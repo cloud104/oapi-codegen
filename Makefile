@@ -8,7 +8,7 @@ OAPI_CODEGEN_URL     := https://raw.githubusercontent.com/oapi-codegen/oapi-code
 help: ## Show this help.
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
-.PHONY: generate
+.PHONY: sync-oapi-codegen
 sync-oapi-codegen: ## Sync the oapi-codegen CLI entrypoint with the module version.
 	@echo "Syncing oapi-codegen $(OAPI_CODEGEN_VERSION)"
 	@curl --fail --silent --show-error --location \
