@@ -1,0 +1,74 @@
+name: Go
+
+on:
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: tks-gha-runner
+    steps:
+      - name: Clone the code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Build
+        run: go build ./...
+
+  sync-entrypoint:
+    runs-on: tks-gha-runner
+    needs: build
+    steps:
+      - name: Clone the code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+
+      - name: Verify oapi-codegen entrypoint
+        run: |
+          make sync-oapi-codegen
+          if ! git diff --quiet -- '*.go'; then
+            echo "::error::oapi-codegen entrypoint is out of date."
+            echo
+            echo "Changed files:"
+            git --no-pager diff --name-only -- '*.go'
+            echo
+            echo "Run 'make sync-oapi-codegen' locally and commit the changes."
+            exit 1
+          fi
+          echo "oapi-codegen entrypoint is up to date."
+
+  test:
+    runs-on: tks-gha-runner
+    needs: build
+    steps:
+      - name: Clone the code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Test
+        run: go test ./...
