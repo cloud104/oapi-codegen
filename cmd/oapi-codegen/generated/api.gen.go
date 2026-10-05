@@ -574,21 +574,6 @@ func (c *Client) applyEditors(ctx context.Context, req *http.Request, additional
 	return nil
 }
 
-// ClientWithResponses builds on ClientInterface to offer response payloads
-type ClientWithResponses struct {
-	ClientInterface
-}
-
-// NewClientWithResponses creates a new ClientWithResponses, which wraps
-// Client with return type handling
-func NewClientWithResponses(server string, opts ...ClientOption) (*ClientWithResponses, error) {
-	client, err := NewClient(server, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return &ClientWithResponses{client}, nil
-}
-
 // WithBaseURL overrides the baseURL.
 func WithBaseURL(baseURL string) ClientOption {
 	return func(c *Client) error {
@@ -989,7 +974,7 @@ func (r ReplaceBeerResponse) ContentType() string {
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /beers (the `ListBeers` operationId).
-func (c *ClientWithResponses) ListBeersWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListBeersResponse, error) {
+func (c *Client) ListBeersWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListBeersResponse, error) {
 	rsp, err := c.ListBeers(ctx, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -1002,7 +987,7 @@ func (c *ClientWithResponses) ListBeersWithResponse(ctx context.Context, reqEdit
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with POST /beers (the `CreateBeer` operationId).
-func (c *ClientWithResponses) CreateBeerWithResponse(ctx context.Context, body CreateBeerJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateBeerResponse, error) {
+func (c *Client) CreateBeerWithResponse(ctx context.Context, body CreateBeerJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateBeerResponse, error) {
 	rsp, err := c.CreateBeer(ctx, body, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -1015,7 +1000,7 @@ func (c *ClientWithResponses) CreateBeerWithResponse(ctx context.Context, body C
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with DELETE /beers/{beerId} (the `DeleteBeer` operationId).
-func (c *ClientWithResponses) DeleteBeerWithResponse(ctx context.Context, beerId int, reqEditors ...RequestEditorFn) (*DeleteBeerResponse, error) {
+func (c *Client) DeleteBeerWithResponse(ctx context.Context, beerId int, reqEditors ...RequestEditorFn) (*DeleteBeerResponse, error) {
 	rsp, err := c.DeleteBeer(ctx, beerId, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -1028,7 +1013,7 @@ func (c *ClientWithResponses) DeleteBeerWithResponse(ctx context.Context, beerId
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /beers/{beerId} (the `GetBeer` operationId).
-func (c *ClientWithResponses) GetBeerWithResponse(ctx context.Context, beerId int, reqEditors ...RequestEditorFn) (*GetBeerResponse, error) {
+func (c *Client) GetBeerWithResponse(ctx context.Context, beerId int, reqEditors ...RequestEditorFn) (*GetBeerResponse, error) {
 	rsp, err := c.GetBeer(ctx, beerId, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -1041,7 +1026,7 @@ func (c *ClientWithResponses) GetBeerWithResponse(ctx context.Context, beerId in
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with PATCH /beers/{beerId} (the `UpdateBeer` operationId).
-func (c *ClientWithResponses) UpdateBeerWithResponse(ctx context.Context, beerId int, body UpdateBeerJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateBeerResponse, error) {
+func (c *Client) UpdateBeerWithResponse(ctx context.Context, beerId int, body UpdateBeerJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateBeerResponse, error) {
 	rsp, err := c.UpdateBeer(ctx, beerId, body, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -1054,7 +1039,7 @@ func (c *ClientWithResponses) UpdateBeerWithResponse(ctx context.Context, beerId
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with PUT /beers/{beerId} (the `ReplaceBeer` operationId).
-func (c *ClientWithResponses) ReplaceBeerWithResponse(ctx context.Context, beerId int, body ReplaceBeerJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceBeerResponse, error) {
+func (c *Client) ReplaceBeerWithResponse(ctx context.Context, beerId int, body ReplaceBeerJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceBeerResponse, error) {
 	rsp, err := c.ReplaceBeer(ctx, beerId, body, reqEditors...)
 	if err != nil {
 		return nil, err
