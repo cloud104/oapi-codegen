@@ -157,7 +157,7 @@ func (r {{genResponseTypeName $opid | ucFirst}}) ContentType() string {
     if err != nil {
         return nil, err
     }
-    return Parse{{genResponseTypeName $opid | ucFirst}}(rsp)
+    return parse{{genResponseTypeName $opid | ucFirst}}(rsp)
 }
 
 {{$hasParams := .RequiresParamObject -}}
@@ -172,7 +172,7 @@ func (r {{genResponseTypeName $opid | ucFirst}}) ContentType() string {
     if err != nil {
         return nil, err
     }
-    return Parse{{genResponseTypeName $opid | ucFirst}}(rsp)
+    return parse{{genResponseTypeName $opid | ucFirst}}(rsp)
 }
 {{end}}
 {{end}}
@@ -182,8 +182,8 @@ func (r {{genResponseTypeName $opid | ucFirst}}) ContentType() string {
 {{/* Generate parse functions for responses*/}}
 {{range .}}{{$opid := .OperationId}}
 
-// Parse{{genResponseTypeName $opid | ucFirst}} parses an HTTP response from a {{$opid}}WithResponse call
-func Parse{{genResponseTypeName $opid | ucFirst}}(rsp *http.Response) (*{{genResponseTypeName $opid}}, error) {
+// parse{{genResponseTypeName $opid | ucFirst}} parses an HTTP response from a {{$opid}}WithResponse call
+func parse{{genResponseTypeName $opid | ucFirst}}(rsp *http.Response) (*{{genResponseTypeName $opid}}, error) {
     bodyBytes, err := io.ReadAll(rsp.Body)
     defer func() { _ = rsp.Body.Close() }()
     if err != nil {

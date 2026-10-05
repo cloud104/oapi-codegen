@@ -1087,7 +1087,7 @@ func (c *Client) listBeersWithResponse(ctx context.Context, reqEditors ...Reques
 	if err != nil {
 		return nil, err
 	}
-	return ParseListBeersResponse(rsp)
+	return parseListBeersResponse(rsp)
 }
 
 // createBeerWithBodyWithResponse Create a new beer
@@ -1100,7 +1100,7 @@ func (c *Client) createBeerWithBodyWithResponse(ctx context.Context, contentType
 	if err != nil {
 		return nil, err
 	}
-	return ParseCreateBeerResponse(rsp)
+	return parseCreateBeerResponse(rsp)
 }
 
 // createBeerWithResponse Create a new beer
@@ -1113,7 +1113,7 @@ func (c *Client) createBeerWithResponse(ctx context.Context, body CreateBeerJSON
 	if err != nil {
 		return nil, err
 	}
-	return ParseCreateBeerResponse(rsp)
+	return parseCreateBeerResponse(rsp)
 }
 
 // deleteBeerWithResponse Delete a beer
@@ -1126,7 +1126,7 @@ func (c *Client) deleteBeerWithResponse(ctx context.Context, beerID int, reqEdit
 	if err != nil {
 		return nil, err
 	}
-	return ParseDeleteBeerResponse(rsp)
+	return parseDeleteBeerResponse(rsp)
 }
 
 // getBeerWithResponse Get a beer by ID
@@ -1139,7 +1139,7 @@ func (c *Client) getBeerWithResponse(ctx context.Context, beerID int, reqEditors
 	if err != nil {
 		return nil, err
 	}
-	return ParseGetBeerResponse(rsp)
+	return parseGetBeerResponse(rsp)
 }
 
 // updateBeerWithBodyWithResponse Partially update a beer
@@ -1152,7 +1152,7 @@ func (c *Client) updateBeerWithBodyWithResponse(ctx context.Context, beerID int,
 	if err != nil {
 		return nil, err
 	}
-	return ParseUpdateBeerResponse(rsp)
+	return parseUpdateBeerResponse(rsp)
 }
 
 // updateBeerWithResponse Partially update a beer
@@ -1165,7 +1165,7 @@ func (c *Client) updateBeerWithResponse(ctx context.Context, beerID int, body Up
 	if err != nil {
 		return nil, err
 	}
-	return ParseUpdateBeerResponse(rsp)
+	return parseUpdateBeerResponse(rsp)
 }
 
 // replaceBeerWithBodyWithResponse Replace a beer
@@ -1178,7 +1178,7 @@ func (c *Client) replaceBeerWithBodyWithResponse(ctx context.Context, beerID int
 	if err != nil {
 		return nil, err
 	}
-	return ParseReplaceBeerResponse(rsp)
+	return parseReplaceBeerResponse(rsp)
 }
 
 // replaceBeerWithResponse Replace a beer
@@ -1191,11 +1191,11 @@ func (c *Client) replaceBeerWithResponse(ctx context.Context, beerID int, body R
 	if err != nil {
 		return nil, err
 	}
-	return ParseReplaceBeerResponse(rsp)
+	return parseReplaceBeerResponse(rsp)
 }
 
-// ParseListBeersResponse parses an HTTP response from a ListBeersWithResponse call
-func ParseListBeersResponse(rsp *http.Response) (*ListBeersResponse, error) {
+// parseListBeersResponse parses an HTTP response from a ListBeersWithResponse call
+func parseListBeersResponse(rsp *http.Response) (*ListBeersResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
@@ -1220,8 +1220,8 @@ func ParseListBeersResponse(rsp *http.Response) (*ListBeersResponse, error) {
 	return response, nil
 }
 
-// ParseCreateBeerResponse parses an HTTP response from a CreateBeerWithResponse call
-func ParseCreateBeerResponse(rsp *http.Response) (*CreateBeerResponse, error) {
+// parseCreateBeerResponse parses an HTTP response from a CreateBeerWithResponse call
+func parseCreateBeerResponse(rsp *http.Response) (*CreateBeerResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
@@ -1267,8 +1267,8 @@ func ParseCreateBeerResponse(rsp *http.Response) (*CreateBeerResponse, error) {
 	return response, nil
 }
 
-// ParseDeleteBeerResponse parses an HTTP response from a DeleteBeerWithResponse call
-func ParseDeleteBeerResponse(rsp *http.Response) (*DeleteBeerResponse, error) {
+// parseDeleteBeerResponse parses an HTTP response from a DeleteBeerWithResponse call
+func parseDeleteBeerResponse(rsp *http.Response) (*DeleteBeerResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
@@ -1303,8 +1303,8 @@ func ParseDeleteBeerResponse(rsp *http.Response) (*DeleteBeerResponse, error) {
 	return response, nil
 }
 
-// ParseGetBeerResponse parses an HTTP response from a GetBeerWithResponse call
-func ParseGetBeerResponse(rsp *http.Response) (*GetBeerResponse, error) {
+// parseGetBeerResponse parses an HTTP response from a GetBeerWithResponse call
+func parseGetBeerResponse(rsp *http.Response) (*GetBeerResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
@@ -1336,8 +1336,8 @@ func ParseGetBeerResponse(rsp *http.Response) (*GetBeerResponse, error) {
 	return response, nil
 }
 
-// ParseUpdateBeerResponse parses an HTTP response from a UpdateBeerWithResponse call
-func ParseUpdateBeerResponse(rsp *http.Response) (*UpdateBeerResponse, error) {
+// parseUpdateBeerResponse parses an HTTP response from a UpdateBeerWithResponse call
+func parseUpdateBeerResponse(rsp *http.Response) (*UpdateBeerResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
@@ -1390,8 +1390,8 @@ func ParseUpdateBeerResponse(rsp *http.Response) (*UpdateBeerResponse, error) {
 	return response, nil
 }
 
-// ParseReplaceBeerResponse parses an HTTP response from a ReplaceBeerWithResponse call
-func ParseReplaceBeerResponse(rsp *http.Response) (*ReplaceBeerResponse, error) {
+// parseReplaceBeerResponse parses an HTTP response from a ReplaceBeerWithResponse call
+func parseReplaceBeerResponse(rsp *http.Response) (*ReplaceBeerResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
