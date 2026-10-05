@@ -1069,19 +1069,6 @@ func (c *Client) ListBeers(ctx context.Context, reqEditors ...RequestEditorFn) (
 	return parseListBeersResponse(rsp)
 }
 
-// CreateBeerWithBody Create a new beer
-//
-// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with POST /beers (the `CreateBeer` operationId).
-func (c *Client) CreateBeerWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateBeerResponse, error) {
-	rsp, err := c.createBeerWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return parseCreateBeerResponse(rsp)
-}
-
 // CreateBeer Create a new beer
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
@@ -1121,19 +1108,6 @@ func (c *Client) GetBeer(ctx context.Context, beerID int, reqEditors ...RequestE
 	return parseGetBeerResponse(rsp)
 }
 
-// UpdateBeerWithBody Partially update a beer
-//
-// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with PATCH /beers/{beerId} (the `UpdateBeer` operationId).
-func (c *Client) UpdateBeerWithBody(ctx context.Context, beerID int, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateBeerResponse, error) {
-	rsp, err := c.updateBeerWithBody(ctx, beerID, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return parseUpdateBeerResponse(rsp)
-}
-
 // UpdateBeer Partially update a beer
 //
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
@@ -1145,19 +1119,6 @@ func (c *Client) UpdateBeer(ctx context.Context, beerID int, body UpdateBeerJSON
 		return nil, err
 	}
 	return parseUpdateBeerResponse(rsp)
-}
-
-// ReplaceBeerWithBody Replace a beer
-//
-// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-//
-// Corresponds with PUT /beers/{beerId} (the `ReplaceBeer` operationId).
-func (c *Client) ReplaceBeerWithBody(ctx context.Context, beerID int, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReplaceBeerResponse, error) {
-	rsp, err := c.replaceBeerWithBody(ctx, beerID, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return parseReplaceBeerResponse(rsp)
 }
 
 // ReplaceBeer Replace a beer
