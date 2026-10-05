@@ -203,13 +203,6 @@ type rawClientInterface interface {
 	// Corresponds with GET /beers (the `ListBeers` operationId).
 	listBeers(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// createBeerWithBody Create a new beer
-	//
-	// Takes any type of body and a specified content type.
-	//
-	// Corresponds with POST /beers (the `CreateBeer` operationId).
-	createBeerWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// createBeer Create a new beer
 	//
 	// Takes a body of the `application/json` content type.
@@ -227,26 +220,12 @@ type rawClientInterface interface {
 	// Corresponds with GET /beers/{beerId} (the `GetBeer` operationId).
 	getBeer(ctx context.Context, beerID int, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// updateBeerWithBody Partially update a beer
-	//
-	// Takes any type of body and a specified content type.
-	//
-	// Corresponds with PATCH /beers/{beerId} (the `UpdateBeer` operationId).
-	updateBeerWithBody(ctx context.Context, beerID int, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// updateBeer Partially update a beer
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PATCH /beers/{beerId} (the `UpdateBeer` operationId).
 	updateBeer(ctx context.Context, beerID int, body UpdateBeerJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// replaceBeerWithBody Replace a beer
-	//
-	// Takes any type of body and a specified content type.
-	//
-	// Corresponds with PUT /beers/{beerId} (the `ReplaceBeer` operationId).
-	replaceBeerWithBody(ctx context.Context, beerID int, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// replaceBeer Replace a beer
 	//

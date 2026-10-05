@@ -81,14 +81,12 @@ type rawClientInterface interface {
 {{- $opidSuffix = "WithBody" -}}
 {{- end -}}
 {{$deprecationComment := .DeprecationComment -}}
-    {{ if .HasBody }}
-        {{ .GenerateFunctionComment $opid "WithBody" false }}
-    {{ else -}}
+    {{ if not .HasBody }}
         {{ .GenerateFunctionComment $opid "" false }}
+        {{with $deprecationComment}}//
+        {{.}}
+        {{end -}}{{$opid}}(ctx context.Context{{genParamArgs $pathParams}}{{if $hasParams}}, params *{{$opid}}Params{{end}}, reqEditors... RequestEditorFn) (*http.Response, error)
     {{ end -}}
-    {{with $deprecationComment}}//
-    {{.}}
-    {{end -}}{{$opid}}{{if .HasBody}}WithBody{{end}}(ctx context.Context{{genParamArgs $pathParams}}{{if $hasParams}}, params *{{$opid}}Params{{end}}{{if .HasBody}}, contentType string, body io.Reader{{end}}, reqEditors... RequestEditorFn) (*http.Response, error)
 {{range .Bodies}}
     {{if .IsSupportedByClient -}}
     {{ .GenerateFunctionComment $opid $parent .Suffix false }}
