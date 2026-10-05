@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 	_ "unsafe"
@@ -24,6 +25,9 @@ type codegenGlobalStateLayout struct {
 //go:linkname codegenGlobalState github.com/oapi-codegen/oapi-codegen/v2/pkg/codegen.globalState
 var codegenGlobalState codegenGlobalStateLayout
 
+//go:linkname genResponseTypeName github.com/oapi-codegen/oapi-codegen/v2/pkg/codegen.genResponseTypeName
+func genResponseTypeName(operationID string) string
+
 func init() {
 	for name, fn := range sprig.FuncMap() {
 		exists := false
@@ -42,7 +46,42 @@ func init() {
 
 	codegen.TemplateFunctions["camelCaseWithInitialisms"] = camelCaseWithInitialisms
 	codegen.TemplateFunctions["genJSONRequestBodyArg"] = genJSONRequestBodyArg
+	codegen.TemplateFunctions["genPrivateResponsePayload"] = genPrivateResponsePayload
 	codegen.TemplateFunctions["jsonRequestBody"] = jsonRequestBody
+}
+
+func camelCaseWithInitialisms(s string) string {
+	overrides := make(map[string]bool)
+
+	// Surround each known initialism with separators so the caser can
+	// recognize it as an independent word, even when acronyms are adjacent.
+	for _, initialism := range codegenGlobalState.initialismsMap {
+		s = strings.ReplaceAll(s, initialism, "_"+initialism+"_")
+		overrides[initialism] = true
+	}
+
+	return strcase.NewCaser(true, overrides, nil).ToCamel(s)
+}
+
+func genJSONRequestBodyArg(op *codegen.OperationDefinition) string {
+	body := jsonRequestBody(op)
+	if body == nil {
+		return ""
+	}
+
+	typeName := body.TypeDef(op.OperationId).TypeName
+
+	return fmt.Sprintf(", body *%s", typeName)
+}
+
+func genPrivateResponsePayload(operationID string) string {
+	buffer := bytes.NewBufferString("")
+	fmt.Fprintf(buffer, "&%s{\n", genResponseTypeName(operationID))
+	fmt.Fprintf(buffer, "body: bodyBytes,\n")
+	fmt.Fprintf(buffer, "httpResponse: rsp,\n")
+	fmt.Fprintf(buffer, "}")
+
+	return buffer.String()
 }
 
 func jsonRequestBody(op *codegen.OperationDefinition) *codegen.RequestBodyDefinition {
@@ -65,28 +104,4 @@ func jsonRequestBody(op *codegen.OperationDefinition) *codegen.RequestBodyDefini
 	}
 
 	return body
-}
-
-func genJSONRequestBodyArg(op *codegen.OperationDefinition) string {
-	body := jsonRequestBody(op)
-	if body == nil {
-		return ""
-	}
-
-	typeName := body.TypeDef(op.OperationId).TypeName
-
-	return fmt.Sprintf(", body *%s", typeName)
-}
-
-func camelCaseWithInitialisms(s string) string {
-	overrides := make(map[string]bool)
-
-	// Surround each known initialism with separators so the caser can
-	// recognize it as an independent word, even when acronyms are adjacent.
-	for _, initialism := range codegenGlobalState.initialismsMap {
-		s = strings.ReplaceAll(s, initialism, "_"+initialism+"_")
-		overrides[initialism] = true
-	}
-
-	return strcase.NewCaser(true, overrides, nil).ToCamel(s)
 }

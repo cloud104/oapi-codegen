@@ -17,7 +17,7 @@ func TestGenerate(t *testing.T) {
 	}
 
 	outputDir := "generated"
-	if err := os.MkdirAll(outputDir, 0755); err != nil {
+	if err := os.MkdirAll(outputDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -63,7 +63,7 @@ func TestGenerate(t *testing.T) {
 
 			output := filepath.Join(outputDir, "api.gen.go")
 
-			if err := os.WriteFile(output, []byte(got), 0644); err != nil {
+			if err := os.WriteFile(output, []byte(got), 0o644); err != nil {
 				t.Fatal(err)
 			}
 		})

@@ -67,8 +67,8 @@ type {{genResponseTypeName $opid | ucFirst}}{{.StatusCode | ucFirst}}Headers str
 }
 {{end}}
 type {{genResponseTypeName $opid | ucFirst}} struct {
-    Body         []byte
-	HTTPResponse *http.Response
+    body         []byte
+	httpResponse *http.Response
     {{- range $responseTypeDefinitions}}
     // {{.TypeName}} the response for an HTTP {{ .ResponseName }} `{{ .ContentTypeName }}` response
     {{.TypeName}} *{{.Schema.TypeDecl}}
@@ -89,22 +89,22 @@ type {{genResponseTypeName $opid | ucFirst}} struct {
 
 // GetBody returns the raw response body bytes
 func (r {{genResponseTypeName $opid | ucFirst}}) GetBody() []byte {
-    return r.Body
+    return r.body
 }
 {{end}}
 
-// Status returns HTTPResponse.Status
+// Status returns the HTTP response status.
 func (r {{genResponseTypeName $opid | ucFirst}}) Status() string {
-    if r.HTTPResponse != nil {
-        return r.HTTPResponse.Status
+    if r.httpResponse != nil {
+        return r.httpResponse.Status
     }
     return http.StatusText(0)
 }
 
-// StatusCode returns HTTPResponse.StatusCode
+// StatusCode returns the HTTP response status code.
 func (r {{genResponseTypeName $opid | ucFirst}}) StatusCode() int {
-    if r.HTTPResponse != nil {
-        return r.HTTPResponse.StatusCode
+    if r.httpResponse != nil {
+        return r.httpResponse.StatusCode
     }
     return 0
 }
@@ -112,15 +112,15 @@ func (r {{genResponseTypeName $opid | ucFirst}}) StatusCode() int {
 {{ if opts.OutputOptions.ClientResponseBytesFunction }}
 // Bytes is a convenience method to retrieve the raw bytes from the HTTP response
 func (r {{genResponseTypeName $opid | ucFirst}}) Bytes() []byte {
-    return r.Body
+    return r.body
 }
 {{end}}
 
 {{ if not opts.OutputOptions.SkipClientResponseContentType }}
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r {{genResponseTypeName $opid | ucFirst}}) ContentType() string {
-    if r.HTTPResponse != nil {
-        return r.HTTPResponse.Header.Get("Content-Type")
+    if r.httpResponse != nil {
+        return r.httpResponse.Header.Get("Content-Type")
     }
     return ""
 }
@@ -178,7 +178,7 @@ func parse{{genResponseTypeName $opid | ucFirst}}(rsp *http.Response) (*{{genRes
         return nil, err
     }
 
-    response := {{genResponsePayload $opid}}
+    response := {{genPrivateResponsePayload $opid}}
 
     {{genResponseUnmarshal .}}
     {{- /* Bind declared response headers into the typed Headers<StatusCode>

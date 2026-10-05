@@ -744,8 +744,8 @@ type ClientInterface interface {
 }
 
 type ListBeersResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
+	body         []byte
+	httpResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *[]Beer
 }
@@ -757,36 +757,36 @@ func (r ListBeersResponse) GetJSON200() *[]Beer {
 
 // GetBody returns the raw response body bytes
 func (r ListBeersResponse) GetBody() []byte {
-	return r.Body
+	return r.body
 }
 
-// Status returns HTTPResponse.Status
+// Status returns the HTTP response status.
 func (r ListBeersResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
+	if r.httpResponse != nil {
+		return r.httpResponse.Status
 	}
 	return http.StatusText(0)
 }
 
-// StatusCode returns HTTPResponse.StatusCode
+// StatusCode returns the HTTP response status code.
 func (r ListBeersResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
+	if r.httpResponse != nil {
+		return r.httpResponse.StatusCode
 	}
 	return 0
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r ListBeersResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
+	if r.httpResponse != nil {
+		return r.httpResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
 type CreateBeerResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
+	body         []byte
+	httpResponse *http.Response
 	// JSON201 the response for an HTTP 201 `application/json` response
 	JSON201 *Beer
 	// JSON400 the response for an HTTP 400 `application/json` response
@@ -819,36 +819,36 @@ func (r CreateBeerResponse) GetJSON415() *UnsupportedMediaType {
 
 // GetBody returns the raw response body bytes
 func (r CreateBeerResponse) GetBody() []byte {
-	return r.Body
+	return r.body
 }
 
-// Status returns HTTPResponse.Status
+// Status returns the HTTP response status.
 func (r CreateBeerResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
+	if r.httpResponse != nil {
+		return r.httpResponse.Status
 	}
 	return http.StatusText(0)
 }
 
-// StatusCode returns HTTPResponse.StatusCode
+// StatusCode returns the HTTP response status code.
 func (r CreateBeerResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
+	if r.httpResponse != nil {
+		return r.httpResponse.StatusCode
 	}
 	return 0
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r CreateBeerResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
+	if r.httpResponse != nil {
+		return r.httpResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
 type DeleteBeerResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
+	body         []byte
+	httpResponse *http.Response
 	// JSON404 the response for an HTTP 404 `application/json` response
 	JSON404 *NotFound
 	// JSON409 the response for an HTTP 409 `application/json` response
@@ -867,36 +867,36 @@ func (r DeleteBeerResponse) GetJSON409() *Conflict {
 
 // GetBody returns the raw response body bytes
 func (r DeleteBeerResponse) GetBody() []byte {
-	return r.Body
+	return r.body
 }
 
-// Status returns HTTPResponse.Status
+// Status returns the HTTP response status.
 func (r DeleteBeerResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
+	if r.httpResponse != nil {
+		return r.httpResponse.Status
 	}
 	return http.StatusText(0)
 }
 
-// StatusCode returns HTTPResponse.StatusCode
+// StatusCode returns the HTTP response status code.
 func (r DeleteBeerResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
+	if r.httpResponse != nil {
+		return r.httpResponse.StatusCode
 	}
 	return 0
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r DeleteBeerResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
+	if r.httpResponse != nil {
+		return r.httpResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
 type GetBeerResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
+	body         []byte
+	httpResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *Beer
 	// JSON404 the response for an HTTP 404 `application/json` response
@@ -915,36 +915,36 @@ func (r GetBeerResponse) GetJSON404() *NotFound {
 
 // GetBody returns the raw response body bytes
 func (r GetBeerResponse) GetBody() []byte {
-	return r.Body
+	return r.body
 }
 
-// Status returns HTTPResponse.Status
+// Status returns the HTTP response status.
 func (r GetBeerResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
+	if r.httpResponse != nil {
+		return r.httpResponse.Status
 	}
 	return http.StatusText(0)
 }
 
-// StatusCode returns HTTPResponse.StatusCode
+// StatusCode returns the HTTP response status code.
 func (r GetBeerResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
+	if r.httpResponse != nil {
+		return r.httpResponse.StatusCode
 	}
 	return 0
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r GetBeerResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
+	if r.httpResponse != nil {
+		return r.httpResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
 type UpdateBeerResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
+	body         []byte
+	httpResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *Beer
 	// JSON400 the response for an HTTP 400 `application/json` response
@@ -984,36 +984,36 @@ func (r UpdateBeerResponse) GetJSON415() *UnsupportedMediaType {
 
 // GetBody returns the raw response body bytes
 func (r UpdateBeerResponse) GetBody() []byte {
-	return r.Body
+	return r.body
 }
 
-// Status returns HTTPResponse.Status
+// Status returns the HTTP response status.
 func (r UpdateBeerResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
+	if r.httpResponse != nil {
+		return r.httpResponse.Status
 	}
 	return http.StatusText(0)
 }
 
-// StatusCode returns HTTPResponse.StatusCode
+// StatusCode returns the HTTP response status code.
 func (r UpdateBeerResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
+	if r.httpResponse != nil {
+		return r.httpResponse.StatusCode
 	}
 	return 0
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r UpdateBeerResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
+	if r.httpResponse != nil {
+		return r.httpResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
 type ReplaceBeerResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
+	body         []byte
+	httpResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *Beer
 	// JSON400 the response for an HTTP 400 `application/json` response
@@ -1053,29 +1053,29 @@ func (r ReplaceBeerResponse) GetJSON415() *UnsupportedMediaType {
 
 // GetBody returns the raw response body bytes
 func (r ReplaceBeerResponse) GetBody() []byte {
-	return r.Body
+	return r.body
 }
 
-// Status returns HTTPResponse.Status
+// Status returns the HTTP response status.
 func (r ReplaceBeerResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
+	if r.httpResponse != nil {
+		return r.httpResponse.Status
 	}
 	return http.StatusText(0)
 }
 
-// StatusCode returns HTTPResponse.StatusCode
+// StatusCode returns the HTTP response status code.
 func (r ReplaceBeerResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
+	if r.httpResponse != nil {
+		return r.httpResponse.StatusCode
 	}
 	return 0
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r ReplaceBeerResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
+	if r.httpResponse != nil {
+		return r.httpResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
@@ -1193,8 +1193,8 @@ func parseListBeersResponse(rsp *http.Response) (*ListBeersResponse, error) {
 	}
 
 	response := &ListBeersResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
+		body:         bodyBytes,
+		httpResponse: rsp,
 	}
 
 	switch {
@@ -1219,8 +1219,8 @@ func parseCreateBeerResponse(rsp *http.Response) (*CreateBeerResponse, error) {
 	}
 
 	response := &CreateBeerResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
+		body:         bodyBytes,
+		httpResponse: rsp,
 	}
 
 	switch {
@@ -1266,8 +1266,8 @@ func parseDeleteBeerResponse(rsp *http.Response) (*DeleteBeerResponse, error) {
 	}
 
 	response := &DeleteBeerResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
+		body:         bodyBytes,
+		httpResponse: rsp,
 	}
 
 	switch {
@@ -1302,8 +1302,8 @@ func parseGetBeerResponse(rsp *http.Response) (*GetBeerResponse, error) {
 	}
 
 	response := &GetBeerResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
+		body:         bodyBytes,
+		httpResponse: rsp,
 	}
 
 	switch {
@@ -1335,8 +1335,8 @@ func parseUpdateBeerResponse(rsp *http.Response) (*UpdateBeerResponse, error) {
 	}
 
 	response := &UpdateBeerResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
+		body:         bodyBytes,
+		httpResponse: rsp,
 	}
 
 	switch {
@@ -1389,8 +1389,8 @@ func parseReplaceBeerResponse(rsp *http.Response) (*ReplaceBeerResponse, error) 
 	}
 
 	response := &ReplaceBeerResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
+		body:         bodyBytes,
+		httpResponse: rsp,
 	}
 
 	switch {
