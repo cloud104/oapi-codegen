@@ -35,18 +35,13 @@ type ClientWithResponsesInterface interface {
 {{$opid := .OperationId -}}
 {{$parent := . }}
 {{$opidSuffix := ""}}
-{{- if .HasBody -}}
-{{- $opidSuffix = "WithBody" -}}
-{{- end -}}
 {{$deprecationComment := .DeprecationComment -}}
-    {{ if .HasBody }}
-        {{ .GenerateFunctionComment $opid "WithBodyWithResponse" true }}
-    {{ else }}
-        {{ .GenerateFunctionComment $opid "WithResponse" true }}
-    {{ end -}}
+    {{ if not .HasBody }}
+    {{ .GenerateFunctionComment $opid "WithResponse" true }}
     {{with $deprecationComment}}//
     {{.}}
     {{end -}}{{$opid}}{{if .HasBody}}WithBody{{end}}WithResponse(ctx context.Context{{genParamArgs .PathParams}}{{if .RequiresParamObject}}, params *{{$opid}}Params{{end}}{{if .HasBody}}, contentType string, body io.Reader{{end}}, reqEditors... RequestEditorFn) (*{{genResponseTypeName $opid}}, error)
+    {{ end -}}
 {{range .Bodies}}
     {{if .IsSupportedByClient -}}
         {{ .GenerateFunctionComment $opid $parent (printf "%sWithResponse" .Suffix) true }}
@@ -137,17 +132,11 @@ func (r {{genResponseTypeName $opid | ucFirst}}) ContentType() string {
 {{$opid := .OperationId -}}
 {{$parent := . }}
 {{$opidSuffix := ""}}
-{{- if .HasBody -}}
-{{- $opidSuffix = "WithBody" -}}
-{{- end -}}
 {{$deprecationComment := .DeprecationComment -}}
 {{/* Generate client methods (with responses)*/}}
 
-{{ if .HasBody }}
-    {{ .GenerateFunctionComment $opid "WithBodyWithResponse" true }}
-{{ else }}
-    {{ .GenerateFunctionComment $opid "WithResponse" true }}
-{{ end -}}
+{{ if not .HasBody }}
+{{ .GenerateFunctionComment $opid "WithResponse" true }}
 {{with $deprecationComment}}//
 {{.}}
 {{end -}}func (c *ClientWithResponses) {{$opid}}{{if .HasBody}}WithBody{{end}}WithResponse(ctx context.Context{{genParamArgs .PathParams}}{{if .RequiresParamObject}}, params *{{$opid}}Params{{end}}{{if .HasBody}}, contentType string, body io.Reader{{end}}, reqEditors... RequestEditorFn) (*{{genResponseTypeName $opid}}, error){
@@ -157,6 +146,7 @@ func (r {{genResponseTypeName $opid | ucFirst}}) ContentType() string {
     }
     return Parse{{genResponseTypeName $opid | ucFirst}}(rsp)
 }
+{{ end -}}
 
 {{$hasParams := .RequiresParamObject -}}
 {{$pathParams := .PathParams -}}
