@@ -260,7 +260,7 @@ type rawClientInterface interface {
 //
 // Corresponds with GET /beers (the `ListBeers` operationId).
 func (c *rawClient) ListBeers(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListBeersRequest(c.Server)
+	req, err := newListBeersRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -277,7 +277,7 @@ func (c *rawClient) ListBeers(ctx context.Context, reqEditors ...RequestEditorFn
 //
 // Corresponds with POST /beers (the `CreateBeer` operationId).
 func (c *rawClient) CreateBeerWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateBeerRequestWithBody(c.Server, contentType, body)
+	req, err := newCreateBeerRequestWithBody(c.Server, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -294,7 +294,7 @@ func (c *rawClient) CreateBeerWithBody(ctx context.Context, contentType string, 
 //
 // Corresponds with POST /beers (the `CreateBeer` operationId).
 func (c *rawClient) CreateBeer(ctx context.Context, body CreateBeerJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateBeerRequest(c.Server, body)
+	req, err := newCreateBeerRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -309,7 +309,7 @@ func (c *rawClient) CreateBeer(ctx context.Context, body CreateBeerJSONRequestBo
 //
 // Corresponds with DELETE /beers/{beerId} (the `DeleteBeer` operationId).
 func (c *rawClient) DeleteBeer(ctx context.Context, beerID int, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteBeerRequest(c.Server, beerID)
+	req, err := newDeleteBeerRequest(c.Server, beerID)
 	if err != nil {
 		return nil, err
 	}
@@ -324,7 +324,7 @@ func (c *rawClient) DeleteBeer(ctx context.Context, beerID int, reqEditors ...Re
 //
 // Corresponds with GET /beers/{beerId} (the `GetBeer` operationId).
 func (c *rawClient) GetBeer(ctx context.Context, beerID int, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetBeerRequest(c.Server, beerID)
+	req, err := newGetBeerRequest(c.Server, beerID)
 	if err != nil {
 		return nil, err
 	}
@@ -341,7 +341,7 @@ func (c *rawClient) GetBeer(ctx context.Context, beerID int, reqEditors ...Reque
 //
 // Corresponds with PATCH /beers/{beerId} (the `UpdateBeer` operationId).
 func (c *rawClient) UpdateBeerWithBody(ctx context.Context, beerID int, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateBeerRequestWithBody(c.Server, beerID, contentType, body)
+	req, err := newUpdateBeerRequestWithBody(c.Server, beerID, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -358,7 +358,7 @@ func (c *rawClient) UpdateBeerWithBody(ctx context.Context, beerID int, contentT
 //
 // Corresponds with PATCH /beers/{beerId} (the `UpdateBeer` operationId).
 func (c *rawClient) UpdateBeer(ctx context.Context, beerID int, body UpdateBeerJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateBeerRequest(c.Server, beerID, body)
+	req, err := newUpdateBeerRequest(c.Server, beerID, body)
 	if err != nil {
 		return nil, err
 	}
@@ -375,7 +375,7 @@ func (c *rawClient) UpdateBeer(ctx context.Context, beerID int, body UpdateBeerJ
 //
 // Corresponds with PUT /beers/{beerId} (the `ReplaceBeer` operationId).
 func (c *rawClient) ReplaceBeerWithBody(ctx context.Context, beerID int, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewReplaceBeerRequestWithBody(c.Server, beerID, contentType, body)
+	req, err := newReplaceBeerRequestWithBody(c.Server, beerID, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -392,7 +392,7 @@ func (c *rawClient) ReplaceBeerWithBody(ctx context.Context, beerID int, content
 //
 // Corresponds with PUT /beers/{beerId} (the `ReplaceBeer` operationId).
 func (c *rawClient) ReplaceBeer(ctx context.Context, beerID int, body ReplaceBeerJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewReplaceBeerRequest(c.Server, beerID, body)
+	req, err := newReplaceBeerRequest(c.Server, beerID, body)
 	if err != nil {
 		return nil, err
 	}
@@ -403,8 +403,8 @@ func (c *rawClient) ReplaceBeer(ctx context.Context, beerID int, body ReplaceBee
 	return c.Client.Do(req)
 }
 
-// NewListBeersRequest constructs an http.Request for the ListBeers method
-func NewListBeersRequest(server string) (*http.Request, error) {
+// newListBeersRequest constructs an http.Request for the ListBeers method
+func newListBeersRequest(server string) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -430,19 +430,19 @@ func NewListBeersRequest(server string) (*http.Request, error) {
 	return req, nil
 }
 
-// NewCreateBeerRequest calls the generic CreateBeer builder with application/json body
-func NewCreateBeerRequest(server string, body CreateBeerJSONRequestBody) (*http.Request, error) {
+// newCreateBeerRequest calls the generic CreateBeer builder with application/json body
+func newCreateBeerRequest(server string, body CreateBeerJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewCreateBeerRequestWithBody(server, "application/json", bodyReader)
+	return newCreateBeerRequestWithBody(server, "application/json", bodyReader)
 }
 
-// NewCreateBeerRequestWithBody constructs an http.Request for the CreateBeer method, with any body, and a specified content type
-func NewCreateBeerRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+// newCreateBeerRequestWithBody constructs an http.Request for the CreateBeer method, with any body, and a specified content type
+func newCreateBeerRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -470,8 +470,8 @@ func NewCreateBeerRequestWithBody(server string, contentType string, body io.Rea
 	return req, nil
 }
 
-// NewDeleteBeerRequest constructs an http.Request for the DeleteBeer method
-func NewDeleteBeerRequest(server string, beerID int) (*http.Request, error) {
+// newDeleteBeerRequest constructs an http.Request for the DeleteBeer method
+func newDeleteBeerRequest(server string, beerID int) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -504,8 +504,8 @@ func NewDeleteBeerRequest(server string, beerID int) (*http.Request, error) {
 	return req, nil
 }
 
-// NewGetBeerRequest constructs an http.Request for the GetBeer method
-func NewGetBeerRequest(server string, beerID int) (*http.Request, error) {
+// newGetBeerRequest constructs an http.Request for the GetBeer method
+func newGetBeerRequest(server string, beerID int) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -538,19 +538,19 @@ func NewGetBeerRequest(server string, beerID int) (*http.Request, error) {
 	return req, nil
 }
 
-// NewUpdateBeerRequest calls the generic UpdateBeer builder with application/json body
-func NewUpdateBeerRequest(server string, beerID int, body UpdateBeerJSONRequestBody) (*http.Request, error) {
+// newUpdateBeerRequest calls the generic UpdateBeer builder with application/json body
+func newUpdateBeerRequest(server string, beerID int, body UpdateBeerJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewUpdateBeerRequestWithBody(server, beerID, "application/json", bodyReader)
+	return newUpdateBeerRequestWithBody(server, beerID, "application/json", bodyReader)
 }
 
-// NewUpdateBeerRequestWithBody constructs an http.Request for the UpdateBeer method, with any body, and a specified content type
-func NewUpdateBeerRequestWithBody(server string, beerID int, contentType string, body io.Reader) (*http.Request, error) {
+// newUpdateBeerRequestWithBody constructs an http.Request for the UpdateBeer method, with any body, and a specified content type
+func newUpdateBeerRequestWithBody(server string, beerID int, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -585,19 +585,19 @@ func NewUpdateBeerRequestWithBody(server string, beerID int, contentType string,
 	return req, nil
 }
 
-// NewReplaceBeerRequest calls the generic ReplaceBeer builder with application/json body
-func NewReplaceBeerRequest(server string, beerID int, body ReplaceBeerJSONRequestBody) (*http.Request, error) {
+// newReplaceBeerRequest calls the generic ReplaceBeer builder with application/json body
+func newReplaceBeerRequest(server string, beerID int, body ReplaceBeerJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewReplaceBeerRequestWithBody(server, beerID, "application/json", bodyReader)
+	return newReplaceBeerRequestWithBody(server, beerID, "application/json", bodyReader)
 }
 
-// NewReplaceBeerRequestWithBody constructs an http.Request for the ReplaceBeer method, with any body, and a specified content type
-func NewReplaceBeerRequestWithBody(server string, beerID int, contentType string, body io.Reader) (*http.Request, error) {
+// newReplaceBeerRequestWithBody constructs an http.Request for the ReplaceBeer method, with any body, and a specified content type
+func newReplaceBeerRequestWithBody(server string, beerID int, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
