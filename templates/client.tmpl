@@ -78,8 +78,6 @@ type ClientInterface interface {
 {{$pathParams := .PathParams -}}
 {{$opid := .OperationId -}}
 {{$parent := . }}
-{{- if .HasBody -}}
-{{- end -}}
 {{$deprecationComment := .DeprecationComment -}}
     {{ if .HasBody }}
         {{ .GenerateFunctionComment $opid "WithBody" false }}
@@ -107,9 +105,6 @@ type ClientInterface interface {
 {{$pathParams := .PathParams -}}
 {{$opid := .OperationId -}}
 {{$parent := . }}
-{{- if .HasBody -}}
-{{- end -}}
-
 {{ if .HasBody }}
     {{ .GenerateFunctionComment $opid "WithBody" false }}
 {{ else }}

@@ -197,6 +197,7 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 
 // The interface specification for the client above.
 type ClientInterface interface {
+
 	// ListBeers List all beers
 	//
 	// Corresponds with GET /beers (the `ListBeers` operationId).
