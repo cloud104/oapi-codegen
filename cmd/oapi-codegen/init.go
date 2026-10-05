@@ -3,11 +3,26 @@ package main
 import (
 	"fmt"
 	"strings"
+	_ "unsafe"
 
 	sprig "github.com/Masterminds/sprig/v3"
 	"github.com/ettle/strcase"
+	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/oapi-codegen/oapi-codegen/v2/pkg/codegen"
 )
+
+// Mirrors the prefix of codegen.globalState up to initialismsMap.
+// This is intentionally coupled to oapi-codegen's internal implementation.
+type codegenGlobalStateLayout struct {
+	options        codegen.Configuration
+	spec           *openapi3.T
+	is31           bool
+	importMapping  map[string]struct{ Name, Path string }
+	initialismsMap map[string]string
+}
+
+//go:linkname codegenGlobalState github.com/oapi-codegen/oapi-codegen/v2/pkg/codegen.globalState
+var codegenGlobalState codegenGlobalStateLayout
 
 func init() {
 	for name, fn := range sprig.FuncMap() {
@@ -63,19 +78,15 @@ func genJSONRequestBodyArg(op *codegen.OperationDefinition) string {
 	return fmt.Sprintf(", body *%s", typeName)
 }
 
-func camelCaseWithInitialisms(s string, initialisms ...string) string {
+func camelCaseWithInitialisms(s string) string {
+	overrides := make(map[string]bool)
+
 	// Surround each known initialism with separators so the caser can
 	// recognize it as an independent word, even when acronyms are adjacent.
-	for _, initialism := range initialisms {
+	for _, initialism := range codegenGlobalState.initialismsMap {
 		s = strings.ReplaceAll(s, initialism, "_"+initialism+"_")
+		overrides[initialism] = true
 	}
 
-	initialismOverrides := make(map[string]bool, len(initialisms))
-	for _, initialism := range initialisms {
-		initialismOverrides[initialism] = true
-	}
-
-	caser := strcase.NewCaser(true, initialismOverrides, nil)
-
-	return caser.ToCamel(s)
+	return strcase.NewCaser(true, overrides, nil).ToCamel(s)
 }
