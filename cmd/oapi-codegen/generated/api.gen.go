@@ -56,6 +56,28 @@ type BeerCreate struct {
 	Style string `json:"style"`
 }
 
+// BeerPage defines model for BeerPage.
+type BeerPage struct {
+	// HasNext Example: true
+	HasNext *bool `json:"hasNext,omitempty"`
+
+	// HasPrevious Example: false
+	HasPrevious *bool  `json:"hasPrevious,omitempty"`
+	Items       []Beer `json:"items"`
+
+	// Page Example: 1
+	Page int `json:"page"`
+
+	// PageSize Example: 20
+	PageSize int `json:"pageSize"`
+
+	// TotalItems Example: 87
+	TotalItems int `json:"totalItems"`
+
+	// TotalPages Example: 5
+	TotalPages int `json:"totalPages"`
+}
+
 // BeerReplace defines model for BeerReplace.
 type BeerReplace struct {
 	// Abv Example: 9.2
@@ -115,6 +137,15 @@ type NotFound = Error
 
 // UnsupportedMediaType defines model for UnsupportedMediaType.
 type UnsupportedMediaType = Error
+
+// ListBeersParams defines parameters for ListBeers.
+type ListBeersParams struct {
+	// Page Page number, starting at 1
+	Page *int `form:"page,omitempty" json:"page,omitempty"`
+
+	// PageSize Number of beers per page
+	PageSize *int `form:"pageSize,omitempty" json:"pageSize,omitempty"`
+}
 
 // CreateBeerTextBody defines parameters for CreateBeer.
 type CreateBeerTextBody = string
@@ -214,7 +245,7 @@ type rawClientInterface interface {
 	// listBeers List all beers
 	//
 	// Corresponds with GET /beers (the `ListBeers` operationId).
-	listBeers(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	listBeers(ctx context.Context, params *listBeersParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// createBeer Create a new beer
 	//
@@ -265,8 +296,8 @@ type rawClientInterface interface {
 // listBeers List all beers
 //
 // Corresponds with GET /beers (the `ListBeers` operationId).
-func (c *rawClient) listBeers(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := newListBeersRequest(c.Server)
+func (c *rawClient) listBeers(ctx context.Context, params *listBeersParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := newListBeersRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -393,7 +424,7 @@ func (c *rawClient) replaceBeer(ctx context.Context, beerID int, body ReplaceBee
 }
 
 // newListBeersRequest constructs an http.Request for the ListBeers method
-func newListBeersRequest(server string) (*http.Request, error) {
+func newListBeersRequest(server string, params *ListBeersParams) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -409,6 +440,45 @@ func newListBeersRequest(server string) (*http.Request, error) {
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Page != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PageSize != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "pageSize", *params.PageSize, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -692,7 +762,7 @@ type ClientInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /beers (the `ListBeers` operationId).
-	ListBeers(ctx context.Context, reqEditors ...RequestEditorFn) (*ListBeersResponse, error)
+	ListBeers(ctx context.Context, params *ListBeersParams, reqEditors ...RequestEditorFn) (*ListBeersResponse, error)
 
 	// CreateBeer Create a new beer
 	//
@@ -744,19 +814,27 @@ type ClientInterface interface {
 	ReplaceBeer(ctx context.Context, beerID int, body ReplaceBeerJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceBeerResponse, error)
 }
 
+// ListBeersResponse200Headers the declared response headers of an HTTP 200 response for ListBeers
+type ListBeersResponse200Headers struct {
+	Link        *string
+	XTotalCount *int
+}
+
 type ListBeersResponse struct {
 	body         []byte
 	httpResponse *http.Response
 	// json200 the response for an HTTP 200 `application/json` response
-	json200 *[]Beer
+	json200 *BeerPage
 	// xml200 the response for an HTTP 200 `application/xml` response
-	xml200 *[]Beer
+	xml200 *BeerPage
 	// xml202 the response for an HTTP 202 `application/xml` response
-	xml202 *[]Beer
+	xml202 *BeerPage
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *ListBeersResponse200Headers
 }
 
-// GetBeers checks if the HTTP response status code is 200 or 202, and if so, returns the []Beer.
-func (r ListBeersResponse) GetBeers() (*[]Beer, error) {
+// GetBeerPage checks if the HTTP response status code is 200 or 202, and if so, returns the BeerPage.
+func (r ListBeersResponse) GetBeerPage() (*BeerPage, error) {
 	if r.json200 != nil {
 		return r.json200, nil
 	}
@@ -819,6 +897,22 @@ type CreateBeerResponse struct {
 	json415 *UnsupportedMediaType
 }
 
+// GetBeer checks if the HTTP response status code is 201, and if so, returns the Beer.
+func (r CreateBeerResponse) GetBeer() (*Beer, error) {
+	if r.json201 != nil {
+		return r.json201, nil
+	}
+	if r.httpResponse == nil {
+		return nil, fmt.Errorf("missing HTTP response")
+	}
+	switch r.httpResponse.StatusCode {
+	case 201:
+		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.httpResponse.StatusCode)
+	default:
+		return nil, fmt.Errorf("unexpected response: status %d: %s", r.httpResponse.StatusCode, string(r.body))
+	}
+}
+
 // GetBadRequest checks if the HTTP response status code is 400, and if so, returns the BadRequest.
 func (r CreateBeerResponse) GetBadRequest() (*BadRequest, error) {
 	if r.json400 != nil {
@@ -861,22 +955,6 @@ func (r CreateBeerResponse) GetUnsupportedMediaType() (*UnsupportedMediaType, er
 	}
 	switch r.httpResponse.StatusCode {
 	case 415:
-		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.httpResponse.StatusCode)
-	default:
-		return nil, fmt.Errorf("unexpected response: status %d: %s", r.httpResponse.StatusCode, string(r.body))
-	}
-}
-
-// GetBeer checks if the HTTP response status code is 201, and if so, returns the Beer.
-func (r CreateBeerResponse) GetBeer() (*Beer, error) {
-	if r.json201 != nil {
-		return r.json201, nil
-	}
-	if r.httpResponse == nil {
-		return nil, fmt.Errorf("missing HTTP response")
-	}
-	switch r.httpResponse.StatusCode {
-	case 201:
 		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.httpResponse.StatusCode)
 	default:
 		return nil, fmt.Errorf("unexpected response: status %d: %s", r.httpResponse.StatusCode, string(r.body))
@@ -1191,22 +1269,6 @@ type ReplaceBeerResponse struct {
 	json415 *UnsupportedMediaType
 }
 
-// GetUnsupportedMediaType checks if the HTTP response status code is 415, and if so, returns the UnsupportedMediaType.
-func (r ReplaceBeerResponse) GetUnsupportedMediaType() (*UnsupportedMediaType, error) {
-	if r.json415 != nil {
-		return r.json415, nil
-	}
-	if r.httpResponse == nil {
-		return nil, fmt.Errorf("missing HTTP response")
-	}
-	switch r.httpResponse.StatusCode {
-	case 415:
-		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.httpResponse.StatusCode)
-	default:
-		return nil, fmt.Errorf("unexpected response: status %d: %s", r.httpResponse.StatusCode, string(r.body))
-	}
-}
-
 // GetBeer checks if the HTTP response status code is 200, and if so, returns the Beer.
 func (r ReplaceBeerResponse) GetBeer() (*Beer, error) {
 	if r.json200 != nil {
@@ -1271,6 +1333,22 @@ func (r ReplaceBeerResponse) GetConflict() (*Conflict, error) {
 	}
 }
 
+// GetUnsupportedMediaType checks if the HTTP response status code is 415, and if so, returns the UnsupportedMediaType.
+func (r ReplaceBeerResponse) GetUnsupportedMediaType() (*UnsupportedMediaType, error) {
+	if r.json415 != nil {
+		return r.json415, nil
+	}
+	if r.httpResponse == nil {
+		return nil, fmt.Errorf("missing HTTP response")
+	}
+	switch r.httpResponse.StatusCode {
+	case 415:
+		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.httpResponse.StatusCode)
+	default:
+		return nil, fmt.Errorf("unexpected response: status %d: %s", r.httpResponse.StatusCode, string(r.body))
+	}
+}
+
 // GetBody returns the raw response body bytes
 func (r ReplaceBeerResponse) GetBody() []byte {
 	return r.body
@@ -1305,8 +1383,8 @@ func (r ReplaceBeerResponse) ContentType() string {
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /beers (the `ListBeers` operationId).
-func (c *Client) ListBeers(ctx context.Context, reqEditors ...RequestEditorFn) (*ListBeersResponse, error) {
-	rsp, err := c.listBeers(ctx, reqEditors...)
+func (c *Client) ListBeers(ctx context.Context, params *ListBeersParams, reqEditors ...RequestEditorFn) (*ListBeersResponse, error) {
+	rsp, err := c.listBeers(ctx, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -1419,26 +1497,46 @@ func parseListBeersResponse(rsp *http.Response) (*ListBeersResponse, error) {
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest []Beer
+		var dest BeerPage
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.json200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "xml") && rsp.StatusCode == 200:
-		var dest []Beer
+		var dest BeerPage
 		if err := xml.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.xml200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "xml") && rsp.StatusCode == 202:
-		var dest []Beer
+		var dest BeerPage
 		if err := xml.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.xml202 = &dest
 
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers ListBeersResponse200Headers
+		if values := rsp.Header.Values("Link"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Link", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.Link = &value
+		}
+		if values := rsp.Header.Values("X-Total-Count"); len(values) > 0 {
+			var value int
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Total-Count", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XTotalCount = &value
+		}
+		response.Headers200 = &headers
 	}
 
 	return response, nil

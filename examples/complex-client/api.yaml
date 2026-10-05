@@ -9,28 +9,64 @@ paths:
     get:
       summary: List all beers
       operationId: listBeers
+      parameters:
+        - name: page
+          in: query
+          description: Page number, starting at 1
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+            example: 1
+
+        - name: pageSize
+          in: query
+          description: Number of beers per page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+            example: 20
+
       responses:
         '200':
-          description: List of beers
+          description: Paginated list of beers
+          headers:
+            Link:
+              description: >
+                Pagination links using RFC 8288 format.
+                May contain first, previous, next, and last relations.
+              schema:
+                type: string
+              example: >
+                </beers?page=1&pageSize=20>; rel="first",
+                </beers?page=1&pageSize=20>; rel="prev",
+                </beers?page=3&pageSize=20>; rel="next",
+                </beers?page=5&pageSize=20>; rel="last"
+
+            X-Total-Count:
+              description: Total number of beers
+              schema:
+                type: integer
+              example: 87
+
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Beer'
+                $ref: '#/components/schemas/BeerPage'
             application/xml:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Beer'
+                $ref: '#/components/schemas/BeerPage'
+
         '202':
-          description: List of beers
+          description: Paginated list of beers
           content:
             application/xml:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Beer'
+                $ref: '#/components/schemas/BeerPage'
 
     post:
       summary: Create a new beer
@@ -194,6 +230,42 @@ components:
             $ref: '#/components/schemas/Error'
 
   schemas:
+    BeerPage:
+      type: object
+      required:
+        - items
+        - page
+        - pageSize
+        - totalItems
+        - totalPages
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Beer'
+        page:
+          type: integer
+          minimum: 1
+          example: 1
+        pageSize:
+          type: integer
+          minimum: 1
+          example: 20
+        totalItems:
+          type: integer
+          minimum: 0
+          example: 87
+        totalPages:
+          type: integer
+          minimum: 0
+          example: 5
+        hasNext:
+          type: boolean
+          example: true
+        hasPrevious:
+          type: boolean
+          example: false
+
     Beer:
       type: object
       required:
