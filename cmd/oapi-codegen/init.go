@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 
 	sprig "github.com/Masterminds/sprig/v3"
 	"github.com/oapi-codegen/oapi-codegen/v2/pkg/codegen"
@@ -9,13 +10,23 @@ import (
 
 func init() {
 	for name, fn := range sprig.FuncMap() {
-		if _, exists := codegen.TemplateFunctions[name]; !exists {
+		exists := false
+
+		for existingName := range codegen.TemplateFunctions {
+			if strings.EqualFold(existingName, name) {
+				exists = true
+				break
+			}
+		}
+
+		if !exists {
 			codegen.TemplateFunctions[name] = fn
 		}
 	}
 
-	codegen.TemplateFunctions["jsonRequestBody"] = jsonRequestBody
+	codegen.TemplateFunctions["camelCaseWithInitialisms"] = codegen.ToCamelCaseWithInitialisms
 	codegen.TemplateFunctions["genJSONRequestBodyArg"] = genJSONRequestBodyArg
+	codegen.TemplateFunctions["jsonRequestBody"] = jsonRequestBody
 }
 
 func jsonRequestBody(op *codegen.OperationDefinition) *codegen.RequestBodyDefinition {
