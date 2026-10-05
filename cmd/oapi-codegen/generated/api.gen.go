@@ -755,7 +755,7 @@ type ListBeersResponse struct {
 	xml202 *[]Beer
 }
 
-// GetBeers checks if the HTTP response status code is 200 or 200 or 202, and if so, returns the []Beer.
+// GetBeers checks if the HTTP response status code is 200, 200 or 202, and if so, returns the []Beer.
 func (r ListBeersResponse) GetBeers() *[]Beer {
 }
 
@@ -901,12 +901,12 @@ type GetBeerResponse struct {
 	json404 *NotFound
 }
 
-// GetNotFound checks if the HTTP response status code is 404, and if so, returns the NotFound.
-func (r GetBeerResponse) GetNotFound() *NotFound {
-}
-
 // GetBeer checks if the HTTP response status code is 200, and if so, returns the Beer.
 func (r GetBeerResponse) GetBeer() *Beer {
+}
+
+// GetNotFound checks if the HTTP response status code is 404, and if so, returns the NotFound.
+func (r GetBeerResponse) GetNotFound() *NotFound {
 }
 
 // GetBody returns the raw response body bytes
@@ -953,14 +953,6 @@ type UpdateBeerResponse struct {
 	json415 *UnsupportedMediaType
 }
 
-// GetConflict checks if the HTTP response status code is 409, and if so, returns the Conflict.
-func (r UpdateBeerResponse) GetConflict() *Conflict {
-}
-
-// GetUnsupportedMediaType checks if the HTTP response status code is 415, and if so, returns the UnsupportedMediaType.
-func (r UpdateBeerResponse) GetUnsupportedMediaType() *UnsupportedMediaType {
-}
-
 // GetBeer checks if the HTTP response status code is 200, and if so, returns the Beer.
 func (r UpdateBeerResponse) GetBeer() *Beer {
 }
@@ -971,6 +963,14 @@ func (r UpdateBeerResponse) GetBadRequest() *BadRequest {
 
 // GetNotFound checks if the HTTP response status code is 404, and if so, returns the NotFound.
 func (r UpdateBeerResponse) GetNotFound() *NotFound {
+}
+
+// GetConflict checks if the HTTP response status code is 409, and if so, returns the Conflict.
+func (r UpdateBeerResponse) GetConflict() *Conflict {
+}
+
+// GetUnsupportedMediaType checks if the HTTP response status code is 415, and if so, returns the UnsupportedMediaType.
+func (r UpdateBeerResponse) GetUnsupportedMediaType() *UnsupportedMediaType {
 }
 
 // GetBody returns the raw response body bytes
@@ -1017,6 +1017,14 @@ type ReplaceBeerResponse struct {
 	json415 *UnsupportedMediaType
 }
 
+// GetConflict checks if the HTTP response status code is 409, and if so, returns the Conflict.
+func (r ReplaceBeerResponse) GetConflict() *Conflict {
+}
+
+// GetUnsupportedMediaType checks if the HTTP response status code is 415, and if so, returns the UnsupportedMediaType.
+func (r ReplaceBeerResponse) GetUnsupportedMediaType() *UnsupportedMediaType {
+}
+
 // GetBeer checks if the HTTP response status code is 200, and if so, returns the Beer.
 func (r ReplaceBeerResponse) GetBeer() *Beer {
 }
@@ -1027,14 +1035,6 @@ func (r ReplaceBeerResponse) GetBadRequest() *BadRequest {
 
 // GetNotFound checks if the HTTP response status code is 404, and if so, returns the NotFound.
 func (r ReplaceBeerResponse) GetNotFound() *NotFound {
-}
-
-// GetConflict checks if the HTTP response status code is 409, and if so, returns the Conflict.
-func (r ReplaceBeerResponse) GetConflict() *Conflict {
-}
-
-// GetUnsupportedMediaType checks if the HTTP response status code is 415, and if so, returns the UnsupportedMediaType.
-func (r ReplaceBeerResponse) GetUnsupportedMediaType() *UnsupportedMediaType {
 }
 
 // GetBody returns the raw response body bytes

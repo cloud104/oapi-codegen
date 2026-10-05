@@ -81,7 +81,7 @@ type {{genResponseTypeName $opid | ucFirst}} struct {
 
 {{ if not opts.OutputOptions.SkipResponseBodyGetters }}
 {{- range groupResponses $responseTypeDefinitions}}
-  // {{.Method}} checks if the HTTP response status code is {{ join " or " .ResponseCodes }}, and if so, returns the {{.Type}}.
+  // {{.Method}} checks if the HTTP response status code is {{ .ResponseCodes.String }}, and if so, returns the {{.Type}}.
   func (r {{genResponseTypeName $opid | ucFirst}}) {{.Method}}() *{{.Type}} {
   }
 {{- end}}

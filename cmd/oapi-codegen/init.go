@@ -71,11 +71,29 @@ func genJSONRequestBodyArg(op *codegen.OperationDefinition) string {
 	return fmt.Sprintf(", body *%s", typeName)
 }
 
+type responseCodes []int
+
+func (rc responseCodes) String() string {
+	parts := make([]string, len(rc))
+	for i, code := range rc {
+		parts[i] = strconv.Itoa(code)
+	}
+
+	switch len(parts) {
+	case 0:
+		return ""
+	case 1:
+		return parts[0]
+	default:
+		return strings.Join(parts[:len(parts)-1], ", ") + " or " + parts[len(parts)-1]
+	}
+}
+
 type responseGroup struct {
 	Type          string
 	Method        string
 	Fields        []string
-	ResponseCodes []int
+	ResponseCodes responseCodes
 }
 
 func groupResponses(types []codegen.ResponseTypeDefinition) []responseGroup {
