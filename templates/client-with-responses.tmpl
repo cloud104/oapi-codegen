@@ -19,7 +19,7 @@ func New{{ $clientTypeName }}(server string, opts ...ClientOption) (*{{ $clientT
 
 // WithBaseURL overrides the baseURL.
 func WithBaseURL(baseURL string) ClientOption {
-	return func(c *{{ $clientTypeName }}) error {
+	return func(c *rawClient) error {
 		newBaseURL, err := url.Parse(baseURL)
 		if err != nil {
 			return err

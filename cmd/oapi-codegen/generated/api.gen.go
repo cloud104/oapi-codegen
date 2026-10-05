@@ -663,7 +663,7 @@ func NewClient(server string, opts ...ClientOption) (*Client, error) {
 
 // WithBaseURL overrides the baseURL.
 func WithBaseURL(baseURL string) ClientOption {
-	return func(c *Client) error {
+	return func(c *rawClient) error {
 		newBaseURL, err := url.Parse(baseURL)
 		if err != nil {
 			return err
