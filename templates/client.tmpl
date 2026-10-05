@@ -81,14 +81,14 @@ type rawClientInterface interface {
         {{ .GenerateFunctionComment $opid "" false }}
         {{with $deprecationComment}}//
         {{.}}
-        {{end -}}{{$opid}}(ctx context.Context{{genParamArgs $pathParams}}{{if $hasParams}}, params *{{$opid}}Params{{end}}, reqEditors... RequestEditorFn) (*http.Response, error)
+        {{end -}}{{$opid}}(ctx context.Context{{genParamArgs $pathParams}}{{if $hasParams}}, params *{{$parent.OperationId}}Params{{end}}, reqEditors... RequestEditorFn) (*http.Response, error)
     {{ end -}}
 {{range .Bodies}}
     {{if .IsSupportedByClient -}}
     {{ .GenerateFunctionComment $opid $parent .Suffix false }}
     {{with $deprecationComment}}//
     {{.}}
-    {{end -}}{{$opid}}{{.Suffix}}(ctx context.Context{{genParamArgs $pathParams}}{{if $hasParams}}, params *{{$opid}}Params{{end}}, body {{$parent.OperationId}}{{.NameTag}}RequestBody, reqEditors... RequestEditorFn) (*http.Response, error)
+    {{end -}}{{$opid}}{{.Suffix}}(ctx context.Context{{genParamArgs $pathParams}}{{if $hasParams}}, params *{{$parent.OperationId}}Params{{end}}, body {{$parent.OperationId}}{{.NameTag}}RequestBody, reqEditors... RequestEditorFn) (*http.Response, error)
     {{end -}}
 {{end}}{{/* range .Bodies */}}
 {{end}}{{/* range . $opid := .OperationId */}}
@@ -105,7 +105,7 @@ type rawClientInterface interface {
 {{ if not .HasBody }}
     {{ .GenerateFunctionComment $opid "" false }}
     {{with .DeprecationComment}}{{.}}
-    {{end -}}func (c *rawClient) {{$opid}}{{if .HasBody}}WithBody{{end}}(ctx context.Context{{genParamArgs $pathParams}}{{if $hasParams}}, params *{{$opid}}Params{{end}}{{if .HasBody}}, contentType string, body io.Reader{{end}}, reqEditors... RequestEditorFn) (*http.Response, error) {
+    {{end -}}func (c *rawClient) {{$opid}}{{if .HasBody}}WithBody{{end}}(ctx context.Context{{genParamArgs $pathParams}}{{if $hasParams}}, params *{{$parent.OperationId}}Params{{end}}{{if .HasBody}}, contentType string, body io.Reader{{end}}, reqEditors... RequestEditorFn) (*http.Response, error) {
         req, err := new{{$parent.OperationId}}Request{{if .HasBody}}WithBody{{end}}(c.Server{{genParamNames .PathParams}}{{if $hasParams}}, params{{end}}{{if .HasBody}}, contentType, body{{end}})
         if err != nil {
             return nil, err
@@ -123,7 +123,7 @@ type rawClientInterface interface {
 {{if .IsSupportedByClient -}}
 {{ .GenerateFunctionComment $opid $parent .Suffix false }}
 {{with $deprecationComment}}{{.}}
-{{end -}}func (c *rawClient) {{$opid}}{{.Suffix}}(ctx context.Context{{genParamArgs $pathParams}}{{if $hasParams}}, params *{{$opid}}Params{{end}}, body {{$parent.OperationId}}{{.NameTag}}RequestBody, reqEditors... RequestEditorFn) (*http.Response, error) {
+{{end -}}func (c *rawClient) {{$opid}}{{.Suffix}}(ctx context.Context{{genParamArgs $pathParams}}{{if $hasParams}}, params *{{$parent.OperationId}}Params{{end}}, body {{$parent.OperationId}}{{.NameTag}}RequestBody, reqEditors... RequestEditorFn) (*http.Response, error) {
     req, err := new{{$parent.OperationId}}Request{{.Suffix}}(c.Server{{genParamNames $pathParams}}{{if $hasParams}}, params{{end}}, body)
     if err != nil {
         return nil, err
