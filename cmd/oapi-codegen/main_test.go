@@ -41,6 +41,12 @@ func TestGenerate(t *testing.T) {
 						Client: true,
 						Models: true,
 					},
+					OutputOptions: codegen.OutputOptions{
+						UserTemplates: map[string]string{
+							"client.tmpl":                "../../templates/client.tmpl",
+							"client-with-responses.tmpl": "../../templates/client-with-responses.tmpl",
+						},
+					},
 				},
 			},
 		},
