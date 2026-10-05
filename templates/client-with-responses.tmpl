@@ -19,7 +19,6 @@ type ClientWithResponsesInterface interface {
 {{$pathParams := .PathParams -}}
 {{$opid := .OperationId -}}
 {{$parent := . }}
-{{$opidSuffix := ""}}
 {{$deprecationComment := .DeprecationComment -}}
     {{ if not .HasBody }}
     {{ .GenerateFunctionComment $opid "WithResponse" true }}
@@ -116,7 +115,6 @@ func (r {{genResponseTypeName $opid | ucFirst}}) ContentType() string {
 {{range .}}
 {{$opid := .OperationId -}}
 {{$parent := . }}
-{{$opidSuffix := ""}}
 {{$deprecationComment := .DeprecationComment -}}
 {{/* Generate client methods (with responses)*/}}
 
