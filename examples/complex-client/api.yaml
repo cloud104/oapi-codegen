@@ -18,6 +18,11 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Beer'
+            application/xml:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Beer'
 
     post:
       summary: Create a new beer

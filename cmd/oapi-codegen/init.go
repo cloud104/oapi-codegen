@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"strings"
 	_ "unsafe"
@@ -46,7 +45,6 @@ func init() {
 
 	codegen.TemplateFunctions["camelCaseWithInitialisms"] = camelCaseWithInitialisms
 	codegen.TemplateFunctions["genJSONRequestBodyArg"] = genJSONRequestBodyArg
-	codegen.TemplateFunctions["genPrivateResponsePayload"] = genPrivateResponsePayload
 	codegen.TemplateFunctions["jsonRequestBody"] = jsonRequestBody
 }
 
@@ -72,16 +70,6 @@ func genJSONRequestBodyArg(op *codegen.OperationDefinition) string {
 	typeName := body.TypeDef(op.OperationId).TypeName
 
 	return fmt.Sprintf(", body *%s", typeName)
-}
-
-func genPrivateResponsePayload(operationID string) string {
-	buffer := bytes.NewBufferString("")
-	fmt.Fprintf(buffer, "&%s{\n", genResponseTypeName(operationID))
-	fmt.Fprintf(buffer, "body: bodyBytes,\n")
-	fmt.Fprintf(buffer, "httpResponse: rsp,\n")
-	fmt.Fprintf(buffer, "}")
-
-	return buffer.String()
 }
 
 func jsonRequestBody(op *codegen.OperationDefinition) *codegen.RequestBodyDefinition {

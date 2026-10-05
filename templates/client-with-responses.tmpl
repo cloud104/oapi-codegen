@@ -178,9 +178,12 @@ func parse{{genResponseTypeName $opid | ucFirst}}(rsp *http.Response) (*{{genRes
         return nil, err
     }
 
-    response := {{genPrivateResponsePayload $opid}}
+    response := &{{ genResponseTypeName $opid }}{
+		body:         bodyBytes,
+		httpResponse: rsp,
+	}
 
-    {{genResponseUnmarshal .}}
+    {{regexReplaceAll `response\.JSON([0-9]{3})` (genResponseUnmarshal .) `response.json${1}`}}
     {{- /* Bind declared response headers into the typed Headers<StatusCode>
     fields. Binding is lenient: an absent header (even a required one) leaves
     the field at its zero value rather than failing the parse, mirroring the
