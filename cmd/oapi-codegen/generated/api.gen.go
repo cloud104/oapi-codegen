@@ -746,13 +746,13 @@ type ClientInterface interface {
 type ListBeersResponse struct {
 	body         []byte
 	httpResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *[]Beer
+	// json200 the response for an HTTP 200 `application/json` response
+	json200 *[]Beer
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r ListBeersResponse) GetJSON200() *[]Beer {
-	return r.JSON200
+	return r.json200
 }
 
 // GetBody returns the raw response body bytes
@@ -787,34 +787,34 @@ func (r ListBeersResponse) ContentType() string {
 type CreateBeerResponse struct {
 	body         []byte
 	httpResponse *http.Response
-	// JSON201 the response for an HTTP 201 `application/json` response
-	JSON201 *Beer
-	// JSON400 the response for an HTTP 400 `application/json` response
-	JSON400 *BadRequest
-	// JSON409 the response for an HTTP 409 `application/json` response
-	JSON409 *Conflict
-	// JSON415 the response for an HTTP 415 `application/json` response
-	JSON415 *UnsupportedMediaType
+	// json201 the response for an HTTP 201 `application/json` response
+	json201 *Beer
+	// json400 the response for an HTTP 400 `application/json` response
+	json400 *BadRequest
+	// json409 the response for an HTTP 409 `application/json` response
+	json409 *Conflict
+	// json415 the response for an HTTP 415 `application/json` response
+	json415 *UnsupportedMediaType
 }
 
 // GetJSON201 returns the response for an HTTP 201 `application/json` response
 func (r CreateBeerResponse) GetJSON201() *Beer {
-	return r.JSON201
+	return r.json201
 }
 
 // GetJSON400 returns the response for an HTTP 400 `application/json` response
 func (r CreateBeerResponse) GetJSON400() *BadRequest {
-	return r.JSON400
+	return r.json400
 }
 
 // GetJSON409 returns the response for an HTTP 409 `application/json` response
 func (r CreateBeerResponse) GetJSON409() *Conflict {
-	return r.JSON409
+	return r.json409
 }
 
 // GetJSON415 returns the response for an HTTP 415 `application/json` response
 func (r CreateBeerResponse) GetJSON415() *UnsupportedMediaType {
-	return r.JSON415
+	return r.json415
 }
 
 // GetBody returns the raw response body bytes
@@ -849,20 +849,20 @@ func (r CreateBeerResponse) ContentType() string {
 type DeleteBeerResponse struct {
 	body         []byte
 	httpResponse *http.Response
-	// JSON404 the response for an HTTP 404 `application/json` response
-	JSON404 *NotFound
-	// JSON409 the response for an HTTP 409 `application/json` response
-	JSON409 *Conflict
+	// json404 the response for an HTTP 404 `application/json` response
+	json404 *NotFound
+	// json409 the response for an HTTP 409 `application/json` response
+	json409 *Conflict
 }
 
 // GetJSON404 returns the response for an HTTP 404 `application/json` response
 func (r DeleteBeerResponse) GetJSON404() *NotFound {
-	return r.JSON404
+	return r.json404
 }
 
 // GetJSON409 returns the response for an HTTP 409 `application/json` response
 func (r DeleteBeerResponse) GetJSON409() *Conflict {
-	return r.JSON409
+	return r.json409
 }
 
 // GetBody returns the raw response body bytes
@@ -897,20 +897,20 @@ func (r DeleteBeerResponse) ContentType() string {
 type GetBeerResponse struct {
 	body         []byte
 	httpResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *Beer
-	// JSON404 the response for an HTTP 404 `application/json` response
-	JSON404 *NotFound
+	// json200 the response for an HTTP 200 `application/json` response
+	json200 *Beer
+	// json404 the response for an HTTP 404 `application/json` response
+	json404 *NotFound
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r GetBeerResponse) GetJSON200() *Beer {
-	return r.JSON200
+	return r.json200
 }
 
 // GetJSON404 returns the response for an HTTP 404 `application/json` response
 func (r GetBeerResponse) GetJSON404() *NotFound {
-	return r.JSON404
+	return r.json404
 }
 
 // GetBody returns the raw response body bytes
@@ -945,41 +945,41 @@ func (r GetBeerResponse) ContentType() string {
 type UpdateBeerResponse struct {
 	body         []byte
 	httpResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *Beer
-	// JSON400 the response for an HTTP 400 `application/json` response
-	JSON400 *BadRequest
-	// JSON404 the response for an HTTP 404 `application/json` response
-	JSON404 *NotFound
-	// JSON409 the response for an HTTP 409 `application/json` response
-	JSON409 *Conflict
-	// JSON415 the response for an HTTP 415 `application/json` response
-	JSON415 *UnsupportedMediaType
+	// json200 the response for an HTTP 200 `application/json` response
+	json200 *Beer
+	// json400 the response for an HTTP 400 `application/json` response
+	json400 *BadRequest
+	// json404 the response for an HTTP 404 `application/json` response
+	json404 *NotFound
+	// json409 the response for an HTTP 409 `application/json` response
+	json409 *Conflict
+	// json415 the response for an HTTP 415 `application/json` response
+	json415 *UnsupportedMediaType
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r UpdateBeerResponse) GetJSON200() *Beer {
-	return r.JSON200
+	return r.json200
 }
 
 // GetJSON400 returns the response for an HTTP 400 `application/json` response
 func (r UpdateBeerResponse) GetJSON400() *BadRequest {
-	return r.JSON400
+	return r.json400
 }
 
 // GetJSON404 returns the response for an HTTP 404 `application/json` response
 func (r UpdateBeerResponse) GetJSON404() *NotFound {
-	return r.JSON404
+	return r.json404
 }
 
 // GetJSON409 returns the response for an HTTP 409 `application/json` response
 func (r UpdateBeerResponse) GetJSON409() *Conflict {
-	return r.JSON409
+	return r.json409
 }
 
 // GetJSON415 returns the response for an HTTP 415 `application/json` response
 func (r UpdateBeerResponse) GetJSON415() *UnsupportedMediaType {
-	return r.JSON415
+	return r.json415
 }
 
 // GetBody returns the raw response body bytes
@@ -1014,41 +1014,41 @@ func (r UpdateBeerResponse) ContentType() string {
 type ReplaceBeerResponse struct {
 	body         []byte
 	httpResponse *http.Response
-	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *Beer
-	// JSON400 the response for an HTTP 400 `application/json` response
-	JSON400 *BadRequest
-	// JSON404 the response for an HTTP 404 `application/json` response
-	JSON404 *NotFound
-	// JSON409 the response for an HTTP 409 `application/json` response
-	JSON409 *Conflict
-	// JSON415 the response for an HTTP 415 `application/json` response
-	JSON415 *UnsupportedMediaType
+	// json200 the response for an HTTP 200 `application/json` response
+	json200 *Beer
+	// json400 the response for an HTTP 400 `application/json` response
+	json400 *BadRequest
+	// json404 the response for an HTTP 404 `application/json` response
+	json404 *NotFound
+	// json409 the response for an HTTP 409 `application/json` response
+	json409 *Conflict
+	// json415 the response for an HTTP 415 `application/json` response
+	json415 *UnsupportedMediaType
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
 func (r ReplaceBeerResponse) GetJSON200() *Beer {
-	return r.JSON200
+	return r.json200
 }
 
 // GetJSON400 returns the response for an HTTP 400 `application/json` response
 func (r ReplaceBeerResponse) GetJSON400() *BadRequest {
-	return r.JSON400
+	return r.json400
 }
 
 // GetJSON404 returns the response for an HTTP 404 `application/json` response
 func (r ReplaceBeerResponse) GetJSON404() *NotFound {
-	return r.JSON404
+	return r.json404
 }
 
 // GetJSON409 returns the response for an HTTP 409 `application/json` response
 func (r ReplaceBeerResponse) GetJSON409() *Conflict {
-	return r.JSON409
+	return r.json409
 }
 
 // GetJSON415 returns the response for an HTTP 415 `application/json` response
 func (r ReplaceBeerResponse) GetJSON415() *UnsupportedMediaType {
-	return r.JSON415
+	return r.json415
 }
 
 // GetBody returns the raw response body bytes

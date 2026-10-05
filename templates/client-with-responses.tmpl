@@ -70,8 +70,8 @@ type {{genResponseTypeName $opid | ucFirst}} struct {
     body         []byte
 	httpResponse *http.Response
     {{- range $responseTypeDefinitions}}
-    // {{.TypeName}} the response for an HTTP {{ .ResponseName }} `{{ .ContentTypeName }}` response
-    {{.TypeName}} *{{.Schema.TypeDecl}}
+    // {{camelCaseWithInitialisms .TypeName}} the response for an HTTP {{ .ResponseName }} `{{ .ContentTypeName }}` response
+    {{camelCaseWithInitialisms .TypeName}} *{{.Schema.TypeDecl}}
     {{- end}}
     {{- range $headerResponses}}
     // Headers{{.StatusCode | ucFirst}} the parsed response headers for an HTTP {{.StatusCode}} response
@@ -83,7 +83,7 @@ type {{genResponseTypeName $opid | ucFirst}} struct {
 {{- range $responseTypeDefinitions}}
   // Get{{.TypeName}} returns the response for an HTTP {{ .ResponseName }} `{{ .ContentTypeName }}` response
   func (r {{genResponseTypeName $opid | ucFirst}}) Get{{.TypeName}}() *{{.Schema.TypeDecl}} {
-      return r.{{.TypeName}}
+      return r.{{camelCaseWithInitialisms .TypeName}}
   }
 {{- end}}
 
