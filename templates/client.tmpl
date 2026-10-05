@@ -74,7 +74,7 @@ type rawClientInterface interface {
 {{range . -}}
 {{$hasParams := .RequiresParamObject -}}
 {{$pathParams := .PathParams -}}
-{{$opid := .OperationId -}}
+{{$opid := camelCaseWithInitialisms .OperationId -}}
 {{$opidSuffix := ""}}
 {{$parent := . }}
 {{- if .HasBody -}}
@@ -94,7 +94,7 @@ type rawClientInterface interface {
     {{ .GenerateFunctionComment $opid $parent .Suffix false }}
     {{with $deprecationComment}}//
     {{.}}
-    {{end -}}{{$opid}}{{.Suffix}}(ctx context.Context{{genParamArgs $pathParams}}{{if $hasParams}}, params *{{$opid}}Params{{end}}, body {{$opid}}{{.NameTag}}RequestBody, reqEditors... RequestEditorFn) (*http.Response, error)
+    {{end -}}{{$opid}}{{.Suffix}}(ctx context.Context{{genParamArgs $pathParams}}{{if $hasParams}}, params *{{$opid}}Params{{end}}, body {{$parent.OperationId}}{{.NameTag}}RequestBody, reqEditors... RequestEditorFn) (*http.Response, error)
     {{end -}}
 {{end}}{{/* range .Bodies */}}
 {{end}}{{/* range . $opid := .OperationId */}}

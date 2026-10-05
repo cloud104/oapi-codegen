@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	sprig "github.com/Masterminds/sprig/v3"
+	"github.com/ettle/strcase"
 	"github.com/oapi-codegen/oapi-codegen/v2/pkg/codegen"
 )
 
@@ -24,7 +25,7 @@ func init() {
 		}
 	}
 
-	codegen.TemplateFunctions["camelCaseWithInitialisms"] = codegen.ToCamelCaseWithInitialisms
+	codegen.TemplateFunctions["camelCaseWithInitialisms"] = camelCaseWithInitialisms
 	codegen.TemplateFunctions["genJSONRequestBodyArg"] = genJSONRequestBodyArg
 	codegen.TemplateFunctions["jsonRequestBody"] = jsonRequestBody
 }
@@ -60,4 +61,21 @@ func genJSONRequestBodyArg(op *codegen.OperationDefinition) string {
 	typeName := body.TypeDef(op.OperationId).TypeName
 
 	return fmt.Sprintf(", body *%s", typeName)
+}
+
+func camelCaseWithInitialisms(s string, initialisms ...string) string {
+	// Surround each known initialism with separators so the caser can
+	// recognize it as an independent word, even when acronyms are adjacent.
+	for _, initialism := range initialisms {
+		s = strings.ReplaceAll(s, initialism, "_"+initialism+"_")
+	}
+
+	initialismOverrides := make(map[string]bool, len(initialisms))
+	for _, initialism := range initialisms {
+		initialismOverrides[initialism] = true
+	}
+
+	caser := strcase.NewCaser(true, initialismOverrides, nil)
+
+	return caser.ToCamel(s)
 }

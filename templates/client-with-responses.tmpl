@@ -136,7 +136,7 @@ func (r {{genResponseTypeName $opid | ucFirst}}) ContentType() string {
 
 
 {{range .}}
-{{$opid := .OperationId -}}
+{{$opid := camelCaseWithInitialisms .OperationId -}}
 {{$parent := . }}
 {{$opidSuffix := ""}}
 {{- if .HasBody -}}
@@ -167,7 +167,7 @@ func (r {{genResponseTypeName $opid | ucFirst}}) ContentType() string {
 {{if .IsSupportedByClient -}}
 {{ .GenerateFunctionComment $opid $parent (printf "%sWithResponse" .Suffix) true }}
 {{with $deprecationComment}}{{.}}
-{{end -}}func (c *{{ $clientTypeName }}) {{$opid}}{{.Suffix}}WithResponse(ctx context.Context{{genParamArgs $pathParams}}{{if $hasParams}}, params *{{$opid}}Params{{end}}, body {{$opid}}{{.NameTag}}RequestBody, reqEditors... RequestEditorFn) (*{{genResponseTypeName $opid}}, error) {
+{{end -}}func (c *{{ $clientTypeName }}) {{$opid}}{{.Suffix}}WithResponse(ctx context.Context{{genParamArgs $pathParams}}{{if $hasParams}}, params *{{$opid}}Params{{end}}, body {{$parent.OperationId}}{{.NameTag}}RequestBody, reqEditors... RequestEditorFn) (*{{genResponseTypeName $opid}}, error) {
     rsp, err := c.{{$opid}}{{.Suffix}}(ctx{{genParamNames $pathParams}}{{if $hasParams}}, params{{end}}, body, reqEditors...)
     if err != nil {
         return nil, err
