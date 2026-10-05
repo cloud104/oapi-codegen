@@ -115,8 +115,20 @@ type NotFound = Error
 // UnsupportedMediaType defines model for UnsupportedMediaType.
 type UnsupportedMediaType = Error
 
+// CreateBeerTextBody defines parameters for CreateBeer.
+type CreateBeerTextBody = string
+
 // CreateBeerJSONRequestBody defines body for CreateBeer for application/json ContentType.
 type CreateBeerJSONRequestBody = BeerCreate
+
+// CreateBeerFormdataRequestBody defines body for CreateBeer for application/x-www-form-urlencoded ContentType.
+type CreateBeerFormdataRequestBody = BeerCreate
+
+// CreateBeerMultipartRequestBody defines body for CreateBeer for multipart/form-data ContentType.
+type CreateBeerMultipartRequestBody = BeerCreate
+
+// CreateBeerTextRequestBody defines body for CreateBeer for text/plain ContentType.
+type CreateBeerTextRequestBody = CreateBeerTextBody
 
 // UpdateBeerJSONRequestBody defines body for UpdateBeer for application/json ContentType.
 type UpdateBeerJSONRequestBody = BeerUpdate
@@ -210,6 +222,20 @@ type rawClientInterface interface {
 	// Corresponds with POST /beers (the `CreateBeer` operationId).
 	createBeer(ctx context.Context, body CreateBeerJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// createBeerWithFormdataBody Create a new beer
+	//
+	// Takes a body of the `application/x-www-form-urlencoded` content type.
+	//
+	// Corresponds with POST /beers (the `CreateBeer` operationId).
+	createBeerWithFormdataBody(ctx context.Context, body CreateBeerFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// createBeerWithTextBody Create a new beer
+	//
+	// Takes a body of the `text/plain` content type.
+	//
+	// Corresponds with POST /beers (the `CreateBeer` operationId).
+	createBeerWithTextBody(ctx context.Context, body CreateBeerTextRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// deleteBeer Delete a beer
 	//
 	// Corresponds with DELETE /beers/{beerId} (the `DeleteBeer` operationId).
@@ -257,6 +283,40 @@ func (c *rawClient) listBeers(ctx context.Context, reqEditors ...RequestEditorFn
 // Corresponds with POST /beers (the `CreateBeer` operationId).
 func (c *rawClient) createBeer(ctx context.Context, body CreateBeerJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := newCreateBeerRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// createBeerWithFormdataBody Create a new beer
+//
+// Takes a body of the `application/x-www-form-urlencoded` content type.
+//
+// Corresponds with POST /beers (the `CreateBeer` operationId).
+func (c *rawClient) createBeerWithFormdataBody(ctx context.Context, body CreateBeerFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := newCreateBeerRequestWithFormdataBody(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// createBeerWithTextBody Create a new beer
+//
+// Takes a body of the `text/plain` content type.
+//
+// Corresponds with POST /beers (the `CreateBeer` operationId).
+func (c *rawClient) createBeerWithTextBody(ctx context.Context, body CreateBeerTextRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := newCreateBeerRequestWithTextBody(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -367,6 +427,28 @@ func newCreateBeerRequest(server string, body CreateBeerJSONRequestBody) (*http.
 	}
 	bodyReader = bytes.NewReader(buf)
 	return newCreateBeerRequestWithBody(server, "application/json", bodyReader)
+}
+
+// newCreateBeerRequestWithFormdataBody calls the generic CreateBeer builder with application/x-www-form-urlencoded body
+func newCreateBeerRequestWithFormdataBody(server string, body CreateBeerFormdataRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	bodyStr, err := runtime.MarshalForm(body, nil)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = strings.NewReader(bodyStr.Encode())
+	return newCreateBeerRequestWithBody(server, "application/x-www-form-urlencoded", bodyReader)
+}
+
+// newCreateBeerRequestWithTextBody calls the generic CreateBeer builder with text/plain body
+func newCreateBeerRequestWithTextBody(server string, body CreateBeerTextRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	if stringer, ok := interface{}(body).(fmt.Stringer); ok {
+		bodyReader = strings.NewReader(stringer.String())
+	} else {
+		bodyReader = strings.NewReader(fmt.Sprint(body))
+	}
+	return newCreateBeerRequestWithBody(server, "text/plain", bodyReader)
 }
 
 // newCreateBeerRequestWithBody constructs an http.Request for the CreateBeer method, with any body, and a specified content type
@@ -617,6 +699,20 @@ type ClientInterface interface {
 	//
 	// Corresponds with POST /beers (the `CreateBeer` operationId).
 	CreateBeer(ctx context.Context, body CreateBeerJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateBeerResponse, error)
+
+	// CreateBeerWithFormdataBody Create a new beer
+	//
+	// Takes a body of the `application/x-www-form-urlencoded` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /beers (the `CreateBeer` operationId).
+	CreateBeerWithFormdataBody(ctx context.Context, body CreateBeerFormdataRequestBody, reqEditors ...RequestEditorFn) (*CreateBeerResponse, error)
+
+	// CreateBeerWithTextBody Create a new beer
+	//
+	// Takes a body of the `text/plain` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /beers (the `CreateBeer` operationId).
+	CreateBeerWithTextBody(ctx context.Context, body CreateBeerTextRequestBody, reqEditors ...RequestEditorFn) (*CreateBeerResponse, error)
 
 	// DeleteBeer Delete a beer
 	//
@@ -1004,6 +1100,32 @@ func (c *Client) ListBeers(ctx context.Context, reqEditors ...RequestEditorFn) (
 // Corresponds with POST /beers (the `CreateBeer` operationId).
 func (c *Client) CreateBeer(ctx context.Context, body CreateBeerJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateBeerResponse, error) {
 	rsp, err := c.createBeer(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return parseCreateBeerResponse(rsp)
+}
+
+// CreateBeerWithFormdataBody Create a new beer
+//
+// Takes a body of the `application/x-www-form-urlencoded` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /beers (the `CreateBeer` operationId).
+func (c *Client) CreateBeerWithFormdataBody(ctx context.Context, body CreateBeerFormdataRequestBody, reqEditors ...RequestEditorFn) (*CreateBeerResponse, error) {
+	rsp, err := c.createBeerWithFormdataBody(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return parseCreateBeerResponse(rsp)
+}
+
+// CreateBeerWithTextBody Create a new beer
+//
+// Takes a body of the `text/plain` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /beers (the `CreateBeer` operationId).
+func (c *Client) CreateBeerWithTextBody(ctx context.Context, body CreateBeerTextRequestBody, reqEditors ...RequestEditorFn) (*CreateBeerResponse, error) {
+	rsp, err := c.createBeerWithTextBody(ctx, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}

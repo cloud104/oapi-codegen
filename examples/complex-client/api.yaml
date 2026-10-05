@@ -28,6 +28,17 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/BeerCreate'
+          text/plain:
+            schema:
+              type: string
+              example: "Midnight Hops,Imperial IPA,8.5,70,Northern Trail Brewing"
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BeerCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BeerCreate'
+
       responses:
         '201':
           description: Beer created
