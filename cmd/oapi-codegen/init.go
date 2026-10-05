@@ -116,7 +116,17 @@ func groupResponses(types []codegen.ResponseTypeDefinition) []responseGroup {
 		}
 
 		group.Fields = append(group.Fields, def.TypeName)
-		group.ResponseCodes = append(group.ResponseCodes, def.ResponseName)
+
+		seen := false
+		for _, code := range group.ResponseCodes {
+			if code == def.ResponseName {
+				seen = true
+				break
+			}
+		}
+		if !seen {
+			group.ResponseCodes = append(group.ResponseCodes, def.ResponseName)
+		}
 
 		groups[typeDecl] = group
 	}
