@@ -77,10 +77,8 @@ type ClientInterface interface {
 {{$hasParams := .RequiresParamObject -}}
 {{$pathParams := .PathParams -}}
 {{$opid := .OperationId -}}
-{{$opidSuffix := ""}}
 {{$parent := . }}
 {{- if .HasBody -}}
-{{- $opidSuffix = "WithBody" -}}
 {{- end -}}
 {{$deprecationComment := .DeprecationComment -}}
     {{ if .HasBody }}
@@ -109,9 +107,7 @@ type ClientInterface interface {
 {{$pathParams := .PathParams -}}
 {{$opid := .OperationId -}}
 {{$parent := . }}
-{{$opidSuffix := ""}}
 {{- if .HasBody -}}
-{{- $opidSuffix = "WithBody" -}}
 {{- end -}}
 
 {{ if .HasBody }}
