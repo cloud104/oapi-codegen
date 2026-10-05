@@ -79,14 +79,12 @@ type ClientInterface interface {
 {{$opid := .OperationId -}}
 {{$parent := . }}
 {{$deprecationComment := .DeprecationComment -}}
-    {{ if .HasBody }}
-        {{ .GenerateFunctionComment $opid "WithBody" false }}
-    {{ else -}}
-        {{ .GenerateFunctionComment $opid "" false }}
-    {{ end -}}
+    {{ if not .HasBody }}
+    {{ .GenerateFunctionComment $opid "" false }}
     {{with $deprecationComment}}//
     {{.}}
-    {{end -}}{{$opid}}{{if .HasBody}}WithBody{{end}}(ctx context.Context{{genParamArgs $pathParams}}{{if $hasParams}}, params *{{$opid}}Params{{end}}{{if .HasBody}}, contentType string, body io.Reader{{end}}, reqEditors... RequestEditorFn) (*http.Response, error)
+    {{end -}}{{$opid}}(ctx context.Context{{genParamArgs $pathParams}}{{if $hasParams}}, params *{{$opid}}Params{{end}}, reqEditors... RequestEditorFn) (*http.Response, error)
+    {{ end -}}
 {{range .Bodies}}
     {{if .IsSupportedByClient -}}
     {{ .GenerateFunctionComment $opid $parent .Suffix false }}
@@ -105,14 +103,11 @@ type ClientInterface interface {
 {{$pathParams := .PathParams -}}
 {{$opid := .OperationId -}}
 {{$parent := . }}
-{{ if .HasBody }}
-    {{ .GenerateFunctionComment $opid "WithBody" false }}
-{{ else }}
+{{ if not .HasBody }}
     {{ .GenerateFunctionComment $opid "" false }}
-{{ end -}}
 {{with .DeprecationComment}}{{.}}
-{{end -}}func (c *{{ $clientTypeName }}) {{$opid}}{{if .HasBody}}WithBody{{end}}(ctx context.Context{{genParamArgs $pathParams}}{{if $hasParams}}, params *{{$opid}}Params{{end}}{{if .HasBody}}, contentType string, body io.Reader{{end}}, reqEditors... RequestEditorFn) (*http.Response, error) {
-    req, err := New{{$opid}}Request{{if .HasBody}}WithBody{{end}}(c.Server{{genParamNames .PathParams}}{{if $hasParams}}, params{{end}}{{if .HasBody}}, contentType, body{{end}})
+{{end -}}func (c *{{ $clientTypeName }}) {{$opid}}(ctx context.Context{{genParamArgs $pathParams}}{{if $hasParams}}, params *{{$opid}}Params{{end}}, reqEditors... RequestEditorFn) (*http.Response, error) {
+    req, err := New{{$opid}}Request(c.Server{{genParamNames .PathParams}}{{if $hasParams}}, params{{end}})
     if err != nil {
         return nil, err
     }
@@ -122,6 +117,7 @@ type ClientInterface interface {
     }
     return c.Client.Do(req)
 }
+{{ end -}}
 
 {{$deprecationComment := .DeprecationComment -}}
 {{range .Bodies}}
