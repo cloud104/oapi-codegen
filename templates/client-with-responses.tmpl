@@ -136,7 +136,7 @@ func (r {{genResponseTypeName $opid | ucFirst}}) ContentType() string {
 
 
 {{range .}}
-{{$opid := camelCaseWithInitialisms .OperationId -}}
+{{$opid := .OperationId -}}
 {{$parent := . }}
 {{$opidSuffix := ""}}
 {{- if .HasBody -}}
@@ -153,7 +153,7 @@ func (r {{genResponseTypeName $opid | ucFirst}}) ContentType() string {
 {{with $deprecationComment}}//
 {{.}}
 {{end -}}func (c *{{ $clientTypeName }}) {{$opid}}{{if .HasBody}}WithBody{{end}}WithResponse(ctx context.Context{{genParamArgs .PathParams}}{{if .RequiresParamObject}}, params *{{$opid}}Params{{end}}{{if .HasBody}}, contentType string, body io.Reader{{end}}, reqEditors... RequestEditorFn) (*{{genResponseTypeName $opid}}, error){
-    rsp, err := c.{{$opid}}{{if .HasBody}}WithBody{{end}}(ctx{{genParamNames .PathParams}}{{if .RequiresParamObject}}, params{{end}}{{if .HasBody}}, contentType, body{{end}}, reqEditors...)
+    rsp, err := c.{{camelCaseWithInitialisms $parent.OperationId}}{{if .HasBody}}WithBody{{end}}(ctx{{genParamNames .PathParams}}{{if .RequiresParamObject}}, params{{end}}{{if .HasBody}}, contentType, body{{end}}, reqEditors...)
     if err != nil {
         return nil, err
     }
@@ -168,7 +168,7 @@ func (r {{genResponseTypeName $opid | ucFirst}}) ContentType() string {
 {{ .GenerateFunctionComment $opid $parent (printf "%sWithResponse" .Suffix) true }}
 {{with $deprecationComment}}{{.}}
 {{end -}}func (c *{{ $clientTypeName }}) {{$opid}}{{.Suffix}}WithResponse(ctx context.Context{{genParamArgs $pathParams}}{{if $hasParams}}, params *{{$opid}}Params{{end}}, body {{$parent.OperationId}}{{.NameTag}}RequestBody, reqEditors... RequestEditorFn) (*{{genResponseTypeName $opid}}, error) {
-    rsp, err := c.{{$opid}}{{.Suffix}}(ctx{{genParamNames $pathParams}}{{if $hasParams}}, params{{end}}, body, reqEditors...)
+    rsp, err := c.{{camelCaseWithInitialisms $parent.OperationId}}{{.Suffix}}(ctx{{genParamNames $pathParams}}{{if $hasParams}}, params{{end}}, body, reqEditors...)
     if err != nil {
         return nil, err
     }
