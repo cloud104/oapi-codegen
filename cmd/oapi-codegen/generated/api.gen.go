@@ -683,13 +683,6 @@ type ClientInterface interface {
 	// Corresponds with GET /beers (the `ListBeers` operationId).
 	ListBeers(ctx context.Context, reqEditors ...RequestEditorFn) (*ListBeersResponse, error)
 
-	// CreateBeerWithBody Create a new beer
-	//
-	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with POST /beers (the `CreateBeer` operationId).
-	CreateBeerWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateBeerResponse, error)
-
 	// CreateBeer Create a new beer
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
@@ -711,26 +704,12 @@ type ClientInterface interface {
 	// Corresponds with GET /beers/{beerId} (the `GetBeer` operationId).
 	GetBeer(ctx context.Context, beerID int, reqEditors ...RequestEditorFn) (*GetBeerResponse, error)
 
-	// UpdateBeerWithBody Partially update a beer
-	//
-	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with PATCH /beers/{beerId} (the `UpdateBeer` operationId).
-	UpdateBeerWithBody(ctx context.Context, beerID int, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateBeerResponse, error)
-
 	// UpdateBeer Partially update a beer
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /beers/{beerId} (the `UpdateBeer` operationId).
 	UpdateBeer(ctx context.Context, beerID int, body UpdateBeerJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateBeerResponse, error)
-
-	// ReplaceBeerWithBody Replace a beer
-	//
-	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
-	//
-	// Corresponds with PUT /beers/{beerId} (the `ReplaceBeer` operationId).
-	ReplaceBeerWithBody(ctx context.Context, beerID int, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReplaceBeerResponse, error)
 
 	// ReplaceBeer Replace a beer
 	//
