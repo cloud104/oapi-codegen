@@ -42,6 +42,8 @@ func TestGenerate(t *testing.T) {
 						Models: true,
 					},
 					OutputOptions: codegen.OutputOptions{
+						NameNormalizer:        "ToCamelCaseWithInitialisms",
+						AdditionalInitialisms: []string{},
 						UserTemplates: map[string]string{
 							"client.tmpl":                "../../templates/client.tmpl",
 							"client-with-responses.tmpl": "../../templates/client-with-responses.tmpl",

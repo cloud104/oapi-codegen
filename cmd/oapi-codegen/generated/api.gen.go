@@ -27,8 +27,8 @@ type Beer struct {
 	// Ibu Example: 70
 	Ibu *int `json:"ibu,omitempty"`
 
-	// Id Example: 7
-	Id int `json:"id"`
+	// ID Example: 7
+	ID int `json:"id"`
 
 	// Name Example: Midnight Hops
 	Name string `json:"name"`
@@ -197,11 +197,14 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 
 // The interface specification for the client above.
 type rawClientInterface interface {
+	// {"OperationId":"ListBeers","SpecOperationId":"listBeers","PathParams":[],"HeaderParams":null,"QueryParams":null,"CookieParams":null,"TypeDefinitions":null,"SecurityDefinitions":[],"BodyRequired":false,"Bodies":null,"Responses":[{"StatusCode":"200","Description":"List of beers","Contents":[{"Schema":{"GoType":"[]Beer","RefType":"","ArrayType":{"GoType":"Beer","RefType":"","ArrayType":null,"EnumValues":null,"Properties":null,"HasAdditionalProperties":false,"AdditionalPropertiesType":null,"AdditionalTypes":null,"SkipOptionalPointer":false,"Description":"","UnionElements":null,"Discriminator":null,"DefineViaAlias":true,"OAPISchema":{"properties":{"abv":{"example":8.5,"format":"float","type":"number"},"brewery":{"example":"Northern Trail Brewing","type":"string"},"ibu":{"example":70,"type":"integer"},"id":{"example":7,"type":"integer"},"name":{"example":"Midnight Hops","type":"string"},"style":{"example":"Imperial IPA","type":"string"}},"required":["id","name","style","abv"],"type":"object"}},"EnumValues":null,"Properties":null,"HasAdditionalProperties":false,"AdditionalPropertiesType":null,"AdditionalTypes":null,"SkipOptionalPointer":false,"Description":"","UnionElements":null,"Discriminator":null,"DefineViaAlias":true,"OAPISchema":{"items":{"$ref":"#/components/schemas/Beer"},"type":"array"}},"ContentType":"application/json","NameTag":"JSON"}],"Headers":null,"Ref":""}],"Summary":"List all beers","Method":"GET","Path":"/beers","SpecOrder":8,"Spec":{"operationId":"ListBeers","responses":{"200":{"content":{"application/json":{"schema":{"items":{"$ref":"#/components/schemas/Beer"},"type":"array"}}},"description":"List of beers"}},"summary":"List all beers"},"IsAlias":false,"AliasTarget":"","PathItemRef":"","IsWebhook":false,"WebhookName":"","IsCallback":false,"CallbackName":""}
 
 	// ListBeers List all beers
 	//
 	// Corresponds with GET /beers (the `ListBeers` operationId).
 	ListBeers(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// {"OperationId":"CreateBeer","SpecOperationId":"createBeer","PathParams":[],"HeaderParams":null,"QueryParams":null,"CookieParams":null,"TypeDefinitions":null,"SecurityDefinitions":[],"BodyRequired":true,"Bodies":[{"Required":true,"Schema":{"GoType":"BeerCreate","RefType":"BeerCreate","ArrayType":null,"EnumValues":null,"Properties":null,"HasAdditionalProperties":false,"AdditionalPropertiesType":null,"AdditionalTypes":null,"SkipOptionalPointer":false,"Description":"","UnionElements":null,"Discriminator":null,"DefineViaAlias":true,"OAPISchema":{"properties":{"abv":{"example":8.5,"format":"float","type":"number"},"brewery":{"example":"Northern Trail Brewing","type":"string"},"ibu":{"example":70,"type":"integer"},"name":{"example":"Midnight Hops","type":"string"},"style":{"example":"Imperial IPA","type":"string"}},"required":["name","style","abv"],"type":"object"}},"NameTag":"JSON","ContentType":"application/json","Default":true,"Encoding":null,"Deprecated":false,"DeprecationReason":""}],"Responses":[{"StatusCode":"201","Description":"Beer created","Contents":[{"Schema":{"GoType":"Beer","RefType":"","ArrayType":null,"EnumValues":null,"Properties":null,"HasAdditionalProperties":false,"AdditionalPropertiesType":null,"AdditionalTypes":null,"SkipOptionalPointer":false,"Description":"","UnionElements":null,"Discriminator":null,"DefineViaAlias":true,"OAPISchema":{"properties":{"abv":{"example":8.5,"format":"float","type":"number"},"brewery":{"example":"Northern Trail Brewing","type":"string"},"ibu":{"example":70,"type":"integer"},"id":{"example":7,"type":"integer"},"name":{"example":"Midnight Hops","type":"string"},"style":{"example":"Imperial IPA","type":"string"}},"required":["id","name","style","abv"],"type":"object"}},"ContentType":"application/json","NameTag":"JSON"}],"Headers":null,"Ref":""},{"StatusCode":"400","Description":"The request is invalid","Contents":[{"Schema":{"GoType":"Error","RefType":"","ArrayType":null,"EnumValues":null,"Properties":null,"HasAdditionalProperties":false,"AdditionalPropertiesType":null,"AdditionalTypes":null,"SkipOptionalPointer":false,"Description":"","UnionElements":null,"Discriminator":null,"DefineViaAlias":true,"OAPISchema":{"properties":{"error":{"example":"Not Found","type":"string"},"message":{"example":"Beer with id 7 was not found","type":"string"},"status":{"example":404,"type":"integer"}},"required":["status","error","message"],"type":"object"}},"ContentType":"application/json","NameTag":"JSON"}],"Headers":null,"Ref":"BadRequest"},{"StatusCode":"409","Description":"The request conflicts with the current state of the resource","Contents":[{"Schema":{"GoType":"Error","RefType":"","ArrayType":null,"EnumValues":null,"Properties":null,"HasAdditionalProperties":false,"AdditionalPropertiesType":null,"AdditionalTypes":null,"SkipOptionalPointer":false,"Description":"","UnionElements":null,"Discriminator":null,"DefineViaAlias":true,"OAPISchema":{"properties":{"error":{"example":"Not Found","type":"string"},"message":{"example":"Beer with id 7 was not found","type":"string"},"status":{"example":404,"type":"integer"}},"required":["status","error","message"],"type":"object"}},"ContentType":"application/json","NameTag":"JSON"}],"Headers":null,"Ref":"Conflict"},{"StatusCode":"415","Description":"The request content type is not supported","Contents":[{"Schema":{"GoType":"Error","RefType":"","ArrayType":null,"EnumValues":null,"Properties":null,"HasAdditionalProperties":false,"AdditionalPropertiesType":null,"AdditionalTypes":null,"SkipOptionalPointer":false,"Description":"","UnionElements":null,"Discriminator":null,"DefineViaAlias":true,"OAPISchema":{"properties":{"error":{"example":"Not Found","type":"string"},"message":{"example":"Beer with id 7 was not found","type":"string"},"status":{"example":404,"type":"integer"}},"required":["status","error","message"],"type":"object"}},"ContentType":"application/json","NameTag":"JSON"}],"Headers":null,"Ref":"UnsupportedMediaType"}],"Summary":"Create a new beer","Method":"POST","Path":"/beers","SpecOrder":8,"Spec":{"operationId":"CreateBeer","requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/BeerCreate"}}},"required":true},"responses":{"201":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/Beer"}}},"description":"Beer created"},"400":{"$ref":"#/components/responses/BadRequest"},"409":{"$ref":"#/components/responses/Conflict"},"415":{"$ref":"#/components/responses/UnsupportedMediaType"}},"summary":"Create a new beer"},"IsAlias":false,"AliasTarget":"","PathItemRef":"","IsWebhook":false,"WebhookName":"","IsCallback":false,"CallbackName":""}
 
 	// CreateBeerWithBody Create a new beer
 	//
@@ -217,43 +220,51 @@ type rawClientInterface interface {
 	// Corresponds with POST /beers (the `CreateBeer` operationId).
 	CreateBeer(ctx context.Context, body CreateBeerJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// {"OperationId":"DeleteBeer","SpecOperationId":"deleteBeer","PathParams":[{"ParamName":"beerId","In":"path","Required":true,"Spec":{"in":"path","name":"beerId","required":true,"schema":{"example":7,"type":"integer"}},"Schema":{"GoType":"int","RefType":"","ArrayType":null,"EnumValues":null,"Properties":null,"HasAdditionalProperties":false,"AdditionalPropertiesType":null,"AdditionalTypes":null,"SkipOptionalPointer":false,"Description":"Example: 7","UnionElements":null,"Discriminator":null,"DefineViaAlias":true,"OAPISchema":{"example":7,"type":"integer"}},"Shared":true}],"HeaderParams":null,"QueryParams":null,"CookieParams":null,"TypeDefinitions":null,"SecurityDefinitions":[],"BodyRequired":false,"Bodies":null,"Responses":[{"StatusCode":"204","Description":"Beer deleted","Contents":null,"Headers":null,"Ref":""},{"StatusCode":"404","Description":"The requested beer was not found","Contents":[{"Schema":{"GoType":"Error","RefType":"","ArrayType":null,"EnumValues":null,"Properties":null,"HasAdditionalProperties":false,"AdditionalPropertiesType":null,"AdditionalTypes":null,"SkipOptionalPointer":false,"Description":"","UnionElements":null,"Discriminator":null,"DefineViaAlias":true,"OAPISchema":{"properties":{"error":{"example":"Not Found","type":"string"},"message":{"example":"Beer with id 7 was not found","type":"string"},"status":{"example":404,"type":"integer"}},"required":["status","error","message"],"type":"object"}},"ContentType":"application/json","NameTag":"JSON"}],"Headers":null,"Ref":"NotFound"},{"StatusCode":"409","Description":"The request conflicts with the current state of the resource","Contents":[{"Schema":{"GoType":"Error","RefType":"","ArrayType":null,"EnumValues":null,"Properties":null,"HasAdditionalProperties":false,"AdditionalPropertiesType":null,"AdditionalTypes":null,"SkipOptionalPointer":false,"Description":"","UnionElements":null,"Discriminator":null,"DefineViaAlias":true,"OAPISchema":{"properties":{"error":{"example":"Not Found","type":"string"},"message":{"example":"Beer with id 7 was not found","type":"string"},"status":{"example":404,"type":"integer"}},"required":["status","error","message"],"type":"object"}},"ContentType":"application/json","NameTag":"JSON"}],"Headers":null,"Ref":"Conflict"}],"Summary":"Delete a beer","Method":"DELETE","Path":"/beers/{beerId}","SpecOrder":48,"Spec":{"operationId":"DeleteBeer","responses":{"204":{"description":"Beer deleted"},"404":{"$ref":"#/components/responses/NotFound"},"409":{"$ref":"#/components/responses/Conflict"}},"summary":"Delete a beer"},"IsAlias":false,"AliasTarget":"","PathItemRef":"","IsWebhook":false,"WebhookName":"","IsCallback":false,"CallbackName":""}
+
 	// DeleteBeer Delete a beer
 	//
 	// Corresponds with DELETE /beers/{beerId} (the `DeleteBeer` operationId).
-	DeleteBeer(ctx context.Context, beerId int, reqEditors ...RequestEditorFn) (*http.Response, error)
+	DeleteBeer(ctx context.Context, beerID int, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// {"OperationId":"GetBeer","SpecOperationId":"getBeer","PathParams":[{"ParamName":"beerId","In":"path","Required":true,"Spec":{"in":"path","name":"beerId","required":true,"schema":{"example":7,"type":"integer"}},"Schema":{"GoType":"int","RefType":"","ArrayType":null,"EnumValues":null,"Properties":null,"HasAdditionalProperties":false,"AdditionalPropertiesType":null,"AdditionalTypes":null,"SkipOptionalPointer":false,"Description":"Example: 7","UnionElements":null,"Discriminator":null,"DefineViaAlias":true,"OAPISchema":{"example":7,"type":"integer"}},"Shared":true}],"HeaderParams":null,"QueryParams":null,"CookieParams":null,"TypeDefinitions":null,"SecurityDefinitions":[],"BodyRequired":false,"Bodies":null,"Responses":[{"StatusCode":"200","Description":"Beer found","Contents":[{"Schema":{"GoType":"Beer","RefType":"","ArrayType":null,"EnumValues":null,"Properties":null,"HasAdditionalProperties":false,"AdditionalPropertiesType":null,"AdditionalTypes":null,"SkipOptionalPointer":false,"Description":"","UnionElements":null,"Discriminator":null,"DefineViaAlias":true,"OAPISchema":{"properties":{"abv":{"example":8.5,"format":"float","type":"number"},"brewery":{"example":"Northern Trail Brewing","type":"string"},"ibu":{"example":70,"type":"integer"},"id":{"example":7,"type":"integer"},"name":{"example":"Midnight Hops","type":"string"},"style":{"example":"Imperial IPA","type":"string"}},"required":["id","name","style","abv"],"type":"object"}},"ContentType":"application/json","NameTag":"JSON"}],"Headers":null,"Ref":""},{"StatusCode":"404","Description":"The requested beer was not found","Contents":[{"Schema":{"GoType":"Error","RefType":"","ArrayType":null,"EnumValues":null,"Properties":null,"HasAdditionalProperties":false,"AdditionalPropertiesType":null,"AdditionalTypes":null,"SkipOptionalPointer":false,"Description":"","UnionElements":null,"Discriminator":null,"DefineViaAlias":true,"OAPISchema":{"properties":{"error":{"example":"Not Found","type":"string"},"message":{"example":"Beer with id 7 was not found","type":"string"},"status":{"example":404,"type":"integer"}},"required":["status","error","message"],"type":"object"}},"ContentType":"application/json","NameTag":"JSON"}],"Headers":null,"Ref":"NotFound"}],"Summary":"Get a beer by ID","Method":"GET","Path":"/beers/{beerId}","SpecOrder":48,"Spec":{"operationId":"GetBeer","responses":{"200":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/Beer"}}},"description":"Beer found"},"404":{"$ref":"#/components/responses/NotFound"}},"summary":"Get a beer by ID"},"IsAlias":false,"AliasTarget":"","PathItemRef":"","IsWebhook":false,"WebhookName":"","IsCallback":false,"CallbackName":""}
 
 	// GetBeer Get a beer by ID
 	//
 	// Corresponds with GET /beers/{beerId} (the `GetBeer` operationId).
-	GetBeer(ctx context.Context, beerId int, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetBeer(ctx context.Context, beerID int, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// {"OperationId":"UpdateBeer","SpecOperationId":"updateBeer","PathParams":[{"ParamName":"beerId","In":"path","Required":true,"Spec":{"in":"path","name":"beerId","required":true,"schema":{"example":7,"type":"integer"}},"Schema":{"GoType":"int","RefType":"","ArrayType":null,"EnumValues":null,"Properties":null,"HasAdditionalProperties":false,"AdditionalPropertiesType":null,"AdditionalTypes":null,"SkipOptionalPointer":false,"Description":"Example: 7","UnionElements":null,"Discriminator":null,"DefineViaAlias":true,"OAPISchema":{"example":7,"type":"integer"}},"Shared":true}],"HeaderParams":null,"QueryParams":null,"CookieParams":null,"TypeDefinitions":null,"SecurityDefinitions":[],"BodyRequired":true,"Bodies":[{"Required":true,"Schema":{"GoType":"BeerUpdate","RefType":"BeerUpdate","ArrayType":null,"EnumValues":null,"Properties":null,"HasAdditionalProperties":false,"AdditionalPropertiesType":null,"AdditionalTypes":null,"SkipOptionalPointer":false,"Description":"","UnionElements":null,"Discriminator":null,"DefineViaAlias":true,"OAPISchema":{"properties":{"abv":{"example":9.2,"format":"float","type":"number"},"brewery":{"example":"Northern Trail Brewing","type":"string"},"ibu":{"example":85,"type":"integer"},"name":{"example":"Midnight Hops Reserve","type":"string"},"style":{"example":"Double IPA","type":"string"}},"type":"object"}},"NameTag":"JSON","ContentType":"application/json","Default":true,"Encoding":null,"Deprecated":false,"DeprecationReason":""}],"Responses":[{"StatusCode":"200","Description":"Beer updated","Contents":[{"Schema":{"GoType":"Beer","RefType":"","ArrayType":null,"EnumValues":null,"Properties":null,"HasAdditionalProperties":false,"AdditionalPropertiesType":null,"AdditionalTypes":null,"SkipOptionalPointer":false,"Description":"","UnionElements":null,"Discriminator":null,"DefineViaAlias":true,"OAPISchema":{"properties":{"abv":{"example":8.5,"format":"float","type":"number"},"brewery":{"example":"Northern Trail Brewing","type":"string"},"ibu":{"example":70,"type":"integer"},"id":{"example":7,"type":"integer"},"name":{"example":"Midnight Hops","type":"string"},"style":{"example":"Imperial IPA","type":"string"}},"required":["id","name","style","abv"],"type":"object"}},"ContentType":"application/json","NameTag":"JSON"}],"Headers":null,"Ref":""},{"StatusCode":"400","Description":"The request is invalid","Contents":[{"Schema":{"GoType":"Error","RefType":"","ArrayType":null,"EnumValues":null,"Properties":null,"HasAdditionalProperties":false,"AdditionalPropertiesType":null,"AdditionalTypes":null,"SkipOptionalPointer":false,"Description":"","UnionElements":null,"Discriminator":null,"DefineViaAlias":true,"OAPISchema":{"properties":{"error":{"example":"Not Found","type":"string"},"message":{"example":"Beer with id 7 was not found","type":"string"},"status":{"example":404,"type":"integer"}},"required":["status","error","message"],"type":"object"}},"ContentType":"application/json","NameTag":"JSON"}],"Headers":null,"Ref":"BadRequest"},{"StatusCode":"404","Description":"The requested beer was not found","Contents":[{"Schema":{"GoType":"Error","RefType":"","ArrayType":null,"EnumValues":null,"Properties":null,"HasAdditionalProperties":false,"AdditionalPropertiesType":null,"AdditionalTypes":null,"SkipOptionalPointer":false,"Description":"","UnionElements":null,"Discriminator":null,"DefineViaAlias":true,"OAPISchema":{"properties":{"error":{"example":"Not Found","type":"string"},"message":{"example":"Beer with id 7 was not found","type":"string"},"status":{"example":404,"type":"integer"}},"required":["status","error","message"],"type":"object"}},"ContentType":"application/json","NameTag":"JSON"}],"Headers":null,"Ref":"NotFound"},{"StatusCode":"409","Description":"The request conflicts with the current state of the resource","Contents":[{"Schema":{"GoType":"Error","RefType":"","ArrayType":null,"EnumValues":null,"Properties":null,"HasAdditionalProperties":false,"AdditionalPropertiesType":null,"AdditionalTypes":null,"SkipOptionalPointer":false,"Description":"","UnionElements":null,"Discriminator":null,"DefineViaAlias":true,"OAPISchema":{"properties":{"error":{"example":"Not Found","type":"string"},"message":{"example":"Beer with id 7 was not found","type":"string"},"status":{"example":404,"type":"integer"}},"required":["status","error","message"],"type":"object"}},"ContentType":"application/json","NameTag":"JSON"}],"Headers":null,"Ref":"Conflict"},{"StatusCode":"415","Description":"The request content type is not supported","Contents":[{"Schema":{"GoType":"Error","RefType":"","ArrayType":null,"EnumValues":null,"Properties":null,"HasAdditionalProperties":false,"AdditionalPropertiesType":null,"AdditionalTypes":null,"SkipOptionalPointer":false,"Description":"","UnionElements":null,"Discriminator":null,"DefineViaAlias":true,"OAPISchema":{"properties":{"error":{"example":"Not Found","type":"string"},"message":{"example":"Beer with id 7 was not found","type":"string"},"status":{"example":404,"type":"integer"}},"required":["status","error","message"],"type":"object"}},"ContentType":"application/json","NameTag":"JSON"}],"Headers":null,"Ref":"UnsupportedMediaType"}],"Summary":"Partially update a beer","Method":"PATCH","Path":"/beers/{beerId}","SpecOrder":48,"Spec":{"operationId":"UpdateBeer","requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/BeerUpdate"}}},"required":true},"responses":{"200":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/Beer"}}},"description":"Beer updated"},"400":{"$ref":"#/components/responses/BadRequest"},"404":{"$ref":"#/components/responses/NotFound"},"409":{"$ref":"#/components/responses/Conflict"},"415":{"$ref":"#/components/responses/UnsupportedMediaType"}},"summary":"Partially update a beer"},"IsAlias":false,"AliasTarget":"","PathItemRef":"","IsWebhook":false,"WebhookName":"","IsCallback":false,"CallbackName":""}
 
 	// UpdateBeerWithBody Partially update a beer
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with PATCH /beers/{beerId} (the `UpdateBeer` operationId).
-	UpdateBeerWithBody(ctx context.Context, beerId int, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateBeerWithBody(ctx context.Context, beerID int, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// UpdateBeer Partially update a beer
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PATCH /beers/{beerId} (the `UpdateBeer` operationId).
-	UpdateBeer(ctx context.Context, beerId int, body UpdateBeerJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateBeer(ctx context.Context, beerID int, body UpdateBeerJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// {"OperationId":"ReplaceBeer","SpecOperationId":"replaceBeer","PathParams":[{"ParamName":"beerId","In":"path","Required":true,"Spec":{"in":"path","name":"beerId","required":true,"schema":{"example":7,"type":"integer"}},"Schema":{"GoType":"int","RefType":"","ArrayType":null,"EnumValues":null,"Properties":null,"HasAdditionalProperties":false,"AdditionalPropertiesType":null,"AdditionalTypes":null,"SkipOptionalPointer":false,"Description":"Example: 7","UnionElements":null,"Discriminator":null,"DefineViaAlias":true,"OAPISchema":{"example":7,"type":"integer"}},"Shared":true}],"HeaderParams":null,"QueryParams":null,"CookieParams":null,"TypeDefinitions":null,"SecurityDefinitions":[],"BodyRequired":true,"Bodies":[{"Required":true,"Schema":{"GoType":"BeerReplace","RefType":"BeerReplace","ArrayType":null,"EnumValues":null,"Properties":null,"HasAdditionalProperties":false,"AdditionalPropertiesType":null,"AdditionalTypes":null,"SkipOptionalPointer":false,"Description":"","UnionElements":null,"Discriminator":null,"DefineViaAlias":true,"OAPISchema":{"properties":{"abv":{"example":9.2,"format":"float","type":"number"},"brewery":{"example":"Northern Trail Brewing","type":"string"},"ibu":{"example":85,"type":"integer"},"name":{"example":"Midnight Hops Reserve","type":"string"},"style":{"example":"Double IPA","type":"string"}},"required":["name","style","abv"],"type":"object"}},"NameTag":"JSON","ContentType":"application/json","Default":true,"Encoding":null,"Deprecated":false,"DeprecationReason":""}],"Responses":[{"StatusCode":"200","Description":"Beer replaced","Contents":[{"Schema":{"GoType":"Beer","RefType":"","ArrayType":null,"EnumValues":null,"Properties":null,"HasAdditionalProperties":false,"AdditionalPropertiesType":null,"AdditionalTypes":null,"SkipOptionalPointer":false,"Description":"","UnionElements":null,"Discriminator":null,"DefineViaAlias":true,"OAPISchema":{"properties":{"abv":{"example":8.5,"format":"float","type":"number"},"brewery":{"example":"Northern Trail Brewing","type":"string"},"ibu":{"example":70,"type":"integer"},"id":{"example":7,"type":"integer"},"name":{"example":"Midnight Hops","type":"string"},"style":{"example":"Imperial IPA","type":"string"}},"required":["id","name","style","abv"],"type":"object"}},"ContentType":"application/json","NameTag":"JSON"}],"Headers":null,"Ref":""},{"StatusCode":"400","Description":"The request is invalid","Contents":[{"Schema":{"GoType":"Error","RefType":"","ArrayType":null,"EnumValues":null,"Properties":null,"HasAdditionalProperties":false,"AdditionalPropertiesType":null,"AdditionalTypes":null,"SkipOptionalPointer":false,"Description":"","UnionElements":null,"Discriminator":null,"DefineViaAlias":true,"OAPISchema":{"properties":{"error":{"example":"Not Found","type":"string"},"message":{"example":"Beer with id 7 was not found","type":"string"},"status":{"example":404,"type":"integer"}},"required":["status","error","message"],"type":"object"}},"ContentType":"application/json","NameTag":"JSON"}],"Headers":null,"Ref":"BadRequest"},{"StatusCode":"404","Description":"The requested beer was not found","Contents":[{"Schema":{"GoType":"Error","RefType":"","ArrayType":null,"EnumValues":null,"Properties":null,"HasAdditionalProperties":false,"AdditionalPropertiesType":null,"AdditionalTypes":null,"SkipOptionalPointer":false,"Description":"","UnionElements":null,"Discriminator":null,"DefineViaAlias":true,"OAPISchema":{"properties":{"error":{"example":"Not Found","type":"string"},"message":{"example":"Beer with id 7 was not found","type":"string"},"status":{"example":404,"type":"integer"}},"required":["status","error","message"],"type":"object"}},"ContentType":"application/json","NameTag":"JSON"}],"Headers":null,"Ref":"NotFound"},{"StatusCode":"409","Description":"The request conflicts with the current state of the resource","Contents":[{"Schema":{"GoType":"Error","RefType":"","ArrayType":null,"EnumValues":null,"Properties":null,"HasAdditionalProperties":false,"AdditionalPropertiesType":null,"AdditionalTypes":null,"SkipOptionalPointer":false,"Description":"","UnionElements":null,"Discriminator":null,"DefineViaAlias":true,"OAPISchema":{"properties":{"error":{"example":"Not Found","type":"string"},"message":{"example":"Beer with id 7 was not found","type":"string"},"status":{"example":404,"type":"integer"}},"required":["status","error","message"],"type":"object"}},"ContentType":"application/json","NameTag":"JSON"}],"Headers":null,"Ref":"Conflict"},{"StatusCode":"415","Description":"The request content type is not supported","Contents":[{"Schema":{"GoType":"Error","RefType":"","ArrayType":null,"EnumValues":null,"Properties":null,"HasAdditionalProperties":false,"AdditionalPropertiesType":null,"AdditionalTypes":null,"SkipOptionalPointer":false,"Description":"","UnionElements":null,"Discriminator":null,"DefineViaAlias":true,"OAPISchema":{"properties":{"error":{"example":"Not Found","type":"string"},"message":{"example":"Beer with id 7 was not found","type":"string"},"status":{"example":404,"type":"integer"}},"required":["status","error","message"],"type":"object"}},"ContentType":"application/json","NameTag":"JSON"}],"Headers":null,"Ref":"UnsupportedMediaType"}],"Summary":"Replace a beer","Method":"PUT","Path":"/beers/{beerId}","SpecOrder":48,"Spec":{"operationId":"ReplaceBeer","requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/BeerReplace"}}},"required":true},"responses":{"200":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/Beer"}}},"description":"Beer replaced"},"400":{"$ref":"#/components/responses/BadRequest"},"404":{"$ref":"#/components/responses/NotFound"},"409":{"$ref":"#/components/responses/Conflict"},"415":{"$ref":"#/components/responses/UnsupportedMediaType"}},"summary":"Replace a beer"},"IsAlias":false,"AliasTarget":"","PathItemRef":"","IsWebhook":false,"WebhookName":"","IsCallback":false,"CallbackName":""}
 
 	// ReplaceBeerWithBody Replace a beer
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with PUT /beers/{beerId} (the `ReplaceBeer` operationId).
-	ReplaceBeerWithBody(ctx context.Context, beerId int, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ReplaceBeerWithBody(ctx context.Context, beerID int, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ReplaceBeer Replace a beer
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PUT /beers/{beerId} (the `ReplaceBeer` operationId).
-	ReplaceBeer(ctx context.Context, beerId int, body ReplaceBeerJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ReplaceBeer(ctx context.Context, beerID int, body ReplaceBeerJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 // ListBeers List all beers
@@ -308,8 +319,8 @@ func (c *rawClient) CreateBeer(ctx context.Context, body CreateBeerJSONRequestBo
 // DeleteBeer Delete a beer
 //
 // Corresponds with DELETE /beers/{beerId} (the `DeleteBeer` operationId).
-func (c *rawClient) DeleteBeer(ctx context.Context, beerId int, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteBeerRequest(c.Server, beerId)
+func (c *rawClient) DeleteBeer(ctx context.Context, beerID int, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteBeerRequest(c.Server, beerID)
 	if err != nil {
 		return nil, err
 	}
@@ -323,8 +334,8 @@ func (c *rawClient) DeleteBeer(ctx context.Context, beerId int, reqEditors ...Re
 // GetBeer Get a beer by ID
 //
 // Corresponds with GET /beers/{beerId} (the `GetBeer` operationId).
-func (c *rawClient) GetBeer(ctx context.Context, beerId int, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetBeerRequest(c.Server, beerId)
+func (c *rawClient) GetBeer(ctx context.Context, beerID int, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetBeerRequest(c.Server, beerID)
 	if err != nil {
 		return nil, err
 	}
@@ -340,8 +351,8 @@ func (c *rawClient) GetBeer(ctx context.Context, beerId int, reqEditors ...Reque
 // Takes any type of body and a specified content type.
 //
 // Corresponds with PATCH /beers/{beerId} (the `UpdateBeer` operationId).
-func (c *rawClient) UpdateBeerWithBody(ctx context.Context, beerId int, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateBeerRequestWithBody(c.Server, beerId, contentType, body)
+func (c *rawClient) UpdateBeerWithBody(ctx context.Context, beerID int, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateBeerRequestWithBody(c.Server, beerID, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -357,8 +368,8 @@ func (c *rawClient) UpdateBeerWithBody(ctx context.Context, beerId int, contentT
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with PATCH /beers/{beerId} (the `UpdateBeer` operationId).
-func (c *rawClient) UpdateBeer(ctx context.Context, beerId int, body UpdateBeerJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateBeerRequest(c.Server, beerId, body)
+func (c *rawClient) UpdateBeer(ctx context.Context, beerID int, body UpdateBeerJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateBeerRequest(c.Server, beerID, body)
 	if err != nil {
 		return nil, err
 	}
@@ -374,8 +385,8 @@ func (c *rawClient) UpdateBeer(ctx context.Context, beerId int, body UpdateBeerJ
 // Takes any type of body and a specified content type.
 //
 // Corresponds with PUT /beers/{beerId} (the `ReplaceBeer` operationId).
-func (c *rawClient) ReplaceBeerWithBody(ctx context.Context, beerId int, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewReplaceBeerRequestWithBody(c.Server, beerId, contentType, body)
+func (c *rawClient) ReplaceBeerWithBody(ctx context.Context, beerID int, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReplaceBeerRequestWithBody(c.Server, beerID, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -391,8 +402,8 @@ func (c *rawClient) ReplaceBeerWithBody(ctx context.Context, beerId int, content
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with PUT /beers/{beerId} (the `ReplaceBeer` operationId).
-func (c *rawClient) ReplaceBeer(ctx context.Context, beerId int, body ReplaceBeerJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewReplaceBeerRequest(c.Server, beerId, body)
+func (c *rawClient) ReplaceBeer(ctx context.Context, beerID int, body ReplaceBeerJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReplaceBeerRequest(c.Server, beerID, body)
 	if err != nil {
 		return nil, err
 	}
@@ -471,12 +482,12 @@ func NewCreateBeerRequestWithBody(server string, contentType string, body io.Rea
 }
 
 // NewDeleteBeerRequest constructs an http.Request for the DeleteBeer method
-func NewDeleteBeerRequest(server string, beerId int) (*http.Request, error) {
+func NewDeleteBeerRequest(server string, beerID int) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
 
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "beerId", beerId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "integer", Format: ""})
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "beerId", beerID, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "integer", Format: ""})
 	if err != nil {
 		return nil, err
 	}
@@ -505,12 +516,12 @@ func NewDeleteBeerRequest(server string, beerId int) (*http.Request, error) {
 }
 
 // NewGetBeerRequest constructs an http.Request for the GetBeer method
-func NewGetBeerRequest(server string, beerId int) (*http.Request, error) {
+func NewGetBeerRequest(server string, beerID int) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
 
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "beerId", beerId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "integer", Format: ""})
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "beerId", beerID, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "integer", Format: ""})
 	if err != nil {
 		return nil, err
 	}
@@ -539,23 +550,23 @@ func NewGetBeerRequest(server string, beerId int) (*http.Request, error) {
 }
 
 // NewUpdateBeerRequest calls the generic UpdateBeer builder with application/json body
-func NewUpdateBeerRequest(server string, beerId int, body UpdateBeerJSONRequestBody) (*http.Request, error) {
+func NewUpdateBeerRequest(server string, beerID int, body UpdateBeerJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewUpdateBeerRequestWithBody(server, beerId, "application/json", bodyReader)
+	return NewUpdateBeerRequestWithBody(server, beerID, "application/json", bodyReader)
 }
 
 // NewUpdateBeerRequestWithBody constructs an http.Request for the UpdateBeer method, with any body, and a specified content type
-func NewUpdateBeerRequestWithBody(server string, beerId int, contentType string, body io.Reader) (*http.Request, error) {
+func NewUpdateBeerRequestWithBody(server string, beerID int, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
 
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "beerId", beerId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "integer", Format: ""})
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "beerId", beerID, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "integer", Format: ""})
 	if err != nil {
 		return nil, err
 	}
@@ -586,23 +597,23 @@ func NewUpdateBeerRequestWithBody(server string, beerId int, contentType string,
 }
 
 // NewReplaceBeerRequest calls the generic ReplaceBeer builder with application/json body
-func NewReplaceBeerRequest(server string, beerId int, body ReplaceBeerJSONRequestBody) (*http.Request, error) {
+func NewReplaceBeerRequest(server string, beerID int, body ReplaceBeerJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewReplaceBeerRequestWithBody(server, beerId, "application/json", bodyReader)
+	return NewReplaceBeerRequestWithBody(server, beerID, "application/json", bodyReader)
 }
 
 // NewReplaceBeerRequestWithBody constructs an http.Request for the ReplaceBeer method, with any body, and a specified content type
-func NewReplaceBeerRequestWithBody(server string, beerId int, contentType string, body io.Reader) (*http.Request, error) {
+func NewReplaceBeerRequestWithBody(server string, beerID int, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
 
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "beerId", beerId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "integer", Format: ""})
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "beerId", beerID, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "integer", Format: ""})
 	if err != nil {
 		return nil, err
 	}
@@ -702,42 +713,42 @@ type ClientInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with DELETE /beers/{beerId} (the `DeleteBeer` operationId).
-	DeleteBeerWithResponse(ctx context.Context, beerId int, reqEditors ...RequestEditorFn) (*DeleteBeerResponse, error)
+	DeleteBeerWithResponse(ctx context.Context, beerID int, reqEditors ...RequestEditorFn) (*DeleteBeerResponse, error)
 
 	// GetBeerWithResponse Get a beer by ID
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /beers/{beerId} (the `GetBeer` operationId).
-	GetBeerWithResponse(ctx context.Context, beerId int, reqEditors ...RequestEditorFn) (*GetBeerResponse, error)
+	GetBeerWithResponse(ctx context.Context, beerID int, reqEditors ...RequestEditorFn) (*GetBeerResponse, error)
 
 	// UpdateBeerWithBodyWithResponse Partially update a beer
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /beers/{beerId} (the `UpdateBeer` operationId).
-	UpdateBeerWithBodyWithResponse(ctx context.Context, beerId int, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateBeerResponse, error)
+	UpdateBeerWithBodyWithResponse(ctx context.Context, beerID int, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateBeerResponse, error)
 
 	// UpdateBeerWithResponse Partially update a beer
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /beers/{beerId} (the `UpdateBeer` operationId).
-	UpdateBeerWithResponse(ctx context.Context, beerId int, body UpdateBeerJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateBeerResponse, error)
+	UpdateBeerWithResponse(ctx context.Context, beerID int, body UpdateBeerJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateBeerResponse, error)
 
 	// ReplaceBeerWithBodyWithResponse Replace a beer
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PUT /beers/{beerId} (the `ReplaceBeer` operationId).
-	ReplaceBeerWithBodyWithResponse(ctx context.Context, beerId int, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReplaceBeerResponse, error)
+	ReplaceBeerWithBodyWithResponse(ctx context.Context, beerID int, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReplaceBeerResponse, error)
 
 	// ReplaceBeerWithResponse Replace a beer
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PUT /beers/{beerId} (the `ReplaceBeer` operationId).
-	ReplaceBeerWithResponse(ctx context.Context, beerId int, body ReplaceBeerJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceBeerResponse, error)
+	ReplaceBeerWithResponse(ctx context.Context, beerID int, body ReplaceBeerJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceBeerResponse, error)
 }
 
 type ListBeersResponse struct {
@@ -1121,8 +1132,8 @@ func (c *Client) CreateBeerWithResponse(ctx context.Context, body CreateBeerJSON
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with DELETE /beers/{beerId} (the `DeleteBeer` operationId).
-func (c *Client) DeleteBeerWithResponse(ctx context.Context, beerId int, reqEditors ...RequestEditorFn) (*DeleteBeerResponse, error) {
-	rsp, err := c.DeleteBeer(ctx, beerId, reqEditors...)
+func (c *Client) DeleteBeerWithResponse(ctx context.Context, beerID int, reqEditors ...RequestEditorFn) (*DeleteBeerResponse, error) {
+	rsp, err := c.DeleteBeer(ctx, beerID, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -1134,8 +1145,8 @@ func (c *Client) DeleteBeerWithResponse(ctx context.Context, beerId int, reqEdit
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /beers/{beerId} (the `GetBeer` operationId).
-func (c *Client) GetBeerWithResponse(ctx context.Context, beerId int, reqEditors ...RequestEditorFn) (*GetBeerResponse, error) {
-	rsp, err := c.GetBeer(ctx, beerId, reqEditors...)
+func (c *Client) GetBeerWithResponse(ctx context.Context, beerID int, reqEditors ...RequestEditorFn) (*GetBeerResponse, error) {
+	rsp, err := c.GetBeer(ctx, beerID, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -1147,8 +1158,8 @@ func (c *Client) GetBeerWithResponse(ctx context.Context, beerId int, reqEditors
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with PATCH /beers/{beerId} (the `UpdateBeer` operationId).
-func (c *Client) UpdateBeerWithBodyWithResponse(ctx context.Context, beerId int, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateBeerResponse, error) {
-	rsp, err := c.UpdateBeerWithBody(ctx, beerId, contentType, body, reqEditors...)
+func (c *Client) UpdateBeerWithBodyWithResponse(ctx context.Context, beerID int, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateBeerResponse, error) {
+	rsp, err := c.UpdateBeerWithBody(ctx, beerID, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -1160,8 +1171,8 @@ func (c *Client) UpdateBeerWithBodyWithResponse(ctx context.Context, beerId int,
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with PATCH /beers/{beerId} (the `UpdateBeer` operationId).
-func (c *Client) UpdateBeerWithResponse(ctx context.Context, beerId int, body UpdateBeerJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateBeerResponse, error) {
-	rsp, err := c.UpdateBeer(ctx, beerId, body, reqEditors...)
+func (c *Client) UpdateBeerWithResponse(ctx context.Context, beerID int, body UpdateBeerJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateBeerResponse, error) {
+	rsp, err := c.UpdateBeer(ctx, beerID, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -1173,8 +1184,8 @@ func (c *Client) UpdateBeerWithResponse(ctx context.Context, beerId int, body Up
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with PUT /beers/{beerId} (the `ReplaceBeer` operationId).
-func (c *Client) ReplaceBeerWithBodyWithResponse(ctx context.Context, beerId int, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReplaceBeerResponse, error) {
-	rsp, err := c.ReplaceBeerWithBody(ctx, beerId, contentType, body, reqEditors...)
+func (c *Client) ReplaceBeerWithBodyWithResponse(ctx context.Context, beerID int, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReplaceBeerResponse, error) {
+	rsp, err := c.ReplaceBeerWithBody(ctx, beerID, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -1186,8 +1197,8 @@ func (c *Client) ReplaceBeerWithBodyWithResponse(ctx context.Context, beerId int
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with PUT /beers/{beerId} (the `ReplaceBeer` operationId).
-func (c *Client) ReplaceBeerWithResponse(ctx context.Context, beerId int, body ReplaceBeerJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceBeerResponse, error) {
-	rsp, err := c.ReplaceBeer(ctx, beerId, body, reqEditors...)
+func (c *Client) ReplaceBeerWithResponse(ctx context.Context, beerID int, body ReplaceBeerJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceBeerResponse, error) {
+	rsp, err := c.ReplaceBeer(ctx, beerID, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
