@@ -23,6 +23,14 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Beer'
+        '202':
+          description: List of beers
+          content:
+            application/xml:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Beer'
 
     post:
       summary: Create a new beer

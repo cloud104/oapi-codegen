@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"strings"
 	_ "unsafe"
-	"github.com/jinzhu/inflection"
 	sprig "github.com/Masterminds/sprig/v3"
 	"github.com/ettle/strcase"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/oapi-codegen/oapi-codegen/v2/pkg/codegen"
+	"strconv"
+	"github.com/jinzhu/inflection"
 )
 
 // Mirrors the prefix of codegen.globalState up to initialismsMap.
@@ -71,43 +72,48 @@ func genJSONRequestBodyArg(op *codegen.OperationDefinition) string {
 }
 
 type responseGroup struct {
-	FieldName     string
-	TypeName      string
-	TypeDecl      string
-	ResponseNames []string
+	Type          string
+	Method        string
+	Fields        []string
+	ResponseCodes []int
 }
 
 func groupResponses(types []codegen.ResponseTypeDefinition) []responseGroup {
-	groupsByType := make(map[string]responseGroup)
+	groups := make(map[string]responseGroup)
 
 	for _, def := range types {
-		schema := def.Schema
-		typeDecl := schema.TypeDecl()
-		typeName := typeDecl
-
-		if schema.ArrayType != nil {
-			typeName = inflection.Plural(schema.ArrayType.TypeDecl())
+		code, err := strconv.Atoi(def.ResponseName)
+		if err != nil {
+			panic(err)
 		}
 
-		group, ok := groupsByType[def.TypeName]
-		if !ok {
+		typeDecl := def.Schema.TypeDecl()
+
+		group, exists := groups[typeDecl]
+		if !exists {
+			method := typeDecl
+			if def.Schema.ArrayType != nil {
+				method = inflection.Plural(def.Schema.ArrayType.TypeDecl())
+			}
+
 			group = responseGroup{
-				FieldName: def.TypeName,
-				TypeName:  typeName,
-				TypeDecl:  typeDecl,
+				Type:   typeDecl,
+				Method: "Get" + method,
 			}
 		}
 
-		group.ResponseNames = append(group.ResponseNames, def.ResponseName)
-		groupsByType[def.TypeName] = group
+		group.Fields = append(group.Fields, def.TypeName)
+		group.ResponseCodes = append(group.ResponseCodes, code)
+
+		groups[typeDecl] = group
 	}
 
-	groups := make([]responseGroup, 0, len(groupsByType))
-	for _, group := range groupsByType {
-		groups = append(groups, group)
+	result := make([]responseGroup, 0, len(groups))
+	for _, group := range groups {
+		result = append(result, group)
 	}
 
-	return groups
+	return result
 }
 
 func jsonRequestBody(op *codegen.OperationDefinition) *codegen.RequestBodyDefinition {
