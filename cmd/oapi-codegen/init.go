@@ -24,9 +24,6 @@ type codegenGlobalStateLayout struct {
 //go:linkname codegenGlobalState github.com/oapi-codegen/oapi-codegen/v2/pkg/codegen.globalState
 var codegenGlobalState codegenGlobalStateLayout
 
-//go:linkname genResponseTypeName github.com/oapi-codegen/oapi-codegen/v2/pkg/codegen.genResponseTypeName
-func genResponseTypeName(operationID string) string
-
 func init() {
 	for name, fn := range sprig.FuncMap() {
 		exists := false

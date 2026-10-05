@@ -1218,7 +1218,7 @@ func parseListBeersResponse(rsp *http.Response) (*ListBeersResponse, error) {
 		if err := xml.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.XML200 = &dest
+		response.xml200 = &dest
 
 	}
 
