@@ -8,7 +8,7 @@ type {{ $clientTypeName }} struct {
 // New{{ $clientTypeName }} creates a new {{ $clientTypeName }}, which wraps
 // Client with return type handling
 func New{{ $clientTypeName }}(server string, opts ...ClientOption) (*{{ $clientTypeName }}, error) {
-    client, err := NewClient(server, opts...)
+    client, err := newRawClient(server, opts...)
     if err != nil {
         return nil, err
     }
