@@ -1,6 +1,8 @@
 package main
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/getkin/kin-openapi/openapi3"
@@ -11,6 +13,11 @@ import (
 func TestGenerate(t *testing.T) {
 	spec, err := util.LoadSwagger("../../examples/minimal-client/api.yaml")
 	if err != nil {
+		t.Fatal(err)
+	}
+
+	outputDir := "generated"
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -41,9 +48,15 @@ func TestGenerate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := codegen.Generate(tt.args.spec, tt.args.opts)
+			got, err := codegen.Generate(tt.args.spec, tt.args.opts)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("Generate() error = %v, wantErr %v", err, tt.wantErr)
+				t.Fatalf("Generate() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			output := filepath.Join(outputDir, "api.gen.go")
+
+			if err := os.WriteFile(output, []byte(got), 0644); err != nil {
+				t.Fatal(err)
 			}
 		})
 	}
