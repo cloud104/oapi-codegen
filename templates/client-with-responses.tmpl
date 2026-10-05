@@ -42,19 +42,19 @@ type {{ $clientTypeName }}Interface interface {
 {{- end -}}
 {{$deprecationComment := .DeprecationComment -}}
     {{ if .HasBody }}
-        {{ .GenerateFunctionComment $opid "WithBodyWithResponse" true }}
+        {{ .GenerateFunctionComment $opid "WithBody" true }}
     {{ else }}
-        {{ .GenerateFunctionComment $opid "WithResponse" true }}
+        {{ .GenerateFunctionComment $opid "" true }}
     {{ end -}}
     {{with $deprecationComment}}//
     {{.}}
-    {{end -}}{{$opid}}{{if .HasBody}}WithBody{{end}}WithResponse(ctx context.Context{{genParamArgs .PathParams}}{{if .RequiresParamObject}}, params *{{$opid}}Params{{end}}{{if .HasBody}}, contentType string, body io.Reader{{end}}, reqEditors... RequestEditorFn) (*{{genResponseTypeName $opid}}, error)
+    {{end -}}{{$opid}}{{if .HasBody}}WithBody{{end}}(ctx context.Context{{genParamArgs .PathParams}}{{if .RequiresParamObject}}, params *{{$opid}}Params{{end}}{{if .HasBody}}, contentType string, body io.Reader{{end}}, reqEditors... RequestEditorFn) (*{{genResponseTypeName $opid}}, error)
 {{range .Bodies}}
     {{if .IsSupportedByClient -}}
-        {{ .GenerateFunctionComment $opid $parent (printf "%sWithResponse" .Suffix) true }}
+        {{ .GenerateFunctionComment $opid $parent .Suffix true }}
         {{with $deprecationComment}}//
         {{.}}
-        {{end -}}{{$opid}}{{.Suffix}}WithResponse(ctx context.Context{{genParamArgs $pathParams}}{{if $hasParams}}, params *{{$opid}}Params{{end}}, body {{$opid}}{{.NameTag}}RequestBody, reqEditors... RequestEditorFn) (*{{genResponseTypeName $opid}}, error)
+        {{end -}}{{$opid}}{{.Suffix}}(ctx context.Context{{genParamArgs $pathParams}}{{if $hasParams}}, params *{{$opid}}Params{{end}}, body {{$opid}}{{.NameTag}}RequestBody, reqEditors... RequestEditorFn) (*{{genResponseTypeName $opid}}, error)
     {{end -}}
 {{end}}{{/* range .Bodies */}}
 {{end}}{{/* range . $opid := .OperationId */}}
@@ -146,13 +146,13 @@ func (r {{genResponseTypeName $opid | ucFirst}}) ContentType() string {
 {{/* Generate client methods (with responses)*/}}
 
 {{ if .HasBody }}
-    {{ .GenerateFunctionComment $opid "WithBodyWithResponse" true }}
+    {{ .GenerateFunctionComment $opid "WithBody" true }}
 {{ else }}
-    {{ .GenerateFunctionComment $opid "WithResponse" true }}
+    {{ .GenerateFunctionComment $opid "" true }}
 {{ end -}}
 {{with $deprecationComment}}//
 {{.}}
-{{end -}}func (c *{{ $clientTypeName }}) {{$opid}}{{if .HasBody}}WithBody{{end}}WithResponse(ctx context.Context{{genParamArgs .PathParams}}{{if .RequiresParamObject}}, params *{{$opid}}Params{{end}}{{if .HasBody}}, contentType string, body io.Reader{{end}}, reqEditors... RequestEditorFn) (*{{genResponseTypeName $opid}}, error){
+{{end -}}func (c *{{ $clientTypeName }}) {{$opid}}{{if .HasBody}}WithBody{{end}}(ctx context.Context{{genParamArgs .PathParams}}{{if .RequiresParamObject}}, params *{{$opid}}Params{{end}}{{if .HasBody}}, contentType string, body io.Reader{{end}}, reqEditors... RequestEditorFn) (*{{genResponseTypeName $opid}}, error){
     rsp, err := c.{{camelCaseWithInitialisms $parent.OperationId}}{{if .HasBody}}WithBody{{end}}(ctx{{genParamNames .PathParams}}{{if .RequiresParamObject}}, params{{end}}{{if .HasBody}}, contentType, body{{end}}, reqEditors...)
     if err != nil {
         return nil, err
@@ -165,9 +165,9 @@ func (r {{genResponseTypeName $opid | ucFirst}}) ContentType() string {
 {{$bodyRequired := .BodyRequired -}}
 {{range .Bodies}}
 {{if .IsSupportedByClient -}}
-{{ .GenerateFunctionComment $opid $parent (printf "%sWithResponse" .Suffix) true }}
+{{ .GenerateFunctionComment $opid $parent .Suffix true }}
 {{with $deprecationComment}}{{.}}
-{{end -}}func (c *{{ $clientTypeName }}) {{$opid}}{{.Suffix}}WithResponse(ctx context.Context{{genParamArgs $pathParams}}{{if $hasParams}}, params *{{$opid}}Params{{end}}, body {{$parent.OperationId}}{{.NameTag}}RequestBody, reqEditors... RequestEditorFn) (*{{genResponseTypeName $opid}}, error) {
+{{end -}}func (c *{{ $clientTypeName }}) {{$opid}}{{.Suffix}}(ctx context.Context{{genParamArgs $pathParams}}{{if $hasParams}}, params *{{$opid}}Params{{end}}, body {{$parent.OperationId}}{{.NameTag}}RequestBody, reqEditors... RequestEditorFn) (*{{genResponseTypeName $opid}}, error) {
     rsp, err := c.{{camelCaseWithInitialisms $parent.OperationId}}{{.Suffix}}(ctx{{genParamNames $pathParams}}{{if $hasParams}}, params{{end}}, body, reqEditors...)
     if err != nil {
         return nil, err
@@ -182,7 +182,7 @@ func (r {{genResponseTypeName $opid | ucFirst}}) ContentType() string {
 {{/* Generate parse functions for responses*/}}
 {{range .}}{{$opid := .OperationId}}
 
-// parse{{genResponseTypeName $opid | ucFirst}} parses an HTTP response from a {{$opid}}WithResponse call
+// parse{{genResponseTypeName $opid | ucFirst}} parses an HTTP response from a {{$opid}} call
 func parse{{genResponseTypeName $opid | ucFirst}}(rsp *http.Response) (*{{genResponseTypeName $opid}}, error) {
     bodyBytes, err := io.ReadAll(rsp.Body)
     defer func() { _ = rsp.Body.Close() }()
