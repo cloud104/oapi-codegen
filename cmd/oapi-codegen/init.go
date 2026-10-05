@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 	_ "unsafe"
-
+	"github.com/jinzhu/inflection"
 	sprig "github.com/Masterminds/sprig/v3"
 	"github.com/ettle/strcase"
 	"github.com/getkin/kin-openapi/openapi3"
@@ -71,27 +71,40 @@ func genJSONRequestBodyArg(op *codegen.OperationDefinition) string {
 }
 
 type responseGroup struct {
+	FieldName     string
 	TypeName      string
+	TypeDecl      string
 	ResponseNames []string
 }
 
 func groupResponses(types []codegen.ResponseTypeDefinition) []responseGroup {
-	responsesByType := make(map[string][]string)
+	groupsByType := make(map[string]responseGroup)
 
 	for _, def := range types {
-		responsesByType[def.TypeName] = append(
-			responsesByType[def.TypeName],
-			def.ResponseName,
-		)
+		schema := def.Schema
+		typeDecl := schema.TypeDecl()
+		typeName := typeDecl
+
+		if schema.ArrayType != nil {
+			typeName = inflection.Plural(schema.ArrayType.TypeDecl())
+		}
+
+		group, ok := groupsByType[def.TypeName]
+		if !ok {
+			group = responseGroup{
+				FieldName: def.TypeName,
+				TypeName:  typeName,
+				TypeDecl:  typeDecl,
+			}
+		}
+
+		group.ResponseNames = append(group.ResponseNames, def.ResponseName)
+		groupsByType[def.TypeName] = group
 	}
 
-	groups := make([]responseGroup, 0, len(responsesByType))
-
-	for typeName, responseNames := range responsesByType {
-		groups = append(groups, responseGroup{
-			TypeName:      typeName,
-			ResponseNames: responseNames,
-		})
+	groups := make([]responseGroup, 0, len(groupsByType))
+	for _, group := range groupsByType {
+		groups = append(groups, group)
 	}
 
 	return groups

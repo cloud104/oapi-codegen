@@ -80,10 +80,10 @@ type {{genResponseTypeName $opid | ucFirst}} struct {
 }
 
 {{ if not opts.OutputOptions.SkipResponseBodyGetters }}
-{{- range $responseTypeDefinitions}}
-  // Get{{.TypeName}} returns the response for an HTTP {{ .ResponseName }} `{{ .ContentTypeName }}` response
-  func (r {{genResponseTypeName $opid | ucFirst}}) Get{{.TypeName}}() *{{.Schema.TypeDecl}} {
-      return r.{{camelCaseWithInitialisms .TypeName}}
+{{- range groupResponses $responseTypeDefinitions}}
+  // Get{{.TypeName}} checks if the HTTP response status code is {{ join " or " .ResponseNames }}, and if so, returns the {{.TypeDecl}}.
+  func (r {{genResponseTypeName $opid | ucFirst}}) Get{{.TypeName}}() *{{.TypeDecl}} {
+      return r.{{camelCaseWithInitialisms .FieldName}}
   }
 {{- end}}
 

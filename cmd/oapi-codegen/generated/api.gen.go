@@ -753,13 +753,13 @@ type ListBeersResponse struct {
 	xml200 *[]Beer
 }
 
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ListBeersResponse) GetJSON200() *[]Beer {
+// GetBeers checks if the HTTP response status code is 200, and if so, returns the []Beer.
+func (r ListBeersResponse) GetBeers() *[]Beer {
 	return r.json200
 }
 
-// GetXML200 returns the response for an HTTP 200 `application/xml` response
-func (r ListBeersResponse) GetXML200() *[]Beer {
+// GetBeers checks if the HTTP response status code is 200, and if so, returns the []Beer.
+func (r ListBeersResponse) GetBeers() *[]Beer {
 	return r.xml200
 }
 
@@ -805,23 +805,23 @@ type CreateBeerResponse struct {
 	json415 *UnsupportedMediaType
 }
 
-// GetJSON201 returns the response for an HTTP 201 `application/json` response
-func (r CreateBeerResponse) GetJSON201() *Beer {
+// GetBeer checks if the HTTP response status code is 201, and if so, returns the Beer.
+func (r CreateBeerResponse) GetBeer() *Beer {
 	return r.json201
 }
 
-// GetJSON400 returns the response for an HTTP 400 `application/json` response
-func (r CreateBeerResponse) GetJSON400() *BadRequest {
+// GetBadRequest checks if the HTTP response status code is 400, and if so, returns the BadRequest.
+func (r CreateBeerResponse) GetBadRequest() *BadRequest {
 	return r.json400
 }
 
-// GetJSON409 returns the response for an HTTP 409 `application/json` response
-func (r CreateBeerResponse) GetJSON409() *Conflict {
+// GetConflict checks if the HTTP response status code is 409, and if so, returns the Conflict.
+func (r CreateBeerResponse) GetConflict() *Conflict {
 	return r.json409
 }
 
-// GetJSON415 returns the response for an HTTP 415 `application/json` response
-func (r CreateBeerResponse) GetJSON415() *UnsupportedMediaType {
+// GetUnsupportedMediaType checks if the HTTP response status code is 415, and if so, returns the UnsupportedMediaType.
+func (r CreateBeerResponse) GetUnsupportedMediaType() *UnsupportedMediaType {
 	return r.json415
 }
 
@@ -863,13 +863,13 @@ type DeleteBeerResponse struct {
 	json409 *Conflict
 }
 
-// GetJSON404 returns the response for an HTTP 404 `application/json` response
-func (r DeleteBeerResponse) GetJSON404() *NotFound {
+// GetNotFound checks if the HTTP response status code is 404, and if so, returns the NotFound.
+func (r DeleteBeerResponse) GetNotFound() *NotFound {
 	return r.json404
 }
 
-// GetJSON409 returns the response for an HTTP 409 `application/json` response
-func (r DeleteBeerResponse) GetJSON409() *Conflict {
+// GetConflict checks if the HTTP response status code is 409, and if so, returns the Conflict.
+func (r DeleteBeerResponse) GetConflict() *Conflict {
 	return r.json409
 }
 
@@ -911,13 +911,13 @@ type GetBeerResponse struct {
 	json404 *NotFound
 }
 
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r GetBeerResponse) GetJSON200() *Beer {
+// GetBeer checks if the HTTP response status code is 200, and if so, returns the Beer.
+func (r GetBeerResponse) GetBeer() *Beer {
 	return r.json200
 }
 
-// GetJSON404 returns the response for an HTTP 404 `application/json` response
-func (r GetBeerResponse) GetJSON404() *NotFound {
+// GetNotFound checks if the HTTP response status code is 404, and if so, returns the NotFound.
+func (r GetBeerResponse) GetNotFound() *NotFound {
 	return r.json404
 }
 
@@ -965,29 +965,29 @@ type UpdateBeerResponse struct {
 	json415 *UnsupportedMediaType
 }
 
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r UpdateBeerResponse) GetJSON200() *Beer {
-	return r.json200
-}
-
-// GetJSON400 returns the response for an HTTP 400 `application/json` response
-func (r UpdateBeerResponse) GetJSON400() *BadRequest {
+// GetBadRequest checks if the HTTP response status code is 400, and if so, returns the BadRequest.
+func (r UpdateBeerResponse) GetBadRequest() *BadRequest {
 	return r.json400
 }
 
-// GetJSON404 returns the response for an HTTP 404 `application/json` response
-func (r UpdateBeerResponse) GetJSON404() *NotFound {
+// GetNotFound checks if the HTTP response status code is 404, and if so, returns the NotFound.
+func (r UpdateBeerResponse) GetNotFound() *NotFound {
 	return r.json404
 }
 
-// GetJSON409 returns the response for an HTTP 409 `application/json` response
-func (r UpdateBeerResponse) GetJSON409() *Conflict {
+// GetConflict checks if the HTTP response status code is 409, and if so, returns the Conflict.
+func (r UpdateBeerResponse) GetConflict() *Conflict {
 	return r.json409
 }
 
-// GetJSON415 returns the response for an HTTP 415 `application/json` response
-func (r UpdateBeerResponse) GetJSON415() *UnsupportedMediaType {
+// GetUnsupportedMediaType checks if the HTTP response status code is 415, and if so, returns the UnsupportedMediaType.
+func (r UpdateBeerResponse) GetUnsupportedMediaType() *UnsupportedMediaType {
 	return r.json415
+}
+
+// GetBeer checks if the HTTP response status code is 200, and if so, returns the Beer.
+func (r UpdateBeerResponse) GetBeer() *Beer {
+	return r.json200
 }
 
 // GetBody returns the raw response body bytes
@@ -1034,28 +1034,28 @@ type ReplaceBeerResponse struct {
 	json415 *UnsupportedMediaType
 }
 
-// GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r ReplaceBeerResponse) GetJSON200() *Beer {
+// GetBeer checks if the HTTP response status code is 200, and if so, returns the Beer.
+func (r ReplaceBeerResponse) GetBeer() *Beer {
 	return r.json200
 }
 
-// GetJSON400 returns the response for an HTTP 400 `application/json` response
-func (r ReplaceBeerResponse) GetJSON400() *BadRequest {
+// GetBadRequest checks if the HTTP response status code is 400, and if so, returns the BadRequest.
+func (r ReplaceBeerResponse) GetBadRequest() *BadRequest {
 	return r.json400
 }
 
-// GetJSON404 returns the response for an HTTP 404 `application/json` response
-func (r ReplaceBeerResponse) GetJSON404() *NotFound {
+// GetNotFound checks if the HTTP response status code is 404, and if so, returns the NotFound.
+func (r ReplaceBeerResponse) GetNotFound() *NotFound {
 	return r.json404
 }
 
-// GetJSON409 returns the response for an HTTP 409 `application/json` response
-func (r ReplaceBeerResponse) GetJSON409() *Conflict {
+// GetConflict checks if the HTTP response status code is 409, and if so, returns the Conflict.
+func (r ReplaceBeerResponse) GetConflict() *Conflict {
 	return r.json409
 }
 
-// GetJSON415 returns the response for an HTTP 415 `application/json` response
-func (r ReplaceBeerResponse) GetJSON415() *UnsupportedMediaType {
+// GetUnsupportedMediaType checks if the HTTP response status code is 415, and if so, returns the UnsupportedMediaType.
+func (r ReplaceBeerResponse) GetUnsupportedMediaType() *UnsupportedMediaType {
 	return r.json415
 }
 
