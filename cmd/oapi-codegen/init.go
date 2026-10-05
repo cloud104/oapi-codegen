@@ -42,6 +42,7 @@ func init() {
 
 	codegen.TemplateFunctions["camelCaseWithInitialisms"] = camelCaseWithInitialisms
 	codegen.TemplateFunctions["genJSONRequestBodyArg"] = genJSONRequestBodyArg
+	codegen.TemplateFunctions["groupResponses"] = groupResponses
 	codegen.TemplateFunctions["jsonRequestBody"] = jsonRequestBody
 }
 
@@ -67,6 +68,33 @@ func genJSONRequestBodyArg(op *codegen.OperationDefinition) string {
 	typeName := body.TypeDef(op.OperationId).TypeName
 
 	return fmt.Sprintf(", body *%s", typeName)
+}
+
+type responseGroup struct {
+	TypeName      string
+	ResponseNames []string
+}
+
+func groupResponses(types []codegen.ResponseTypeDefinition) []responseGroup {
+	responsesByType := make(map[string][]string)
+
+	for _, def := range types {
+		responsesByType[def.TypeName] = append(
+			responsesByType[def.TypeName],
+			def.ResponseName,
+		)
+	}
+
+	groups := make([]responseGroup, 0, len(responsesByType))
+
+	for typeName, responseNames := range responsesByType {
+		groups = append(groups, responseGroup{
+			TypeName:      typeName,
+			ResponseNames: responseNames,
+		})
+	}
+
+	return groups
 }
 
 func jsonRequestBody(op *codegen.OperationDefinition) *codegen.RequestBodyDefinition {
