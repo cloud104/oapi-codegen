@@ -82,7 +82,21 @@ type {{genResponseTypeName $opid | ucFirst}} struct {
 {{ if not opts.OutputOptions.SkipResponseBodyGetters }}
 {{- range groupResponses $responseTypeDefinitions}}
   // {{.Method}} checks if the HTTP response status code is {{ .ResponseCodes.String }}, and if so, returns the {{.Type}}.
-  func (r {{genResponseTypeName $opid | ucFirst}}) {{.Method}}() *{{.Type}} {
+  func (r {{genResponseTypeName $opid | ucFirst}}) {{.Method}}() (*{{.Type}}, error) {
+    {{- range .Fields }}
+    if r.{{ camelCaseWithInitialisms . }} != nil {
+        return r.{{ camelCaseWithInitialisms . }}, nil
+    }
+    {{- end }}
+    if r.httpResponse == nil {
+        return nil, fmt.Errorf("missing HTTP response")
+    }
+    switch r.httpResponse.StatusCode {
+    case {{ .ResponseCodes | join ", " }}:
+        return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.httpResponse.StatusCode)
+    default:
+        return nil, fmt.Errorf("unexpected response: status %d: %s", r.httpResponse.StatusCode, string(r.body))
+    }
   }
 {{- end}}
 

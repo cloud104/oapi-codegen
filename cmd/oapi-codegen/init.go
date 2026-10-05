@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"strings"
 	_ "unsafe"
+
 	sprig "github.com/Masterminds/sprig/v3"
 	"github.com/ettle/strcase"
 	"github.com/getkin/kin-openapi/openapi3"
-	"github.com/oapi-codegen/oapi-codegen/v2/pkg/codegen"
-	"strconv"
 	"github.com/jinzhu/inflection"
+	"github.com/oapi-codegen/oapi-codegen/v2/pkg/codegen"
 )
 
 // Mirrors the prefix of codegen.globalState up to initialismsMap.
@@ -71,12 +71,12 @@ func genJSONRequestBodyArg(op *codegen.OperationDefinition) string {
 	return fmt.Sprintf(", body *%s", typeName)
 }
 
-type responseCodes []int
+type responseCodes []string
 
 func (rc responseCodes) String() string {
 	parts := make([]string, len(rc))
 	for i, code := range rc {
-		parts[i] = strconv.Itoa(code)
+		parts[i] = code
 	}
 
 	switch len(parts) {
@@ -100,11 +100,6 @@ func groupResponses(types []codegen.ResponseTypeDefinition) []responseGroup {
 	groups := make(map[string]responseGroup)
 
 	for _, def := range types {
-		code, err := strconv.Atoi(def.ResponseName)
-		if err != nil {
-			panic(err)
-		}
-
 		typeDecl := def.Schema.TypeDecl()
 
 		group, exists := groups[typeDecl]
@@ -121,7 +116,7 @@ func groupResponses(types []codegen.ResponseTypeDefinition) []responseGroup {
 		}
 
 		group.Fields = append(group.Fields, def.TypeName)
-		group.ResponseCodes = append(group.ResponseCodes, code)
+		group.ResponseCodes = append(group.ResponseCodes, def.ResponseName)
 
 		groups[typeDecl] = group
 	}
