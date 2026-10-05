@@ -9,6 +9,7 @@ go get \
 	github.com/getkin/kin-openapi@latest \
 	github.com/oapi-codegen/oapi-codegen/v2@latest \
 	go.yaml.in/yaml/v3@latest \
+	github.com/oapi-codegen/runtime@latest \
 	golang.org/x/crypto@latest \
 	golang.org/x/mod@latest \
 	golang.org/x/sync@latest \

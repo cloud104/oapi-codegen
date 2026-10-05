@@ -4,6 +4,7 @@
 package api
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -11,13 +12,117 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+
+	"github.com/oapi-codegen/runtime"
 )
 
-// Pong defines model for Pong.
-type Pong struct {
-	// Ping Example: pong
-	Ping string `json:"ping"`
+// Beer defines model for Beer.
+type Beer struct {
+	// Abv Example: 8.5
+	Abv float32 `json:"abv"`
+
+	// Brewery Example: Northern Trail Brewing
+	Brewery *string `json:"brewery,omitempty"`
+
+	// Ibu Example: 70
+	Ibu *int `json:"ibu,omitempty"`
+
+	// Id Example: 7
+	Id int `json:"id"`
+
+	// Name Example: Midnight Hops
+	Name string `json:"name"`
+
+	// Style Example: Imperial IPA
+	Style string `json:"style"`
 }
+
+// BeerCreate defines model for BeerCreate.
+type BeerCreate struct {
+	// Abv Example: 8.5
+	Abv float32 `json:"abv"`
+
+	// Brewery Example: Northern Trail Brewing
+	Brewery *string `json:"brewery,omitempty"`
+
+	// Ibu Example: 70
+	Ibu *int `json:"ibu,omitempty"`
+
+	// Name Example: Midnight Hops
+	Name string `json:"name"`
+
+	// Style Example: Imperial IPA
+	Style string `json:"style"`
+}
+
+// BeerReplace defines model for BeerReplace.
+type BeerReplace struct {
+	// Abv Example: 9.2
+	Abv float32 `json:"abv"`
+
+	// Brewery Example: Northern Trail Brewing
+	Brewery *string `json:"brewery,omitempty"`
+
+	// Ibu Example: 85
+	Ibu *int `json:"ibu,omitempty"`
+
+	// Name Example: Midnight Hops Reserve
+	Name string `json:"name"`
+
+	// Style Example: Double IPA
+	Style string `json:"style"`
+}
+
+// BeerUpdate defines model for BeerUpdate.
+type BeerUpdate struct {
+	// Abv Example: 9.2
+	Abv *float32 `json:"abv,omitempty"`
+
+	// Brewery Example: Northern Trail Brewing
+	Brewery *string `json:"brewery,omitempty"`
+
+	// Ibu Example: 85
+	Ibu *int `json:"ibu,omitempty"`
+
+	// Name Example: Midnight Hops Reserve
+	Name *string `json:"name,omitempty"`
+
+	// Style Example: Double IPA
+	Style *string `json:"style,omitempty"`
+}
+
+// Error defines model for Error.
+type Error struct {
+	// Error Example: Not Found
+	Error string `json:"error"`
+
+	// Message Example: Beer with id 7 was not found
+	Message string `json:"message"`
+
+	// Status Example: 404
+	Status int `json:"status"`
+}
+
+// BadRequest defines model for BadRequest.
+type BadRequest = Error
+
+// Conflict defines model for Conflict.
+type Conflict = Error
+
+// NotFound defines model for NotFound.
+type NotFound = Error
+
+// UnsupportedMediaType defines model for UnsupportedMediaType.
+type UnsupportedMediaType = Error
+
+// CreateBeerJSONRequestBody defines body for CreateBeer for application/json ContentType.
+type CreateBeerJSONRequestBody = BeerCreate
+
+// UpdateBeerJSONRequestBody defines body for UpdateBeer for application/json ContentType.
+type UpdateBeerJSONRequestBody = BeerUpdate
+
+// ReplaceBeerJSONRequestBody defines body for ReplaceBeer for application/json ContentType.
+type ReplaceBeerJSONRequestBody = BeerReplace
 
 // RequestEditorFn is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
@@ -93,13 +198,69 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 // The interface specification for the client above.
 type ClientInterface interface {
 
-	// GetPing performs a GET /ping (the `GetPing` operationId) request.
-	GetPing(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// ListBeers List all beers
+	//
+	// Corresponds with GET /beers (the `ListBeers` operationId).
+	ListBeers(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateBeerWithBody Create a new beer
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /beers (the `CreateBeer` operationId).
+	CreateBeerWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateBeer Create a new beer
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /beers (the `CreateBeer` operationId).
+	CreateBeer(ctx context.Context, body CreateBeerJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteBeer Delete a beer
+	//
+	// Corresponds with DELETE /beers/{beerId} (the `DeleteBeer` operationId).
+	DeleteBeer(ctx context.Context, beerId int, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetBeer Get a beer by ID
+	//
+	// Corresponds with GET /beers/{beerId} (the `GetBeer` operationId).
+	GetBeer(ctx context.Context, beerId int, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateBeerWithBody Partially update a beer
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PATCH /beers/{beerId} (the `UpdateBeer` operationId).
+	UpdateBeerWithBody(ctx context.Context, beerId int, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateBeer Partially update a beer
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PATCH /beers/{beerId} (the `UpdateBeer` operationId).
+	UpdateBeer(ctx context.Context, beerId int, body UpdateBeerJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ReplaceBeerWithBody Replace a beer
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PUT /beers/{beerId} (the `ReplaceBeer` operationId).
+	ReplaceBeerWithBody(ctx context.Context, beerId int, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ReplaceBeer Replace a beer
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PUT /beers/{beerId} (the `ReplaceBeer` operationId).
+	ReplaceBeer(ctx context.Context, beerId int, body ReplaceBeerJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
-// GetPing performs a GET /ping (the `GetPing` operationId) request.
-func (c *Client) GetPing(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetPingRequest(c.Server)
+// ListBeers List all beers
+//
+// Corresponds with GET /beers (the `ListBeers` operationId).
+func (c *Client) ListBeers(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListBeersRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -110,8 +271,140 @@ func (c *Client) GetPing(ctx context.Context, reqEditors ...RequestEditorFn) (*h
 	return c.Client.Do(req)
 }
 
-// NewGetPingRequest constructs an http.Request for the GetPing method
-func NewGetPingRequest(server string) (*http.Request, error) {
+// CreateBeerWithBody Create a new beer
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /beers (the `CreateBeer` operationId).
+func (c *Client) CreateBeerWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateBeerRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// CreateBeer Create a new beer
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /beers (the `CreateBeer` operationId).
+func (c *Client) CreateBeer(ctx context.Context, body CreateBeerJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateBeerRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// DeleteBeer Delete a beer
+//
+// Corresponds with DELETE /beers/{beerId} (the `DeleteBeer` operationId).
+func (c *Client) DeleteBeer(ctx context.Context, beerId int, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteBeerRequest(c.Server, beerId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetBeer Get a beer by ID
+//
+// Corresponds with GET /beers/{beerId} (the `GetBeer` operationId).
+func (c *Client) GetBeer(ctx context.Context, beerId int, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetBeerRequest(c.Server, beerId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdateBeerWithBody Partially update a beer
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PATCH /beers/{beerId} (the `UpdateBeer` operationId).
+func (c *Client) UpdateBeerWithBody(ctx context.Context, beerId int, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateBeerRequestWithBody(c.Server, beerId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// UpdateBeer Partially update a beer
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PATCH /beers/{beerId} (the `UpdateBeer` operationId).
+func (c *Client) UpdateBeer(ctx context.Context, beerId int, body UpdateBeerJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateBeerRequest(c.Server, beerId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ReplaceBeerWithBody Replace a beer
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PUT /beers/{beerId} (the `ReplaceBeer` operationId).
+func (c *Client) ReplaceBeerWithBody(ctx context.Context, beerId int, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReplaceBeerRequestWithBody(c.Server, beerId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// ReplaceBeer Replace a beer
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PUT /beers/{beerId} (the `ReplaceBeer` operationId).
+func (c *Client) ReplaceBeer(ctx context.Context, beerId int, body ReplaceBeerJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReplaceBeerRequest(c.Server, beerId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// NewListBeersRequest constructs an http.Request for the ListBeers method
+func NewListBeersRequest(server string) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -119,7 +412,7 @@ func NewGetPingRequest(server string) (*http.Request, error) {
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/ping")
+	operationPath := fmt.Sprintf("/beers")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -133,6 +426,208 @@ func NewGetPingRequest(server string) (*http.Request, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewCreateBeerRequest calls the generic CreateBeer builder with application/json body
+func NewCreateBeerRequest(server string, body CreateBeerJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateBeerRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateBeerRequestWithBody constructs an http.Request for the CreateBeer method, with any body, and a specified content type
+func NewCreateBeerRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/beers")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteBeerRequest constructs an http.Request for the DeleteBeer method
+func NewDeleteBeerRequest(server string, beerId int) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "beerId", beerId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "integer", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/beers/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetBeerRequest constructs an http.Request for the GetBeer method
+func NewGetBeerRequest(server string, beerId int) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "beerId", beerId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "integer", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/beers/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdateBeerRequest calls the generic UpdateBeer builder with application/json body
+func NewUpdateBeerRequest(server string, beerId int, body UpdateBeerJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateBeerRequestWithBody(server, beerId, "application/json", bodyReader)
+}
+
+// NewUpdateBeerRequestWithBody constructs an http.Request for the UpdateBeer method, with any body, and a specified content type
+func NewUpdateBeerRequestWithBody(server string, beerId int, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "beerId", beerId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "integer", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/beers/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewReplaceBeerRequest calls the generic ReplaceBeer builder with application/json body
+func NewReplaceBeerRequest(server string, beerId int, body ReplaceBeerJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewReplaceBeerRequestWithBody(server, beerId, "application/json", bodyReader)
+}
+
+// NewReplaceBeerRequestWithBody constructs an http.Request for the ReplaceBeer method, with any body, and a specified content type
+func NewReplaceBeerRequestWithBody(server string, beerId int, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "beerId", beerId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "integer", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/beers/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -151,34 +646,119 @@ func (c *Client) applyEditors(ctx context.Context, req *http.Request, additional
 	return nil
 }
 
+// ClientWithResponses builds on ClientInterface to offer response payloads
+type ClientWithResponses struct {
+	ClientInterface
+}
+
+// NewClientWithResponses creates a new ClientWithResponses, which wraps
+// Client with return type handling
+func NewClientWithResponses(server string, opts ...ClientOption) (*ClientWithResponses, error) {
+	client, err := NewClient(server, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &ClientWithResponses{client}, nil
+}
+
+// WithBaseURL overrides the baseURL.
+func WithBaseURL(baseURL string) ClientOption {
+	return func(c *Client) error {
+		newBaseURL, err := url.Parse(baseURL)
+		if err != nil {
+			return err
+		}
+		c.Server = newBaseURL.String()
+		return nil
+	}
+}
+
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
 
-	// GetPingWithResponse performs a GET /ping (the `GetPing` operationId) request.
+	// ListBeersWithResponse List all beers
 	//
 	// Returns a wrapper object for the known response body format(s).
-	GetPingWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetPingResponse, error)
+	//
+	// Corresponds with GET /beers (the `ListBeers` operationId).
+	ListBeersWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListBeersResponse, error)
+
+	// CreateBeerWithBodyWithResponse Create a new beer
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /beers (the `CreateBeer` operationId).
+	CreateBeerWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateBeerResponse, error)
+
+	// CreateBeerWithResponse Create a new beer
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /beers (the `CreateBeer` operationId).
+	CreateBeerWithResponse(ctx context.Context, body CreateBeerJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateBeerResponse, error)
+
+	// DeleteBeerWithResponse Delete a beer
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with DELETE /beers/{beerId} (the `DeleteBeer` operationId).
+	DeleteBeerWithResponse(ctx context.Context, beerId int, reqEditors ...RequestEditorFn) (*DeleteBeerResponse, error)
+
+	// GetBeerWithResponse Get a beer by ID
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /beers/{beerId} (the `GetBeer` operationId).
+	GetBeerWithResponse(ctx context.Context, beerId int, reqEditors ...RequestEditorFn) (*GetBeerResponse, error)
+
+	// UpdateBeerWithBodyWithResponse Partially update a beer
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PATCH /beers/{beerId} (the `UpdateBeer` operationId).
+	UpdateBeerWithBodyWithResponse(ctx context.Context, beerId int, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateBeerResponse, error)
+
+	// UpdateBeerWithResponse Partially update a beer
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PATCH /beers/{beerId} (the `UpdateBeer` operationId).
+	UpdateBeerWithResponse(ctx context.Context, beerId int, body UpdateBeerJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateBeerResponse, error)
+
+	// ReplaceBeerWithBodyWithResponse Replace a beer
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /beers/{beerId} (the `ReplaceBeer` operationId).
+	ReplaceBeerWithBodyWithResponse(ctx context.Context, beerId int, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReplaceBeerResponse, error)
+
+	// ReplaceBeerWithResponse Replace a beer
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PUT /beers/{beerId} (the `ReplaceBeer` operationId).
+	ReplaceBeerWithResponse(ctx context.Context, beerId int, body ReplaceBeerJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceBeerResponse, error)
 }
 
-type GetPingResponse struct {
+type ListBeersResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *Pong
+	JSON200 *[]Beer
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
-func (r GetPingResponse) GetJSON200() *Pong {
+func (r ListBeersResponse) GetJSON200() *[]Beer {
 	return r.JSON200
 }
 
 // GetBody returns the raw response body bytes
-func (r GetPingResponse) GetBody() []byte {
+func (r ListBeersResponse) GetBody() []byte {
 	return r.Body
 }
 
 // Status returns HTTPResponse.Status
-func (r GetPingResponse) Status() string {
+func (r ListBeersResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -186,7 +766,7 @@ func (r GetPingResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r GetPingResponse) StatusCode() int {
+func (r ListBeersResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -194,44 +774,670 @@ func (r GetPingResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetPingResponse) ContentType() string {
+func (r ListBeersResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
-// GetPingWithResponse performs a GET /ping (the `GetPing` operationId) request.
+type CreateBeerResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON201 the response for an HTTP 201 `application/json` response
+	JSON201 *Beer
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *BadRequest
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Conflict
+	// JSON415 the response for an HTTP 415 `application/json` response
+	JSON415 *UnsupportedMediaType
+}
+
+// GetJSON201 returns the response for an HTTP 201 `application/json` response
+func (r CreateBeerResponse) GetJSON201() *Beer {
+	return r.JSON201
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r CreateBeerResponse) GetJSON400() *BadRequest {
+	return r.JSON400
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r CreateBeerResponse) GetJSON409() *Conflict {
+	return r.JSON409
+}
+
+// GetJSON415 returns the response for an HTTP 415 `application/json` response
+func (r CreateBeerResponse) GetJSON415() *UnsupportedMediaType {
+	return r.JSON415
+}
+
+// GetBody returns the raw response body bytes
+func (r CreateBeerResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateBeerResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateBeerResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateBeerResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type DeleteBeerResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *NotFound
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Conflict
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r DeleteBeerResponse) GetJSON404() *NotFound {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r DeleteBeerResponse) GetJSON409() *Conflict {
+	return r.JSON409
+}
+
+// GetBody returns the raw response body bytes
+func (r DeleteBeerResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteBeerResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteBeerResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeleteBeerResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetBeerResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Beer
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *NotFound
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetBeerResponse) GetJSON200() *Beer {
+	return r.JSON200
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r GetBeerResponse) GetJSON404() *NotFound {
+	return r.JSON404
+}
+
+// GetBody returns the raw response body bytes
+func (r GetBeerResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetBeerResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetBeerResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetBeerResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type UpdateBeerResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Beer
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *BadRequest
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *NotFound
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Conflict
+	// JSON415 the response for an HTTP 415 `application/json` response
+	JSON415 *UnsupportedMediaType
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r UpdateBeerResponse) GetJSON200() *Beer {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r UpdateBeerResponse) GetJSON400() *BadRequest {
+	return r.JSON400
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r UpdateBeerResponse) GetJSON404() *NotFound {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r UpdateBeerResponse) GetJSON409() *Conflict {
+	return r.JSON409
+}
+
+// GetJSON415 returns the response for an HTTP 415 `application/json` response
+func (r UpdateBeerResponse) GetJSON415() *UnsupportedMediaType {
+	return r.JSON415
+}
+
+// GetBody returns the raw response body bytes
+func (r UpdateBeerResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateBeerResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateBeerResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r UpdateBeerResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ReplaceBeerResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Beer
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *BadRequest
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *NotFound
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Conflict
+	// JSON415 the response for an HTTP 415 `application/json` response
+	JSON415 *UnsupportedMediaType
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r ReplaceBeerResponse) GetJSON200() *Beer {
+	return r.JSON200
+}
+
+// GetJSON400 returns the response for an HTTP 400 `application/json` response
+func (r ReplaceBeerResponse) GetJSON400() *BadRequest {
+	return r.JSON400
+}
+
+// GetJSON404 returns the response for an HTTP 404 `application/json` response
+func (r ReplaceBeerResponse) GetJSON404() *NotFound {
+	return r.JSON404
+}
+
+// GetJSON409 returns the response for an HTTP 409 `application/json` response
+func (r ReplaceBeerResponse) GetJSON409() *Conflict {
+	return r.JSON409
+}
+
+// GetJSON415 returns the response for an HTTP 415 `application/json` response
+func (r ReplaceBeerResponse) GetJSON415() *UnsupportedMediaType {
+	return r.JSON415
+}
+
+// GetBody returns the raw response body bytes
+func (r ReplaceBeerResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r ReplaceBeerResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ReplaceBeerResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ReplaceBeerResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+// ListBeersWithResponse List all beers
 //
 // Returns a wrapper object for the known response body format(s).
-func (c *ClientWithResponses) GetPingWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetPingResponse, error) {
-	rsp, err := c.GetPing(ctx, reqEditors...)
+//
+// Corresponds with GET /beers (the `ListBeers` operationId).
+func (c *ClientWithResponses) ListBeersWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListBeersResponse, error) {
+	rsp, err := c.ListBeers(ctx, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseGetPingResponse(rsp)
+	return ParseListBeersResponse(rsp)
 }
 
-// ParseGetPingResponse parses an HTTP response from a GetPingWithResponse call
-func ParseGetPingResponse(rsp *http.Response) (*GetPingResponse, error) {
+// CreateBeerWithBodyWithResponse Create a new beer
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /beers (the `CreateBeer` operationId).
+func (c *ClientWithResponses) CreateBeerWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateBeerResponse, error) {
+	rsp, err := c.CreateBeerWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateBeerResponse(rsp)
+}
+
+// CreateBeerWithResponse Create a new beer
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /beers (the `CreateBeer` operationId).
+func (c *ClientWithResponses) CreateBeerWithResponse(ctx context.Context, body CreateBeerJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateBeerResponse, error) {
+	rsp, err := c.CreateBeer(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateBeerResponse(rsp)
+}
+
+// DeleteBeerWithResponse Delete a beer
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with DELETE /beers/{beerId} (the `DeleteBeer` operationId).
+func (c *ClientWithResponses) DeleteBeerWithResponse(ctx context.Context, beerId int, reqEditors ...RequestEditorFn) (*DeleteBeerResponse, error) {
+	rsp, err := c.DeleteBeer(ctx, beerId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteBeerResponse(rsp)
+}
+
+// GetBeerWithResponse Get a beer by ID
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /beers/{beerId} (the `GetBeer` operationId).
+func (c *ClientWithResponses) GetBeerWithResponse(ctx context.Context, beerId int, reqEditors ...RequestEditorFn) (*GetBeerResponse, error) {
+	rsp, err := c.GetBeer(ctx, beerId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetBeerResponse(rsp)
+}
+
+// UpdateBeerWithBodyWithResponse Partially update a beer
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PATCH /beers/{beerId} (the `UpdateBeer` operationId).
+func (c *ClientWithResponses) UpdateBeerWithBodyWithResponse(ctx context.Context, beerId int, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateBeerResponse, error) {
+	rsp, err := c.UpdateBeerWithBody(ctx, beerId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateBeerResponse(rsp)
+}
+
+// UpdateBeerWithResponse Partially update a beer
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PATCH /beers/{beerId} (the `UpdateBeer` operationId).
+func (c *ClientWithResponses) UpdateBeerWithResponse(ctx context.Context, beerId int, body UpdateBeerJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateBeerResponse, error) {
+	rsp, err := c.UpdateBeer(ctx, beerId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateBeerResponse(rsp)
+}
+
+// ReplaceBeerWithBodyWithResponse Replace a beer
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /beers/{beerId} (the `ReplaceBeer` operationId).
+func (c *ClientWithResponses) ReplaceBeerWithBodyWithResponse(ctx context.Context, beerId int, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReplaceBeerResponse, error) {
+	rsp, err := c.ReplaceBeerWithBody(ctx, beerId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseReplaceBeerResponse(rsp)
+}
+
+// ReplaceBeerWithResponse Replace a beer
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PUT /beers/{beerId} (the `ReplaceBeer` operationId).
+func (c *ClientWithResponses) ReplaceBeerWithResponse(ctx context.Context, beerId int, body ReplaceBeerJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceBeerResponse, error) {
+	rsp, err := c.ReplaceBeer(ctx, beerId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseReplaceBeerResponse(rsp)
+}
+
+// ParseListBeersResponse parses an HTTP response from a ListBeersWithResponse call
+func ParseListBeersResponse(rsp *http.Response) (*ListBeersResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &GetPingResponse{
+	response := &ListBeersResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Pong
+		var dest []Beer
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateBeerResponse parses an HTTP response from a CreateBeerWithResponse call
+func ParseCreateBeerResponse(rsp *http.Response) (*CreateBeerResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateBeerResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest Beer
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 415:
+		var dest UnsupportedMediaType
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON415 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteBeerResponse parses an HTTP response from a DeleteBeerWithResponse call
+func ParseDeleteBeerResponse(rsp *http.Response) (*DeleteBeerResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteBeerResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		break // No content-type
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetBeerResponse parses an HTTP response from a GetBeerWithResponse call
+func ParseGetBeerResponse(rsp *http.Response) (*GetBeerResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetBeerResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Beer
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateBeerResponse parses an HTTP response from a UpdateBeerWithResponse call
+func ParseUpdateBeerResponse(rsp *http.Response) (*UpdateBeerResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateBeerResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Beer
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 415:
+		var dest UnsupportedMediaType
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON415 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseReplaceBeerResponse parses an HTTP response from a ReplaceBeerWithResponse call
+func ParseReplaceBeerResponse(rsp *http.Response) (*ReplaceBeerResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ReplaceBeerResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Beer
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 415:
+		var dest UnsupportedMediaType
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON415 = &dest
 
 	}
 

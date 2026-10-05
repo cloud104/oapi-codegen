@@ -11,7 +11,7 @@ import (
 )
 
 func TestGenerate(t *testing.T) {
-	spec, err := util.LoadSwagger("../../examples/minimal-client/api.yaml")
+	spec, err := util.LoadSwagger("../../examples/complex-client/api.yaml")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -32,7 +32,7 @@ func TestGenerate(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "minimal client",
+			name: "complex client",
 			args: args{
 				spec: spec,
 				opts: codegen.Configuration{
