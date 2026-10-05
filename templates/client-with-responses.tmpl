@@ -36,10 +36,6 @@ type {{ $clientTypeName }}Interface interface {
 {{$pathParams := .PathParams -}}
 {{$opid := .OperationId -}}
 {{$parent := . }}
-{{$opidSuffix := ""}}
-{{- if .HasBody -}}
-{{- $opidSuffix = "WithBody" -}}
-{{- end -}}
 {{$deprecationComment := .DeprecationComment -}}
     {{ if not .HasBody }}
         {{ .GenerateFunctionComment $opid "" true }}
@@ -136,10 +132,6 @@ func (r {{genResponseTypeName $opid | ucFirst}}) ContentType() string {
 {{range .}}
 {{$opid := .OperationId -}}
 {{$parent := . }}
-{{$opidSuffix := ""}}
-{{- if .HasBody -}}
-{{- $opidSuffix = "WithBody" -}}
-{{- end -}}
 {{$deprecationComment := .DeprecationComment -}}
 {{/* Generate client methods (with responses)*/}}
 
