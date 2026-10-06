@@ -820,6 +820,14 @@ type ListBeersResponse200Headers struct {
 	XTotalCount *int
 }
 
+// ListBeersResponse202Headers the declared response headers of an HTTP 202 response for ListBeers
+type ListBeersResponse202Headers struct {
+	Link        *string
+	RetryAfter  *int
+	XRequestID  *string
+	XTotalCount *int
+}
+
 type ListBeersResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -831,6 +839,8 @@ type ListBeersResponse struct {
 	XML202 *BeerPage
 	// Headers200 the parsed response headers for an HTTP 200 response
 	Headers200 *ListBeersResponse200Headers
+	// Headers202 the parsed response headers for an HTTP 202 response
+	Headers202 *ListBeersResponse202Headers
 }
 
 // GetBeerPage checks if the HTTP response status code is 200 or 202, and if so, returns the BeerPage.
@@ -908,38 +918,6 @@ type CreateBeerResponse struct {
 	JSON415 *UnsupportedMediaType
 }
 
-// GetBeer checks if the HTTP response status code is 201, and if so, returns the Beer.
-func (r CreateBeerResponse) GetBeer() (*Beer, error) {
-	if r.JSON201 != nil {
-		return r.JSON201, nil
-	}
-	if r.HTTPResponse == nil {
-		return nil, fmt.Errorf("missing HTTP response")
-	}
-	switch r.HTTPResponse.StatusCode {
-	case 201:
-		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
-	default:
-		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
-	}
-}
-
-// GetBadRequest checks if the HTTP response status code is 400, and if so, returns the BadRequest.
-func (r CreateBeerResponse) GetBadRequest() (*BadRequest, error) {
-	if r.JSON400 != nil {
-		return r.JSON400, nil
-	}
-	if r.HTTPResponse == nil {
-		return nil, fmt.Errorf("missing HTTP response")
-	}
-	switch r.HTTPResponse.StatusCode {
-	case 400:
-		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
-	default:
-		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
-	}
-}
-
 // GetConflict checks if the HTTP response status code is 409, and if so, returns the Conflict.
 func (r CreateBeerResponse) GetConflict() (*Conflict, error) {
 	if r.JSON409 != nil {
@@ -966,6 +944,38 @@ func (r CreateBeerResponse) GetUnsupportedMediaType() (*UnsupportedMediaType, er
 	}
 	switch r.HTTPResponse.StatusCode {
 	case 415:
+		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
+	default:
+		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
+	}
+}
+
+// GetBeer checks if the HTTP response status code is 201, and if so, returns the Beer.
+func (r CreateBeerResponse) GetBeer() (*Beer, error) {
+	if r.JSON201 != nil {
+		return r.JSON201, nil
+	}
+	if r.HTTPResponse == nil {
+		return nil, fmt.Errorf("missing HTTP response")
+	}
+	switch r.HTTPResponse.StatusCode {
+	case 201:
+		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
+	default:
+		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
+	}
+}
+
+// GetBadRequest checks if the HTTP response status code is 400, and if so, returns the BadRequest.
+func (r CreateBeerResponse) GetBadRequest() (*BadRequest, error) {
+	if r.JSON400 != nil {
+		return r.JSON400, nil
+	}
+	if r.HTTPResponse == nil {
+		return nil, fmt.Errorf("missing HTTP response")
+	}
+	switch r.HTTPResponse.StatusCode {
+	case 400:
 		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
 	default:
 		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
@@ -1189,6 +1199,22 @@ type UpdateBeerResponse struct {
 	JSON415 *UnsupportedMediaType
 }
 
+// GetUnsupportedMediaType checks if the HTTP response status code is 415, and if so, returns the UnsupportedMediaType.
+func (r UpdateBeerResponse) GetUnsupportedMediaType() (*UnsupportedMediaType, error) {
+	if r.JSON415 != nil {
+		return r.JSON415, nil
+	}
+	if r.HTTPResponse == nil {
+		return nil, fmt.Errorf("missing HTTP response")
+	}
+	switch r.HTTPResponse.StatusCode {
+	case 415:
+		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
+	default:
+		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
+	}
+}
+
 // GetBeer checks if the HTTP response status code is 200, and if so, returns the Beer.
 func (r UpdateBeerResponse) GetBeer() (*Beer, error) {
 	if r.JSON200 != nil {
@@ -1253,22 +1279,6 @@ func (r UpdateBeerResponse) GetConflict() (*Conflict, error) {
 	}
 }
 
-// GetUnsupportedMediaType checks if the HTTP response status code is 415, and if so, returns the UnsupportedMediaType.
-func (r UpdateBeerResponse) GetUnsupportedMediaType() (*UnsupportedMediaType, error) {
-	if r.JSON415 != nil {
-		return r.JSON415, nil
-	}
-	if r.HTTPResponse == nil {
-		return nil, fmt.Errorf("missing HTTP response")
-	}
-	switch r.HTTPResponse.StatusCode {
-	case 415:
-		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
-	default:
-		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
-	}
-}
-
 // GetBody returns the raw response body bytes
 func (r UpdateBeerResponse) GetBody() []byte {
 	return r.Body
@@ -1322,6 +1332,22 @@ type ReplaceBeerResponse struct {
 	JSON409 *Conflict
 	// JSON415 the response for an HTTP 415 `application/json` response
 	JSON415 *UnsupportedMediaType
+}
+
+// GetBeer checks if the HTTP response status code is 200, and if so, returns the Beer.
+func (r ReplaceBeerResponse) GetBeer() (*Beer, error) {
+	if r.JSON200 != nil {
+		return r.JSON200, nil
+	}
+	if r.HTTPResponse == nil {
+		return nil, fmt.Errorf("missing HTTP response")
+	}
+	switch r.HTTPResponse.StatusCode {
+	case 200:
+		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
+	default:
+		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
+	}
 }
 
 // GetBadRequest checks if the HTTP response status code is 400, and if so, returns the BadRequest.
@@ -1382,22 +1408,6 @@ func (r ReplaceBeerResponse) GetUnsupportedMediaType() (*UnsupportedMediaType, e
 	}
 	switch r.HTTPResponse.StatusCode {
 	case 415:
-		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
-	default:
-		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
-	}
-}
-
-// GetBeer checks if the HTTP response status code is 200, and if so, returns the Beer.
-func (r ReplaceBeerResponse) GetBeer() (*Beer, error) {
-	if r.JSON200 != nil {
-		return r.JSON200, nil
-	}
-	if r.HTTPResponse == nil {
-		return nil, fmt.Errorf("missing HTTP response")
-	}
-	switch r.HTTPResponse.StatusCode {
-	case 200:
 		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
 	default:
 		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
@@ -1603,6 +1613,37 @@ func parseListBeersResponse(rsp *http.Response) (*ListBeersResponse, error) {
 			headers.XTotalCount = &value
 		}
 		response.Headers200 = &headers
+	case rsp.StatusCode == 202:
+		var headers ListBeersResponse202Headers
+		if values := rsp.Header.Values("Link"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Link", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.Link = &value
+		}
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value int
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		if values := rsp.Header.Values("X-Request-Id"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Request-Id", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XRequestID = &value
+		}
+		if values := rsp.Header.Values("X-Total-Count"); len(values) > 0 {
+			var value int
+			if err := runtime.BindStyledParameterWithOptions("simple", "X-Total-Count", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.XTotalCount = &value
+		}
+		response.Headers202 = &headers
 	}
 
 	return response, nil

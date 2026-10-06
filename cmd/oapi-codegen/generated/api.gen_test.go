@@ -14,10 +14,12 @@ func Test_ListBeers(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	beers, err := client.ListBeers(ctx)
+	response, err := client.ListBeers(ctx, &api.ListBeersParams{})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	_ = beers
+	response.Headers200
+
+	_ = response
 }

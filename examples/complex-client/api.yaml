@@ -63,6 +63,37 @@ paths:
 
         '202':
           description: Paginated list of beers
+          headers:
+            Link:
+              description: >
+                Pagination links using RFC 8288 format.
+                May contain first, previous, next, and last relations.
+              schema:
+                type: string
+              example: >
+                </beers?page=1&pageSize=20>; rel="first",
+                </beers?page=1&pageSize=20>; rel="prev",
+                </beers?page=3&pageSize=20>; rel="next",
+                </beers?page=5&pageSize=20>; rel="last"
+
+            X-Total-Count:
+              description: Total number of beers
+              schema:
+                type: integer
+              example: 87
+
+            Retry-After:
+              description: Number of seconds to wait before retrying
+              schema:
+                type: integer
+              example: 30
+
+            X-Request-Id:
+              description: Unique identifier for this request
+              schema:
+                type: string
+              example: "8f3a2c91-7b4e-4d6a-9f12-123456789abc"
+
           content:
             application/xml:
               schema:
