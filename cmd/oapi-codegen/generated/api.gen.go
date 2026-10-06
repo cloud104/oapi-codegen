@@ -12,7 +12,9 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/oapi-codegen/runtime"
 )
@@ -1888,4 +1890,130 @@ func parseReplaceBeerResponse(rsp *http.Response) (*ReplaceBeerResponse, error) 
 	}
 
 	return response, nil
+}
+
+type HeaderValue interface {
+	string |
+		bool |
+		int | int8 | int16 | int32 | int64 |
+		uint | uint8 | uint16 | uint32 | uint64 |
+		float32 | float64 |
+		time.Duration |
+		time.Time
+}
+
+func parseHeaderValue[T HeaderValue](value string) (T, bool) {
+	var zero T
+
+	switch any(zero).(type) {
+	case string:
+		return any(value).(T), true
+
+	case bool:
+		v, err := strconv.ParseBool(value)
+		if err != nil {
+			return zero, false
+		}
+		return any(v).(T), true
+
+	case int:
+		v, err := strconv.Atoi(value)
+		if err != nil {
+			return zero, false
+		}
+		return any(v).(T), true
+
+	case int8:
+		v, err := strconv.ParseInt(value, 10, 8)
+		if err != nil {
+			return zero, false
+		}
+		return any(int8(v)).(T), true
+
+	case int16:
+		v, err := strconv.ParseInt(value, 10, 16)
+		if err != nil {
+			return zero, false
+		}
+		return any(int16(v)).(T), true
+
+	case int32:
+		v, err := strconv.ParseInt(value, 10, 32)
+		if err != nil {
+			return zero, false
+		}
+		return any(int32(v)).(T), true
+
+	case int64:
+		v, err := strconv.ParseInt(value, 10, 64)
+		if err != nil {
+			return zero, false
+		}
+		return any(v).(T), true
+
+	case uint:
+		v, err := strconv.ParseUint(value, 10, strconv.IntSize)
+		if err != nil {
+			return zero, false
+		}
+		return any(uint(v)).(T), true
+
+	case uint8:
+		v, err := strconv.ParseUint(value, 10, 8)
+		if err != nil {
+			return zero, false
+		}
+		return any(uint8(v)).(T), true
+
+	case uint16:
+		v, err := strconv.ParseUint(value, 10, 16)
+		if err != nil {
+			return zero, false
+		}
+		return any(uint16(v)).(T), true
+
+	case uint32:
+		v, err := strconv.ParseUint(value, 10, 32)
+		if err != nil {
+			return zero, false
+		}
+		return any(uint32(v)).(T), true
+
+	case uint64:
+		v, err := strconv.ParseUint(value, 10, 64)
+		if err != nil {
+			return zero, false
+		}
+		return any(v).(T), true
+
+	case float32:
+		v, err := strconv.ParseFloat(value, 32)
+		if err != nil {
+			return zero, false
+		}
+		return any(float32(v)).(T), true
+
+	case float64:
+		v, err := strconv.ParseFloat(value, 64)
+		if err != nil {
+			return zero, false
+		}
+		return any(v).(T), true
+
+	case time.Duration:
+		v, err := time.ParseDuration(value)
+		if err != nil {
+			return zero, false
+		}
+		return any(v).(T), true
+
+	case time.Time:
+		v, err := http.ParseTime(value)
+		if err != nil {
+			return zero, false
+		}
+		return any(v).(T), true
+	}
+
+	return zero, false
 }

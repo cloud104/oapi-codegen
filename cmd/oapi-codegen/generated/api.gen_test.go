@@ -19,7 +19,12 @@ func Test_ListBeers(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// response.Headers200
+	link, _ := response.GetHeader[string]("Link")
+	total, _ := response.GetHeader[int]("X-Total-Count")
+	retryAfter, _ := response.GetHeader[int]("Retry-After")
 
 	_ = response
+	_ = link
+	_ = total
+	_ = retryAfter
 }
