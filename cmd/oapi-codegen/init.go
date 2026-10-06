@@ -98,7 +98,10 @@ type responseGroup struct {
 	ResponseCodes responseCodes
 }
 
-var structRE = regexp.MustCompile(`(?s)^\s*struct\s*\{.*\}\s*$`)
+var (
+	structRE = regexp.MustCompile(`(?s)^\s*struct\s*\{.*\}\s*$`)
+	mapRE    = regexp.MustCompile(`^\s*map\s*\[.*\].*$`)
+)
 
 func groupResponses(types []codegen.ResponseTypeDefinition) []*responseGroup {
 	groups := make(map[string]*responseGroup)
@@ -106,7 +109,7 @@ func groupResponses(types []codegen.ResponseTypeDefinition) []*responseGroup {
 	for _, def := range types {
 		typeDecl := def.Schema.TypeDecl()
 
-		if matched := structRE.MatchString(typeDecl); matched {
+		if structRE.MatchString(typeDecl) || mapRE.MatchString(typeDecl) {
 			continue
 		}
 

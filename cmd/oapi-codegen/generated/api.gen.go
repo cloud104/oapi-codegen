@@ -1029,6 +1029,8 @@ type DeleteBeerResponse struct {
 	JSON404 *NotFound
 	// JSON409 the response for an HTTP 409 `application/json` response
 	JSON409 *Conflict
+	// JSONDefault the response for an HTTP default `application/json` response
+	JSONDefault *map[string]interface{}
 }
 
 // GetNotFound checks if the HTTP response status code is 404, and if so, returns the NotFound.
@@ -1722,6 +1724,13 @@ func parseDeleteBeerResponse(rsp *http.Response) (*DeleteBeerResponse, error) {
 			return nil, err
 		}
 		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && true:
+		var dest map[string]interface{}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSONDefault = &dest
 
 	}
 

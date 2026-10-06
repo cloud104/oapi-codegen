@@ -248,6 +248,13 @@ paths:
         '409':
           $ref: '#/components/responses/Conflict'
 
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                type: object
+
 components:
   responses:
     BadRequest:
