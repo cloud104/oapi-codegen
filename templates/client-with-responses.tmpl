@@ -67,11 +67,11 @@ type {{genResponseTypeName $opid | ucFirst}}{{.StatusCode | ucFirst}}Headers str
 }
 {{end}}
 type {{genResponseTypeName $opid | ucFirst}} struct {
-    body         []byte
-	httpResponse *http.Response
+    Body         []byte
+	HTTPResponse *http.Response
     {{- range $responseTypeDefinitions}}
-    // {{camelCaseWithInitialisms .TypeName}} the response for an HTTP {{ .ResponseName }} `{{ .ContentTypeName }}` response
-    {{camelCaseWithInitialisms .TypeName}} *{{.Schema.TypeDecl}}
+    // {{.TypeName}} the response for an HTTP {{ .ResponseName }} `{{ .ContentTypeName }}` response
+    {{.TypeName}} *{{.Schema.TypeDecl}}
     {{- end}}
     {{- range $headerResponses}}
     // Headers{{.StatusCode | ucFirst}} the parsed response headers for an HTTP {{.StatusCode}} response
@@ -84,51 +84,51 @@ type {{genResponseTypeName $opid | ucFirst}} struct {
   // {{.Method}} checks if the HTTP response status code is {{ .ResponseCodes.String }}, and if so, returns the {{.Type}}.
   func (r {{genResponseTypeName $opid | ucFirst}}) {{.Method}}() (*{{.Type}}, error) {
     {{- range .Fields }}
-    if r.{{ camelCaseWithInitialisms . }} != nil {
-        return r.{{ camelCaseWithInitialisms . }}, nil
+    if r.{{ . }} != nil {
+        return r.{{ . }}, nil
     }
     {{- end }}
-    if r.httpResponse == nil {
+    if r.HTTPResponse == nil {
         return nil, fmt.Errorf("missing HTTP response")
     }
-    switch r.httpResponse.StatusCode {
+    switch r.HTTPResponse.StatusCode {
     case {{ .ResponseCodes | join ", " }}:
-        return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.httpResponse.StatusCode)
+        return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
     default:
-        return nil, fmt.Errorf("unexpected response: status %d: %s", r.httpResponse.StatusCode, string(r.body))
+        return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
     }
   }
 {{- end}}
 
 // GetBody returns the raw response body bytes
 func (r {{genResponseTypeName $opid | ucFirst}}) GetBody() []byte {
-    return r.body
+    return r.Body
 }
 {{end}}
 
 // Error returns an error when the HTTP response does not indicate success.
 func (r {{genResponseTypeName $opid | ucFirst}}) Error() error {
-	if r.httpResponse == nil {
+	if r.HTTPResponse == nil {
 		return fmt.Errorf("missing HTTP response")
 	}
-	if r.httpResponse.StatusCode >= 200 && r.httpResponse.StatusCode < 300 {
+	if r.HTTPResponse.StatusCode >= 200 && r.HTTPResponse.StatusCode < 300 {
 		return nil
 	}
-	return fmt.Errorf("unexpected response: status %d: %s", r.httpResponse.StatusCode, string(r.body))
+	return fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
 }
 
 // Status returns the HTTP response status.
 func (r {{genResponseTypeName $opid | ucFirst}}) Status() string {
-    if r.httpResponse != nil {
-        return r.httpResponse.Status
+    if r.HTTPResponse != nil {
+        return r.HTTPResponse.Status
     }
     return http.StatusText(0)
 }
 
 // StatusCode returns the HTTP response status code.
 func (r {{genResponseTypeName $opid | ucFirst}}) StatusCode() int {
-    if r.httpResponse != nil {
-        return r.httpResponse.StatusCode
+    if r.HTTPResponse != nil {
+        return r.HTTPResponse.StatusCode
     }
     return 0
 }
@@ -136,15 +136,15 @@ func (r {{genResponseTypeName $opid | ucFirst}}) StatusCode() int {
 {{ if opts.OutputOptions.ClientResponseBytesFunction }}
 // Bytes is a convenience method to retrieve the raw bytes from the HTTP response
 func (r {{genResponseTypeName $opid | ucFirst}}) Bytes() []byte {
-    return r.body
+    return r.Body
 }
 {{end}}
 
 {{ if not opts.OutputOptions.SkipClientResponseContentType }}
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r {{genResponseTypeName $opid | ucFirst}}) ContentType() string {
-    if r.httpResponse != nil {
-        return r.httpResponse.Header.Get("Content-Type")
+    if r.HTTPResponse != nil {
+        return r.HTTPResponse.Header.Get("Content-Type")
     }
     return ""
 }

@@ -821,625 +821,625 @@ type ListBeersResponse200Headers struct {
 }
 
 type ListBeersResponse struct {
-	body         []byte
-	httpResponse *http.Response
-	// json200 the response for an HTTP 200 `application/json` response
-	json200 *BeerPage
-	// xml200 the response for an HTTP 200 `application/xml` response
-	xml200 *BeerPage
-	// xml202 the response for an HTTP 202 `application/xml` response
-	xml202 *BeerPage
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *BeerPage
+	// XML200 the response for an HTTP 200 `application/xml` response
+	XML200 *BeerPage
+	// XML202 the response for an HTTP 202 `application/xml` response
+	XML202 *BeerPage
 	// Headers200 the parsed response headers for an HTTP 200 response
 	Headers200 *ListBeersResponse200Headers
 }
 
 // GetBeerPage checks if the HTTP response status code is 200 or 202, and if so, returns the BeerPage.
 func (r ListBeersResponse) GetBeerPage() (*BeerPage, error) {
-	if r.json200 != nil {
-		return r.json200, nil
+	if r.JSON200 != nil {
+		return r.JSON200, nil
 	}
-	if r.xml200 != nil {
-		return r.xml200, nil
+	if r.XML200 != nil {
+		return r.XML200, nil
 	}
-	if r.xml202 != nil {
-		return r.xml202, nil
+	if r.XML202 != nil {
+		return r.XML202, nil
 	}
-	if r.httpResponse == nil {
+	if r.HTTPResponse == nil {
 		return nil, fmt.Errorf("missing HTTP response")
 	}
-	switch r.httpResponse.StatusCode {
+	switch r.HTTPResponse.StatusCode {
 	case 200, 202:
-		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.httpResponse.StatusCode)
+		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
 	default:
-		return nil, fmt.Errorf("unexpected response: status %d: %s", r.httpResponse.StatusCode, string(r.body))
+		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
 	}
 }
 
 // GetBody returns the raw response body bytes
 func (r ListBeersResponse) GetBody() []byte {
-	return r.body
+	return r.Body
 }
 
 // Error returns an error when the HTTP response does not indicate success.
 func (r ListBeersResponse) Error() error {
-	if r.httpResponse == nil {
+	if r.HTTPResponse == nil {
 		return fmt.Errorf("missing HTTP response")
 	}
-	if r.httpResponse.StatusCode >= 200 && r.httpResponse.StatusCode < 300 {
+	if r.HTTPResponse.StatusCode >= 200 && r.HTTPResponse.StatusCode < 300 {
 		return nil
 	}
-	return fmt.Errorf("unexpected response: status %d: %s", r.httpResponse.StatusCode, string(r.body))
+	return fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
 }
 
 // Status returns the HTTP response status.
 func (r ListBeersResponse) Status() string {
-	if r.httpResponse != nil {
-		return r.httpResponse.Status
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
 	}
 	return http.StatusText(0)
 }
 
 // StatusCode returns the HTTP response status code.
 func (r ListBeersResponse) StatusCode() int {
-	if r.httpResponse != nil {
-		return r.httpResponse.StatusCode
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r ListBeersResponse) ContentType() string {
-	if r.httpResponse != nil {
-		return r.httpResponse.Header.Get("Content-Type")
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
 type CreateBeerResponse struct {
-	body         []byte
-	httpResponse *http.Response
-	// json201 the response for an HTTP 201 `application/json` response
-	json201 *Beer
-	// json400 the response for an HTTP 400 `application/json` response
-	json400 *BadRequest
-	// json409 the response for an HTTP 409 `application/json` response
-	json409 *Conflict
-	// json415 the response for an HTTP 415 `application/json` response
-	json415 *UnsupportedMediaType
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON201 the response for an HTTP 201 `application/json` response
+	JSON201 *Beer
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *BadRequest
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Conflict
+	// JSON415 the response for an HTTP 415 `application/json` response
+	JSON415 *UnsupportedMediaType
+}
+
+// GetBeer checks if the HTTP response status code is 201, and if so, returns the Beer.
+func (r CreateBeerResponse) GetBeer() (*Beer, error) {
+	if r.JSON201 != nil {
+		return r.JSON201, nil
+	}
+	if r.HTTPResponse == nil {
+		return nil, fmt.Errorf("missing HTTP response")
+	}
+	switch r.HTTPResponse.StatusCode {
+	case 201:
+		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
+	default:
+		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
+	}
 }
 
 // GetBadRequest checks if the HTTP response status code is 400, and if so, returns the BadRequest.
 func (r CreateBeerResponse) GetBadRequest() (*BadRequest, error) {
-	if r.json400 != nil {
-		return r.json400, nil
+	if r.JSON400 != nil {
+		return r.JSON400, nil
 	}
-	if r.httpResponse == nil {
+	if r.HTTPResponse == nil {
 		return nil, fmt.Errorf("missing HTTP response")
 	}
-	switch r.httpResponse.StatusCode {
+	switch r.HTTPResponse.StatusCode {
 	case 400:
-		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.httpResponse.StatusCode)
+		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
 	default:
-		return nil, fmt.Errorf("unexpected response: status %d: %s", r.httpResponse.StatusCode, string(r.body))
+		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
 	}
 }
 
 // GetConflict checks if the HTTP response status code is 409, and if so, returns the Conflict.
 func (r CreateBeerResponse) GetConflict() (*Conflict, error) {
-	if r.json409 != nil {
-		return r.json409, nil
+	if r.JSON409 != nil {
+		return r.JSON409, nil
 	}
-	if r.httpResponse == nil {
+	if r.HTTPResponse == nil {
 		return nil, fmt.Errorf("missing HTTP response")
 	}
-	switch r.httpResponse.StatusCode {
+	switch r.HTTPResponse.StatusCode {
 	case 409:
-		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.httpResponse.StatusCode)
+		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
 	default:
-		return nil, fmt.Errorf("unexpected response: status %d: %s", r.httpResponse.StatusCode, string(r.body))
+		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
 	}
 }
 
 // GetUnsupportedMediaType checks if the HTTP response status code is 415, and if so, returns the UnsupportedMediaType.
 func (r CreateBeerResponse) GetUnsupportedMediaType() (*UnsupportedMediaType, error) {
-	if r.json415 != nil {
-		return r.json415, nil
+	if r.JSON415 != nil {
+		return r.JSON415, nil
 	}
-	if r.httpResponse == nil {
+	if r.HTTPResponse == nil {
 		return nil, fmt.Errorf("missing HTTP response")
 	}
-	switch r.httpResponse.StatusCode {
+	switch r.HTTPResponse.StatusCode {
 	case 415:
-		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.httpResponse.StatusCode)
+		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
 	default:
-		return nil, fmt.Errorf("unexpected response: status %d: %s", r.httpResponse.StatusCode, string(r.body))
-	}
-}
-
-// GetBeer checks if the HTTP response status code is 201, and if so, returns the Beer.
-func (r CreateBeerResponse) GetBeer() (*Beer, error) {
-	if r.json201 != nil {
-		return r.json201, nil
-	}
-	if r.httpResponse == nil {
-		return nil, fmt.Errorf("missing HTTP response")
-	}
-	switch r.httpResponse.StatusCode {
-	case 201:
-		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.httpResponse.StatusCode)
-	default:
-		return nil, fmt.Errorf("unexpected response: status %d: %s", r.httpResponse.StatusCode, string(r.body))
+		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
 	}
 }
 
 // GetBody returns the raw response body bytes
 func (r CreateBeerResponse) GetBody() []byte {
-	return r.body
+	return r.Body
 }
 
 // Error returns an error when the HTTP response does not indicate success.
 func (r CreateBeerResponse) Error() error {
-	if r.httpResponse == nil {
+	if r.HTTPResponse == nil {
 		return fmt.Errorf("missing HTTP response")
 	}
-	if r.httpResponse.StatusCode >= 200 && r.httpResponse.StatusCode < 300 {
+	if r.HTTPResponse.StatusCode >= 200 && r.HTTPResponse.StatusCode < 300 {
 		return nil
 	}
-	return fmt.Errorf("unexpected response: status %d: %s", r.httpResponse.StatusCode, string(r.body))
+	return fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
 }
 
 // Status returns the HTTP response status.
 func (r CreateBeerResponse) Status() string {
-	if r.httpResponse != nil {
-		return r.httpResponse.Status
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
 	}
 	return http.StatusText(0)
 }
 
 // StatusCode returns the HTTP response status code.
 func (r CreateBeerResponse) StatusCode() int {
-	if r.httpResponse != nil {
-		return r.httpResponse.StatusCode
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r CreateBeerResponse) ContentType() string {
-	if r.httpResponse != nil {
-		return r.httpResponse.Header.Get("Content-Type")
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
 type DeleteBeerResponse struct {
-	body         []byte
-	httpResponse *http.Response
-	// json404 the response for an HTTP 404 `application/json` response
-	json404 *NotFound
-	// json409 the response for an HTTP 409 `application/json` response
-	json409 *Conflict
-}
-
-// GetNotFound checks if the HTTP response status code is 404, and if so, returns the NotFound.
-func (r DeleteBeerResponse) GetNotFound() (*NotFound, error) {
-	if r.json404 != nil {
-		return r.json404, nil
-	}
-	if r.httpResponse == nil {
-		return nil, fmt.Errorf("missing HTTP response")
-	}
-	switch r.httpResponse.StatusCode {
-	case 404:
-		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.httpResponse.StatusCode)
-	default:
-		return nil, fmt.Errorf("unexpected response: status %d: %s", r.httpResponse.StatusCode, string(r.body))
-	}
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *NotFound
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Conflict
 }
 
 // GetConflict checks if the HTTP response status code is 409, and if so, returns the Conflict.
 func (r DeleteBeerResponse) GetConflict() (*Conflict, error) {
-	if r.json409 != nil {
-		return r.json409, nil
+	if r.JSON409 != nil {
+		return r.JSON409, nil
 	}
-	if r.httpResponse == nil {
+	if r.HTTPResponse == nil {
 		return nil, fmt.Errorf("missing HTTP response")
 	}
-	switch r.httpResponse.StatusCode {
+	switch r.HTTPResponse.StatusCode {
 	case 409:
-		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.httpResponse.StatusCode)
+		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
 	default:
-		return nil, fmt.Errorf("unexpected response: status %d: %s", r.httpResponse.StatusCode, string(r.body))
+		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
+	}
+}
+
+// GetNotFound checks if the HTTP response status code is 404, and if so, returns the NotFound.
+func (r DeleteBeerResponse) GetNotFound() (*NotFound, error) {
+	if r.JSON404 != nil {
+		return r.JSON404, nil
+	}
+	if r.HTTPResponse == nil {
+		return nil, fmt.Errorf("missing HTTP response")
+	}
+	switch r.HTTPResponse.StatusCode {
+	case 404:
+		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
+	default:
+		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
 	}
 }
 
 // GetBody returns the raw response body bytes
 func (r DeleteBeerResponse) GetBody() []byte {
-	return r.body
+	return r.Body
 }
 
 // Error returns an error when the HTTP response does not indicate success.
 func (r DeleteBeerResponse) Error() error {
-	if r.httpResponse == nil {
+	if r.HTTPResponse == nil {
 		return fmt.Errorf("missing HTTP response")
 	}
-	if r.httpResponse.StatusCode >= 200 && r.httpResponse.StatusCode < 300 {
+	if r.HTTPResponse.StatusCode >= 200 && r.HTTPResponse.StatusCode < 300 {
 		return nil
 	}
-	return fmt.Errorf("unexpected response: status %d: %s", r.httpResponse.StatusCode, string(r.body))
+	return fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
 }
 
 // Status returns the HTTP response status.
 func (r DeleteBeerResponse) Status() string {
-	if r.httpResponse != nil {
-		return r.httpResponse.Status
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
 	}
 	return http.StatusText(0)
 }
 
 // StatusCode returns the HTTP response status code.
 func (r DeleteBeerResponse) StatusCode() int {
-	if r.httpResponse != nil {
-		return r.httpResponse.StatusCode
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r DeleteBeerResponse) ContentType() string {
-	if r.httpResponse != nil {
-		return r.httpResponse.Header.Get("Content-Type")
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
 type GetBeerResponse struct {
-	body         []byte
-	httpResponse *http.Response
-	// json200 the response for an HTTP 200 `application/json` response
-	json200 *Beer
-	// json404 the response for an HTTP 404 `application/json` response
-	json404 *NotFound
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Beer
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *NotFound
 }
 
 // GetBeer checks if the HTTP response status code is 200, and if so, returns the Beer.
 func (r GetBeerResponse) GetBeer() (*Beer, error) {
-	if r.json200 != nil {
-		return r.json200, nil
+	if r.JSON200 != nil {
+		return r.JSON200, nil
 	}
-	if r.httpResponse == nil {
+	if r.HTTPResponse == nil {
 		return nil, fmt.Errorf("missing HTTP response")
 	}
-	switch r.httpResponse.StatusCode {
+	switch r.HTTPResponse.StatusCode {
 	case 200:
-		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.httpResponse.StatusCode)
+		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
 	default:
-		return nil, fmt.Errorf("unexpected response: status %d: %s", r.httpResponse.StatusCode, string(r.body))
+		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
 	}
 }
 
 // GetNotFound checks if the HTTP response status code is 404, and if so, returns the NotFound.
 func (r GetBeerResponse) GetNotFound() (*NotFound, error) {
-	if r.json404 != nil {
-		return r.json404, nil
+	if r.JSON404 != nil {
+		return r.JSON404, nil
 	}
-	if r.httpResponse == nil {
+	if r.HTTPResponse == nil {
 		return nil, fmt.Errorf("missing HTTP response")
 	}
-	switch r.httpResponse.StatusCode {
+	switch r.HTTPResponse.StatusCode {
 	case 404:
-		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.httpResponse.StatusCode)
+		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
 	default:
-		return nil, fmt.Errorf("unexpected response: status %d: %s", r.httpResponse.StatusCode, string(r.body))
+		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
 	}
 }
 
 // GetBody returns the raw response body bytes
 func (r GetBeerResponse) GetBody() []byte {
-	return r.body
+	return r.Body
 }
 
 // Error returns an error when the HTTP response does not indicate success.
 func (r GetBeerResponse) Error() error {
-	if r.httpResponse == nil {
+	if r.HTTPResponse == nil {
 		return fmt.Errorf("missing HTTP response")
 	}
-	if r.httpResponse.StatusCode >= 200 && r.httpResponse.StatusCode < 300 {
+	if r.HTTPResponse.StatusCode >= 200 && r.HTTPResponse.StatusCode < 300 {
 		return nil
 	}
-	return fmt.Errorf("unexpected response: status %d: %s", r.httpResponse.StatusCode, string(r.body))
+	return fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
 }
 
 // Status returns the HTTP response status.
 func (r GetBeerResponse) Status() string {
-	if r.httpResponse != nil {
-		return r.httpResponse.Status
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
 	}
 	return http.StatusText(0)
 }
 
 // StatusCode returns the HTTP response status code.
 func (r GetBeerResponse) StatusCode() int {
-	if r.httpResponse != nil {
-		return r.httpResponse.StatusCode
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r GetBeerResponse) ContentType() string {
-	if r.httpResponse != nil {
-		return r.httpResponse.Header.Get("Content-Type")
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
 type UpdateBeerResponse struct {
-	body         []byte
-	httpResponse *http.Response
-	// json200 the response for an HTTP 200 `application/json` response
-	json200 *Beer
-	// json400 the response for an HTTP 400 `application/json` response
-	json400 *BadRequest
-	// json404 the response for an HTTP 404 `application/json` response
-	json404 *NotFound
-	// json409 the response for an HTTP 409 `application/json` response
-	json409 *Conflict
-	// json415 the response for an HTTP 415 `application/json` response
-	json415 *UnsupportedMediaType
-}
-
-// GetConflict checks if the HTTP response status code is 409, and if so, returns the Conflict.
-func (r UpdateBeerResponse) GetConflict() (*Conflict, error) {
-	if r.json409 != nil {
-		return r.json409, nil
-	}
-	if r.httpResponse == nil {
-		return nil, fmt.Errorf("missing HTTP response")
-	}
-	switch r.httpResponse.StatusCode {
-	case 409:
-		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.httpResponse.StatusCode)
-	default:
-		return nil, fmt.Errorf("unexpected response: status %d: %s", r.httpResponse.StatusCode, string(r.body))
-	}
-}
-
-// GetUnsupportedMediaType checks if the HTTP response status code is 415, and if so, returns the UnsupportedMediaType.
-func (r UpdateBeerResponse) GetUnsupportedMediaType() (*UnsupportedMediaType, error) {
-	if r.json415 != nil {
-		return r.json415, nil
-	}
-	if r.httpResponse == nil {
-		return nil, fmt.Errorf("missing HTTP response")
-	}
-	switch r.httpResponse.StatusCode {
-	case 415:
-		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.httpResponse.StatusCode)
-	default:
-		return nil, fmt.Errorf("unexpected response: status %d: %s", r.httpResponse.StatusCode, string(r.body))
-	}
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Beer
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *BadRequest
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *NotFound
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Conflict
+	// JSON415 the response for an HTTP 415 `application/json` response
+	JSON415 *UnsupportedMediaType
 }
 
 // GetBeer checks if the HTTP response status code is 200, and if so, returns the Beer.
 func (r UpdateBeerResponse) GetBeer() (*Beer, error) {
-	if r.json200 != nil {
-		return r.json200, nil
+	if r.JSON200 != nil {
+		return r.JSON200, nil
 	}
-	if r.httpResponse == nil {
+	if r.HTTPResponse == nil {
 		return nil, fmt.Errorf("missing HTTP response")
 	}
-	switch r.httpResponse.StatusCode {
+	switch r.HTTPResponse.StatusCode {
 	case 200:
-		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.httpResponse.StatusCode)
+		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
 	default:
-		return nil, fmt.Errorf("unexpected response: status %d: %s", r.httpResponse.StatusCode, string(r.body))
+		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
 	}
 }
 
 // GetBadRequest checks if the HTTP response status code is 400, and if so, returns the BadRequest.
 func (r UpdateBeerResponse) GetBadRequest() (*BadRequest, error) {
-	if r.json400 != nil {
-		return r.json400, nil
+	if r.JSON400 != nil {
+		return r.JSON400, nil
 	}
-	if r.httpResponse == nil {
+	if r.HTTPResponse == nil {
 		return nil, fmt.Errorf("missing HTTP response")
 	}
-	switch r.httpResponse.StatusCode {
+	switch r.HTTPResponse.StatusCode {
 	case 400:
-		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.httpResponse.StatusCode)
+		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
 	default:
-		return nil, fmt.Errorf("unexpected response: status %d: %s", r.httpResponse.StatusCode, string(r.body))
+		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
 	}
 }
 
 // GetNotFound checks if the HTTP response status code is 404, and if so, returns the NotFound.
 func (r UpdateBeerResponse) GetNotFound() (*NotFound, error) {
-	if r.json404 != nil {
-		return r.json404, nil
+	if r.JSON404 != nil {
+		return r.JSON404, nil
 	}
-	if r.httpResponse == nil {
+	if r.HTTPResponse == nil {
 		return nil, fmt.Errorf("missing HTTP response")
 	}
-	switch r.httpResponse.StatusCode {
+	switch r.HTTPResponse.StatusCode {
 	case 404:
-		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.httpResponse.StatusCode)
+		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
 	default:
-		return nil, fmt.Errorf("unexpected response: status %d: %s", r.httpResponse.StatusCode, string(r.body))
+		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
+	}
+}
+
+// GetConflict checks if the HTTP response status code is 409, and if so, returns the Conflict.
+func (r UpdateBeerResponse) GetConflict() (*Conflict, error) {
+	if r.JSON409 != nil {
+		return r.JSON409, nil
+	}
+	if r.HTTPResponse == nil {
+		return nil, fmt.Errorf("missing HTTP response")
+	}
+	switch r.HTTPResponse.StatusCode {
+	case 409:
+		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
+	default:
+		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
+	}
+}
+
+// GetUnsupportedMediaType checks if the HTTP response status code is 415, and if so, returns the UnsupportedMediaType.
+func (r UpdateBeerResponse) GetUnsupportedMediaType() (*UnsupportedMediaType, error) {
+	if r.JSON415 != nil {
+		return r.JSON415, nil
+	}
+	if r.HTTPResponse == nil {
+		return nil, fmt.Errorf("missing HTTP response")
+	}
+	switch r.HTTPResponse.StatusCode {
+	case 415:
+		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
+	default:
+		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
 	}
 }
 
 // GetBody returns the raw response body bytes
 func (r UpdateBeerResponse) GetBody() []byte {
-	return r.body
+	return r.Body
 }
 
 // Error returns an error when the HTTP response does not indicate success.
 func (r UpdateBeerResponse) Error() error {
-	if r.httpResponse == nil {
+	if r.HTTPResponse == nil {
 		return fmt.Errorf("missing HTTP response")
 	}
-	if r.httpResponse.StatusCode >= 200 && r.httpResponse.StatusCode < 300 {
+	if r.HTTPResponse.StatusCode >= 200 && r.HTTPResponse.StatusCode < 300 {
 		return nil
 	}
-	return fmt.Errorf("unexpected response: status %d: %s", r.httpResponse.StatusCode, string(r.body))
+	return fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
 }
 
 // Status returns the HTTP response status.
 func (r UpdateBeerResponse) Status() string {
-	if r.httpResponse != nil {
-		return r.httpResponse.Status
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
 	}
 	return http.StatusText(0)
 }
 
 // StatusCode returns the HTTP response status code.
 func (r UpdateBeerResponse) StatusCode() int {
-	if r.httpResponse != nil {
-		return r.httpResponse.StatusCode
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r UpdateBeerResponse) ContentType() string {
-	if r.httpResponse != nil {
-		return r.httpResponse.Header.Get("Content-Type")
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
 type ReplaceBeerResponse struct {
-	body         []byte
-	httpResponse *http.Response
-	// json200 the response for an HTTP 200 `application/json` response
-	json200 *Beer
-	// json400 the response for an HTTP 400 `application/json` response
-	json400 *BadRequest
-	// json404 the response for an HTTP 404 `application/json` response
-	json404 *NotFound
-	// json409 the response for an HTTP 409 `application/json` response
-	json409 *Conflict
-	// json415 the response for an HTTP 415 `application/json` response
-	json415 *UnsupportedMediaType
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Beer
+	// JSON400 the response for an HTTP 400 `application/json` response
+	JSON400 *BadRequest
+	// JSON404 the response for an HTTP 404 `application/json` response
+	JSON404 *NotFound
+	// JSON409 the response for an HTTP 409 `application/json` response
+	JSON409 *Conflict
+	// JSON415 the response for an HTTP 415 `application/json` response
+	JSON415 *UnsupportedMediaType
+}
+
+// GetNotFound checks if the HTTP response status code is 404, and if so, returns the NotFound.
+func (r ReplaceBeerResponse) GetNotFound() (*NotFound, error) {
+	if r.JSON404 != nil {
+		return r.JSON404, nil
+	}
+	if r.HTTPResponse == nil {
+		return nil, fmt.Errorf("missing HTTP response")
+	}
+	switch r.HTTPResponse.StatusCode {
+	case 404:
+		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
+	default:
+		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
+	}
 }
 
 // GetConflict checks if the HTTP response status code is 409, and if so, returns the Conflict.
 func (r ReplaceBeerResponse) GetConflict() (*Conflict, error) {
-	if r.json409 != nil {
-		return r.json409, nil
+	if r.JSON409 != nil {
+		return r.JSON409, nil
 	}
-	if r.httpResponse == nil {
+	if r.HTTPResponse == nil {
 		return nil, fmt.Errorf("missing HTTP response")
 	}
-	switch r.httpResponse.StatusCode {
+	switch r.HTTPResponse.StatusCode {
 	case 409:
-		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.httpResponse.StatusCode)
+		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
 	default:
-		return nil, fmt.Errorf("unexpected response: status %d: %s", r.httpResponse.StatusCode, string(r.body))
+		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
 	}
 }
 
 // GetUnsupportedMediaType checks if the HTTP response status code is 415, and if so, returns the UnsupportedMediaType.
 func (r ReplaceBeerResponse) GetUnsupportedMediaType() (*UnsupportedMediaType, error) {
-	if r.json415 != nil {
-		return r.json415, nil
+	if r.JSON415 != nil {
+		return r.JSON415, nil
 	}
-	if r.httpResponse == nil {
+	if r.HTTPResponse == nil {
 		return nil, fmt.Errorf("missing HTTP response")
 	}
-	switch r.httpResponse.StatusCode {
+	switch r.HTTPResponse.StatusCode {
 	case 415:
-		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.httpResponse.StatusCode)
+		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
 	default:
-		return nil, fmt.Errorf("unexpected response: status %d: %s", r.httpResponse.StatusCode, string(r.body))
+		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
 	}
 }
 
 // GetBeer checks if the HTTP response status code is 200, and if so, returns the Beer.
 func (r ReplaceBeerResponse) GetBeer() (*Beer, error) {
-	if r.json200 != nil {
-		return r.json200, nil
+	if r.JSON200 != nil {
+		return r.JSON200, nil
 	}
-	if r.httpResponse == nil {
+	if r.HTTPResponse == nil {
 		return nil, fmt.Errorf("missing HTTP response")
 	}
-	switch r.httpResponse.StatusCode {
+	switch r.HTTPResponse.StatusCode {
 	case 200:
-		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.httpResponse.StatusCode)
+		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
 	default:
-		return nil, fmt.Errorf("unexpected response: status %d: %s", r.httpResponse.StatusCode, string(r.body))
+		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
 	}
 }
 
 // GetBadRequest checks if the HTTP response status code is 400, and if so, returns the BadRequest.
 func (r ReplaceBeerResponse) GetBadRequest() (*BadRequest, error) {
-	if r.json400 != nil {
-		return r.json400, nil
+	if r.JSON400 != nil {
+		return r.JSON400, nil
 	}
-	if r.httpResponse == nil {
+	if r.HTTPResponse == nil {
 		return nil, fmt.Errorf("missing HTTP response")
 	}
-	switch r.httpResponse.StatusCode {
+	switch r.HTTPResponse.StatusCode {
 	case 400:
-		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.httpResponse.StatusCode)
+		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
 	default:
-		return nil, fmt.Errorf("unexpected response: status %d: %s", r.httpResponse.StatusCode, string(r.body))
-	}
-}
-
-// GetNotFound checks if the HTTP response status code is 404, and if so, returns the NotFound.
-func (r ReplaceBeerResponse) GetNotFound() (*NotFound, error) {
-	if r.json404 != nil {
-		return r.json404, nil
-	}
-	if r.httpResponse == nil {
-		return nil, fmt.Errorf("missing HTTP response")
-	}
-	switch r.httpResponse.StatusCode {
-	case 404:
-		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.httpResponse.StatusCode)
-	default:
-		return nil, fmt.Errorf("unexpected response: status %d: %s", r.httpResponse.StatusCode, string(r.body))
+		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
 	}
 }
 
 // GetBody returns the raw response body bytes
 func (r ReplaceBeerResponse) GetBody() []byte {
-	return r.body
+	return r.Body
 }
 
 // Error returns an error when the HTTP response does not indicate success.
 func (r ReplaceBeerResponse) Error() error {
-	if r.httpResponse == nil {
+	if r.HTTPResponse == nil {
 		return fmt.Errorf("missing HTTP response")
 	}
-	if r.httpResponse.StatusCode >= 200 && r.httpResponse.StatusCode < 300 {
+	if r.HTTPResponse.StatusCode >= 200 && r.HTTPResponse.StatusCode < 300 {
 		return nil
 	}
-	return fmt.Errorf("unexpected response: status %d: %s", r.httpResponse.StatusCode, string(r.body))
+	return fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
 }
 
 // Status returns the HTTP response status.
 func (r ReplaceBeerResponse) Status() string {
-	if r.httpResponse != nil {
-		return r.httpResponse.Status
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
 	}
 	return http.StatusText(0)
 }
 
 // StatusCode returns the HTTP response status code.
 func (r ReplaceBeerResponse) StatusCode() int {
-	if r.httpResponse != nil {
-		return r.httpResponse.StatusCode
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
 	}
 	return 0
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r ReplaceBeerResponse) ContentType() string {
-	if r.httpResponse != nil {
-		return r.httpResponse.Header.Get("Content-Type")
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
