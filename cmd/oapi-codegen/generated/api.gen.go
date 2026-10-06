@@ -1021,22 +1021,6 @@ type DeleteBeerResponse struct {
 	JSON409 *Conflict
 }
 
-// GetConflict checks if the HTTP response status code is 409, and if so, returns the Conflict.
-func (r DeleteBeerResponse) GetConflict() (*Conflict, error) {
-	if r.JSON409 != nil {
-		return r.JSON409, nil
-	}
-	if r.HTTPResponse == nil {
-		return nil, fmt.Errorf("missing HTTP response")
-	}
-	switch r.HTTPResponse.StatusCode {
-	case 409:
-		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
-	default:
-		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
-	}
-}
-
 // GetNotFound checks if the HTTP response status code is 404, and if so, returns the NotFound.
 func (r DeleteBeerResponse) GetNotFound() (*NotFound, error) {
 	if r.JSON404 != nil {
@@ -1047,6 +1031,22 @@ func (r DeleteBeerResponse) GetNotFound() (*NotFound, error) {
 	}
 	switch r.HTTPResponse.StatusCode {
 	case 404:
+		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
+	default:
+		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
+	}
+}
+
+// GetConflict checks if the HTTP response status code is 409, and if so, returns the Conflict.
+func (r DeleteBeerResponse) GetConflict() (*Conflict, error) {
+	if r.JSON409 != nil {
+		return r.JSON409, nil
+	}
+	if r.HTTPResponse == nil {
+		return nil, fmt.Errorf("missing HTTP response")
+	}
+	switch r.HTTPResponse.StatusCode {
+	case 409:
 		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
 	default:
 		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
@@ -1557,8 +1557,8 @@ func parseListBeersResponse(rsp *http.Response) (*ListBeersResponse, error) {
 	}
 
 	response := &ListBeersResponse{
-		body:         bodyBytes,
-		httpResponse: rsp,
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
 	}
 
 	switch {
@@ -1567,21 +1567,21 @@ func parseListBeersResponse(rsp *http.Response) (*ListBeersResponse, error) {
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.json200 = &dest
+		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "xml") && rsp.StatusCode == 200:
 		var dest BeerPage
 		if err := xml.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.xml200 = &dest
+		response.XML200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "xml") && rsp.StatusCode == 202:
 		var dest BeerPage
 		if err := xml.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.xml202 = &dest
+		response.XML202 = &dest
 
 	}
 
@@ -1617,8 +1617,8 @@ func parseCreateBeerResponse(rsp *http.Response) (*CreateBeerResponse, error) {
 	}
 
 	response := &CreateBeerResponse{
-		body:         bodyBytes,
-		httpResponse: rsp,
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
 	}
 
 	switch {
@@ -1627,28 +1627,28 @@ func parseCreateBeerResponse(rsp *http.Response) (*CreateBeerResponse, error) {
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.json201 = &dest
+		response.JSON201 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest BadRequest
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.json400 = &dest
+		response.JSON400 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
 		var dest Conflict
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.json409 = &dest
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 415:
 		var dest UnsupportedMediaType
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.json415 = &dest
+		response.JSON415 = &dest
 
 	}
 
@@ -1664,8 +1664,8 @@ func parseDeleteBeerResponse(rsp *http.Response) (*DeleteBeerResponse, error) {
 	}
 
 	response := &DeleteBeerResponse{
-		body:         bodyBytes,
-		httpResponse: rsp,
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
 	}
 
 	switch {
@@ -1677,14 +1677,14 @@ func parseDeleteBeerResponse(rsp *http.Response) (*DeleteBeerResponse, error) {
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.json404 = &dest
+		response.JSON404 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
 		var dest Conflict
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.json409 = &dest
+		response.JSON409 = &dest
 
 	}
 
@@ -1700,8 +1700,8 @@ func parseGetBeerResponse(rsp *http.Response) (*GetBeerResponse, error) {
 	}
 
 	response := &GetBeerResponse{
-		body:         bodyBytes,
-		httpResponse: rsp,
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
 	}
 
 	switch {
@@ -1710,14 +1710,14 @@ func parseGetBeerResponse(rsp *http.Response) (*GetBeerResponse, error) {
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.json200 = &dest
+		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.json404 = &dest
+		response.JSON404 = &dest
 
 	}
 
@@ -1733,8 +1733,8 @@ func parseUpdateBeerResponse(rsp *http.Response) (*UpdateBeerResponse, error) {
 	}
 
 	response := &UpdateBeerResponse{
-		body:         bodyBytes,
-		httpResponse: rsp,
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
 	}
 
 	switch {
@@ -1743,35 +1743,35 @@ func parseUpdateBeerResponse(rsp *http.Response) (*UpdateBeerResponse, error) {
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.json200 = &dest
+		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest BadRequest
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.json400 = &dest
+		response.JSON400 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.json404 = &dest
+		response.JSON404 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
 		var dest Conflict
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.json409 = &dest
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 415:
 		var dest UnsupportedMediaType
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.json415 = &dest
+		response.JSON415 = &dest
 
 	}
 
@@ -1787,8 +1787,8 @@ func parseReplaceBeerResponse(rsp *http.Response) (*ReplaceBeerResponse, error) 
 	}
 
 	response := &ReplaceBeerResponse{
-		body:         bodyBytes,
-		httpResponse: rsp,
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
 	}
 
 	switch {
@@ -1797,35 +1797,35 @@ func parseReplaceBeerResponse(rsp *http.Response) (*ReplaceBeerResponse, error) 
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.json200 = &dest
+		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest BadRequest
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.json400 = &dest
+		response.JSON400 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.json404 = &dest
+		response.JSON404 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
 		var dest Conflict
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.json409 = &dest
+		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 415:
 		var dest UnsupportedMediaType
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
-		response.json415 = &dest
+		response.JSON415 = &dest
 
 	}
 

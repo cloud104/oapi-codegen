@@ -202,23 +202,9 @@ func parse{{genResponseTypeName $opid | ucFirst}}(rsp *http.Response) (*{{genRes
         return nil, err
     }
 
-    response := &{{ genResponseTypeName $opid }}{
-		body:         bodyBytes,
-		httpResponse: rsp,
-	}
+    response := {{genResponsePayload $opid}}
 
-    {{$responseFormats := dict
-        "HALJSON" "halJSON"
-        "JSON"    "json"
-        "YAML"    "yaml"
-        "XML"     "xml"
-    }}
-    {{$unmarshal := genResponseUnmarshal .}}
-    {{range $from, $to := $responseFormats}}
-        {{$unmarshal = regexReplaceAll (printf `response\.%s([0-9]{3})` $from) $unmarshal (printf `response.%s${1}` $to)}}
-    {{end}}
-    {{$unmarshal}}
-
+    {{genResponseUnmarshal .}}
     {{- /* Bind declared response headers into the typed Headers<StatusCode>
     fields. Binding is lenient: an absent header (even a required one) leaves
     the field at its zero value rather than failing the parse, mirroring the
