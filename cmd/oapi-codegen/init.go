@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"sort"
+	"slices"
 	"strings"
 	_ "unsafe"
 
@@ -97,8 +97,8 @@ type responseGroup struct {
 	ResponseCodes responseCodes
 }
 
-func groupResponses(types []codegen.ResponseTypeDefinition) []responseGroup {
-	groups := make(map[string]responseGroup)
+func groupResponses(types []codegen.ResponseTypeDefinition) []*responseGroup {
+	groups := make(map[string]*responseGroup)
 
 	for _, def := range types {
 		typeDecl := def.Schema.TypeDecl()
@@ -110,53 +110,36 @@ func groupResponses(types []codegen.ResponseTypeDefinition) []responseGroup {
 				method = inflection.Plural(def.Schema.ArrayType.TypeDecl())
 			}
 
-			group = responseGroup{
+			group = &responseGroup{
 				Type:   typeDecl,
 				Method: "Get" + method,
 			}
+			groups[typeDecl] = group
 		}
 
 		group.Fields = append(group.Fields, def.TypeName)
 
-		seen := false
-
-		for _, code := range group.ResponseCodes {
-			if code == def.ResponseName {
-				seen = true
-				break
-			}
-		}
-
-		if !seen {
+		if !slices.Contains(group.ResponseCodes, def.ResponseName) {
 			group.ResponseCodes = append(group.ResponseCodes, def.ResponseName)
 		}
-
-		groups[typeDecl] = group
 	}
 
-	result := make([]responseGroup, 0, len(groups))
+	result := make([]*responseGroup, 0, len(groups))
 	for _, group := range groups {
-		sort.Strings(group.Fields)
-		sort.Slice(group.ResponseCodes, func(i, j int) bool {
-			return group.ResponseCodes[i] < group.ResponseCodes[j]
-		})
+		slices.Sort(group.Fields)
+		slices.Sort(group.ResponseCodes)
 		result = append(result, group)
 	}
 
-	sort.Slice(result, func(i, j int) bool {
-		a, b := result[i], result[j]
-
-		for k := 0; k < len(a.ResponseCodes) && k < len(b.ResponseCodes); k++ {
-			if a.ResponseCodes[k] != b.ResponseCodes[k] {
-				return a.ResponseCodes[k] < b.ResponseCodes[k]
-			}
+	// Map iteration order is undefined, so sort the groups to keep generated
+	// output deterministic. Response codes define the primary order, with the
+	// response type acting as a stable tie-breaker.
+	slices.SortFunc(result, func(a, b *responseGroup) int {
+		if n := slices.Compare(a.ResponseCodes, b.ResponseCodes); n != 0 {
+			return n
 		}
 
-		if len(a.ResponseCodes) != len(b.ResponseCodes) {
-			return len(a.ResponseCodes) < len(b.ResponseCodes)
-		}
-
-		return a.Type < b.Type
+		return strings.Compare(a.Type, b.Type)
 	})
 
 	return result
