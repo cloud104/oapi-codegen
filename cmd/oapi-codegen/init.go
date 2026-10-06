@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	_ "unsafe"
 
@@ -118,12 +119,14 @@ func groupResponses(types []codegen.ResponseTypeDefinition) []responseGroup {
 		group.Fields = append(group.Fields, def.TypeName)
 
 		seen := false
+
 		for _, code := range group.ResponseCodes {
 			if code == def.ResponseName {
 				seen = true
 				break
 			}
 		}
+
 		if !seen {
 			group.ResponseCodes = append(group.ResponseCodes, def.ResponseName)
 		}
@@ -133,8 +136,28 @@ func groupResponses(types []codegen.ResponseTypeDefinition) []responseGroup {
 
 	result := make([]responseGroup, 0, len(groups))
 	for _, group := range groups {
+		sort.Strings(group.Fields)
+		sort.Slice(group.ResponseCodes, func(i, j int) bool {
+			return group.ResponseCodes[i] < group.ResponseCodes[j]
+		})
 		result = append(result, group)
 	}
+
+	sort.Slice(result, func(i, j int) bool {
+		a, b := result[i], result[j]
+
+		for k := 0; k < len(a.ResponseCodes) && k < len(b.ResponseCodes); k++ {
+			if a.ResponseCodes[k] != b.ResponseCodes[k] {
+				return a.ResponseCodes[k] < b.ResponseCodes[k]
+			}
+		}
+
+		if len(a.ResponseCodes) != len(b.ResponseCodes) {
+			return len(a.ResponseCodes) < len(b.ResponseCodes)
+		}
+
+		return a.Type < b.Type
+	})
 
 	return result
 }

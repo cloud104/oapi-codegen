@@ -19,7 +19,7 @@ func Test_ListBeers(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response.Headers200
+	// response.Headers200
 
 	_ = response
 }
