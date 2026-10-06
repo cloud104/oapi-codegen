@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"regexp"
 	"slices"
 	"strings"
 	_ "unsafe"
@@ -97,11 +98,17 @@ type responseGroup struct {
 	ResponseCodes responseCodes
 }
 
+var structRE = regexp.MustCompile(`(?s)^\s*struct\s*\{.*\}\s*$`)
+
 func groupResponses(types []codegen.ResponseTypeDefinition) []*responseGroup {
 	groups := make(map[string]*responseGroup)
 
 	for _, def := range types {
 		typeDecl := def.Schema.TypeDecl()
+
+		if matched := structRE.MatchString(typeDecl); matched {
+			continue
+		}
 
 		group, exists := groups[typeDecl]
 		if !exists {
@@ -135,8 +142,8 @@ func groupResponses(types []codegen.ResponseTypeDefinition) []*responseGroup {
 	// output deterministic. Response codes define the primary order, with the
 	// response type acting as a stable tie-breaker.
 	slices.SortFunc(result, func(a, b *responseGroup) int {
-		if n := slices.Compare(a.ResponseCodes, b.ResponseCodes); n != 0 {
-			return n
+		if cmp := slices.Compare(a.ResponseCodes, b.ResponseCodes); cmp != 0 {
+			return cmp
 		}
 
 		return strings.Compare(a.Type, b.Type)

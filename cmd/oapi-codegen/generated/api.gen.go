@@ -1107,25 +1107,21 @@ type GetBeerResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON200 the response for an HTTP 200 `application/json` response
-	JSON200 *Beer
+	JSON200 *struct {
+		// Abv Example: 6.5
+		Abv *float32 `json:"abv,omitempty"`
+
+		// ID Example: 7
+		ID int `json:"id"`
+
+		// Name Example: IPA
+		Name string `json:"name"`
+
+		// Style Example: India Pale Ale
+		Style *string `json:"style,omitempty"`
+	}
 	// JSON404 the response for an HTTP 404 `application/json` response
 	JSON404 *NotFound
-}
-
-// GetBeer checks if the HTTP response status code is 200, and if so, returns the Beer.
-func (r GetBeerResponse) GetBeer() (*Beer, error) {
-	if r.JSON200 != nil {
-		return r.JSON200, nil
-	}
-	if r.HTTPResponse == nil {
-		return nil, fmt.Errorf("missing HTTP response")
-	}
-	switch r.HTTPResponse.StatusCode {
-	case 200:
-		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
-	default:
-		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
-	}
 }
 
 // GetNotFound checks if the HTTP response status code is 404, and if so, returns the NotFound.
@@ -1747,7 +1743,19 @@ func parseGetBeerResponse(rsp *http.Response) (*GetBeerResponse, error) {
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Beer
+		var dest struct {
+			// Abv Example: 6.5
+			Abv *float32 `json:"abv,omitempty"`
+
+			// ID Example: 7
+			ID int `json:"id"`
+
+			// Name Example: IPA
+			Name string `json:"name"`
+
+			// Style Example: India Pale Ale
+			Style *string `json:"style,omitempty"`
+		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

@@ -7,6 +7,7 @@ require (
 	github.com/ettle/strcase v0.2.0
 	github.com/getkin/kin-openapi v0.149.0
 	github.com/jinzhu/inflection v1.0.0
+	github.com/oapi-codegen/nullable v1.1.0
 	github.com/oapi-codegen/oapi-codegen/v2 v2.8.0
 	github.com/oapi-codegen/runtime v1.7.0
 	go.yaml.in/yaml/v3 v3.0.5

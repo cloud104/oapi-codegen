@@ -155,7 +155,24 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Beer'
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    example: 7
+                  name:
+                    type: string
+                    example: "IPA"
+                  style:
+                    type: string
+                    example: "India Pale Ale"
+                  abv:
+                    type: number
+                    format: float
+                    example: 6.5
+                required:
+                  - id
+                  - name
 
         '404':
           $ref: '#/components/responses/NotFound'
