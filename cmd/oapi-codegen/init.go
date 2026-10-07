@@ -183,27 +183,43 @@ type operationSecurityScheme struct {
 	Scheme     *openapi3.SecurityScheme
 }
 
-func securitySchemes(op *codegen.OperationDefinition) []*operationSecurityScheme {
+func securitySchemes(ops ...*codegen.OperationDefinition) []*operationSecurityScheme {
 	spec := codegenGlobalState.spec
-	if op == nil || spec == nil || spec.Components == nil {
+	if spec == nil || spec.Components == nil {
 		return nil
 	}
 
-	var schemes []*operationSecurityScheme
+	schemes := make(map[string]*operationSecurityScheme)
 
-	for _, definition := range op.SecurityDefinitions {
-		ref := spec.Components.SecuritySchemes[definition.ProviderName]
-		if ref == nil || ref.Value == nil {
+	for _, op := range ops {
+		if op == nil {
 			continue
 		}
 
-		schemes = append(schemes, &operationSecurityScheme{
-			Definition: definition,
-			Scheme:     ref.Value,
-		})
+		for _, definition := range op.SecurityDefinitions {
+			name := definition.ProviderName
+			if _, exists := schemes[name]; exists {
+				continue
+			}
+
+			ref := spec.Components.SecuritySchemes[name]
+			if ref == nil || ref.Value == nil {
+				continue
+			}
+
+			schemes[name] = &operationSecurityScheme{
+				Definition: definition,
+				Scheme:     ref.Value,
+			}
+		}
 	}
 
-	return schemes
+	result := make([]*operationSecurityScheme, 0, len(schemes))
+	for _, scheme := range schemes {
+		result = append(result, scheme)
+	}
+
+	return result
 }
 
 type basicAuthSecurity struct {

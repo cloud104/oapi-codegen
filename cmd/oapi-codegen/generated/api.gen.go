@@ -154,6 +154,7 @@ func (c *rawClient) applyEditors(ctx context.Context, req *http.Request, additio
 // Client which conforms to the OpenAPI3 specification for this service.
 type Client struct {
 	rawClientInterface
+	// [{"OperationId":"Ping","SpecOperationId":"ping","PathParams":[],"HeaderParams":null,"QueryParams":null,"CookieParams":null,"TypeDefinitions":null,"SecurityDefinitions":[{"ProviderName":"bearerAuth","Scopes":[]},{"ProviderName":"basicAuth","Scopes":[]},{"ProviderName":"apiKeyAuth","Scopes":[]}],"BodyRequired":false,"Bodies":null,"Responses":[{"StatusCode":"200","Description":"pet response","Contents":[{"Schema":{"GoType":"Pong","RefType":"","ArrayType":null,"EnumValues":null,"Properties":null,"HasAdditionalProperties":false,"AdditionalPropertiesType":null,"AdditionalTypes":null,"SkipOptionalPointer":false,"Description":"","UnionElements":null,"Discriminator":null,"DefineViaAlias":true,"OAPISchema":{"properties":{"ping":{"example":"pong","type":"string"}},"required":["ping"],"type":"object"}},"ContentType":"application/json","NameTag":"JSON"}],"Headers":null,"Ref":""}],"Summary":"","Method":"GET","Path":"/ping","SpecOrder":6,"Spec":{"operationId":"Ping","responses":{"200":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/Pong"}}},"description":"pet response"}},"security":[{"bearerAuth":[]},{"basicAuth":[]},{"apiKeyAuth":[]}]},"IsAlias":false,"AliasTarget":"","PathItemRef":"","IsWebhook":false,"WebhookName":"","IsCallback":false,"CallbackName":""}]
 }
 
 // NewClient creates a new Client, which wraps

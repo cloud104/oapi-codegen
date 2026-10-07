@@ -3,6 +3,7 @@
 // {{ $clientTypeName }} which conforms to the OpenAPI3 specification for this service.
 type {{ $clientTypeName }} struct {
     rawClientInterface
+    // {{ toJson . }}
 }
 
 // New{{ $clientTypeName }} creates a new {{ $clientTypeName }}, which wraps
