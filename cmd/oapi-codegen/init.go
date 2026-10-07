@@ -179,8 +179,8 @@ func jsonRequestBody(op *codegen.OperationDefinition) *codegen.RequestBodyDefini
 }
 
 type operationSecurityScheme struct {
-	definition codegen.SecurityDefinition
-	scheme     *openapi3.SecurityScheme
+	Definition codegen.SecurityDefinition
+	Scheme     *openapi3.SecurityScheme
 }
 
 func securitySchemes(op *codegen.OperationDefinition) []*operationSecurityScheme {
@@ -198,8 +198,8 @@ func securitySchemes(op *codegen.OperationDefinition) []*operationSecurityScheme
 		}
 
 		schemes = append(schemes, &operationSecurityScheme{
-			definition: definition,
-			scheme:     ref.Value,
+			Definition: definition,
+			Scheme:     ref.Value,
 		})
 	}
 
@@ -216,15 +216,15 @@ func basicAuthFromOperation(op *codegen.OperationDefinition) []*basicAuthSecurit
 	var result []*basicAuthSecurity
 
 	for _, security := range securitySchemes(op) {
-		if security.scheme.Type != "http" ||
-			!strings.EqualFold(security.scheme.Scheme, "basic") {
+		if security.Scheme.Type != "http" ||
+			!strings.EqualFold(security.Scheme.Scheme, "basic") {
 			continue
 		}
 
 		result = append(result, &basicAuthSecurity{
-			Name:        security.definition.ProviderName,
-			Description: security.scheme.Description,
-			Scopes:      security.definition.Scopes,
+			Name:        security.Definition.ProviderName,
+			Description: security.Scheme.Description,
+			Scopes:      security.Definition.Scopes,
 		})
 	}
 
@@ -242,16 +242,16 @@ func bearerAuthFromOperation(op *codegen.OperationDefinition) []*bearerAuthSecur
 	var result []*bearerAuthSecurity
 
 	for _, security := range securitySchemes(op) {
-		if security.scheme.Type != "http" ||
-			!strings.EqualFold(security.scheme.Scheme, "bearer") {
+		if security.Scheme.Type != "http" ||
+			!strings.EqualFold(security.Scheme.Scheme, "bearer") {
 			continue
 		}
 
 		result = append(result, &bearerAuthSecurity{
-			Name:         security.definition.ProviderName,
-			Description:  security.scheme.Description,
-			BearerFormat: security.scheme.BearerFormat,
-			Scopes:       security.definition.Scopes,
+			Name:         security.Definition.ProviderName,
+			Description:  security.Scheme.Description,
+			BearerFormat: security.Scheme.BearerFormat,
+			Scopes:       security.Definition.Scopes,
 		})
 	}
 
@@ -270,16 +270,16 @@ func apiKeyAuthFromOperation(op *codegen.OperationDefinition) []*apiKeyAuthSecur
 	var result []*apiKeyAuthSecurity
 
 	for _, security := range securitySchemes(op) {
-		if security.scheme.Type != "apiKey" {
+		if security.Scheme.Type != "apiKey" {
 			continue
 		}
 
 		result = append(result, &apiKeyAuthSecurity{
-			Name:        security.definition.ProviderName,
-			Description: security.scheme.Description,
-			KeyName:     security.scheme.Name,
-			In:          security.scheme.In,
-			Scopes:      security.definition.Scopes,
+			Name:        security.Definition.ProviderName,
+			Description: security.Scheme.Description,
+			KeyName:     security.Scheme.Name,
+			In:          security.Scheme.In,
+			Scopes:      security.Definition.Scopes,
 		})
 	}
 

@@ -254,7 +254,7 @@ func (r PingResponse) ContentType() string {
 //
 // Returns a wrapper object for the known response body format(s).
 func (c *Client) Ping(ctx context.Context, reqEditors ...RequestEditorFn) (*PingResponse, error) {
-	// {"bearerAuth":{"scheme":"bearer","type":"http"}}
+	// [{"Definition":{"ProviderName":"bearerAuth","Scopes":[]},"Scheme":{"scheme":"bearer","type":"http"}}]
 	rsp, err := c.ping(ctx, reqEditors...)
 	if err != nil {
 		return nil, err
