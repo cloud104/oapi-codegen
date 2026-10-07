@@ -165,7 +165,7 @@ type rawClientInterface interface {
     {{ .GenerateFunctionComment $opid "" false }}
     {{with .DeprecationComment}}{{.}}
     {{end -}}func (c *rawClient) {{$opid}}{{if .HasBody}}WithBody{{end}}(ctx context.Context{{genParamArgs $pathParams}}{{if $hasParams}}, params *{{$parent.OperationId}}Params{{end}}{{if .HasBody}}, contentType string, body io.Reader{{end}}, reqEditors... RequestEditorFn) (*http.Response, error) {
-    {{ if $bearerAuthSchemes }}
+    {{ if $bearerAuthSchemes -}}
         for attempt := 0; attempt < 2; attempt++ {
             req, err := new{{$parent.OperationId}}Request{{if .HasBody}}WithBody{{end}}(c.Server{{genParamNames .PathParams}}{{if $hasParams}}, params{{end}}{{if .HasBody}}, contentType, body{{end}})
             if err != nil {
@@ -178,10 +178,7 @@ type rawClientInterface interface {
             {{ range $basic := $basicAuthSchemes -}}
             {{- $name := pascalCaseWithInitialisms $basic.Name -}}
             if c.{{ $name }}.Username != "" && c.{{ $name }}.Password != "" {
-                editors = append(editors, func(_ context.Context, req *http.Request) error {
-                    req.SetBasicAuth(c.{{ $name }}.Username, c.{{ $name }}.Password)
-                    return nil
-                })
+                req.SetBasicAuth(c.{{ $name }}.Username, c.{{ $name }}.Password)
             }
             {{ end -}}
             {{ range $bearer := $bearerAuthSchemes -}}
@@ -191,30 +188,24 @@ type rawClientInterface interface {
                 if err != nil {
                     return nil, fmt.Errorf("get authentication token: %w", err)
                 }
-                editors = append(editors, func(_ context.Context, req *http.Request) error {
-                    req.Header.Set("Authorization", "Bearer "+token)
-                    return nil
-                })
+                req.Header.Set("Authorization", "Bearer "+token)
             }
             {{ end -}}
             {{ range $apiKey := $apiKeyAuthSchemes -}}
             {{- $name := pascalCaseWithInitialisms $apiKey.Name -}}
             if c.{{ $name }}.APIKey != "" {
-                editors = append(editors, func(_ context.Context, req *http.Request) error {
-                    {{ if eq $apiKey.In "header" -}}
-                    req.Header.Set("{{$apiKey.KeyName}}", c.{{ $name }}.APIKey)
-                    {{ else if eq $apiKey.In "query" -}}
-                    q := req.URL.Query()
-                    q.Set("{{$apiKey.KeyName}}", c.{{ $name }}.APIKey)
-                    req.URL.RawQuery = q.Encode()
-                    {{ else if eq $apiKey.In "cookie" -}}
-                    req.AddCookie(&http.Cookie{
-                        Name:  "{{$apiKey.KeyName}}",
-                        Value: c.{{ $name }}.APIKey,
-                    })
-                    {{ end -}}
-                    return nil
+                {{ if eq $apiKey.In "header" -}}
+                req.Header.Set("{{$apiKey.KeyName}}", c.{{ $name }}.APIKey)
+                {{ else if eq $apiKey.In "query" -}}
+                q := req.URL.Query()
+                q.Set("{{$apiKey.KeyName}}", c.{{ $name }}.APIKey)
+                req.URL.RawQuery = q.Encode()
+                {{ else if eq $apiKey.In "cookie" -}}
+                req.AddCookie(&http.Cookie{
+                    Name:  "{{$apiKey.KeyName}}",
+                    Value: c.{{ $name }}.APIKey,
                 })
+                {{ end -}}
             }
             {{ end -}}
             resp, err := c.Client.Do(req)

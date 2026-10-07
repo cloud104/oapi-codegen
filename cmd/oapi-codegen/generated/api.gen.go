@@ -138,7 +138,6 @@ type rawClientInterface interface {
 
 // ping performs a GET /ping (the `Ping` operationId) request.
 func (c *rawClient) ping(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-
 	for attempt := 0; attempt < 2; attempt++ {
 		req, err := newPingRequest(c.Server)
 		if err != nil {
@@ -149,28 +148,19 @@ func (c *rawClient) ping(ctx context.Context, reqEditors ...RequestEditorFn) (*h
 			return nil, err
 		}
 		if c.BasicAuth.Username != "" && c.BasicAuth.Password != "" {
-			editors = append(editors, func(_ context.Context, req *http.Request) error {
-				req.SetBasicAuth(c.BasicAuth.Username, c.BasicAuth.Password)
-				return nil
-			})
+			req.SetBasicAuth(c.BasicAuth.Username, c.BasicAuth.Password)
 		}
 		if c.BearerAuth.Provider != nil {
 			token, err := c.BearerAuth.Provider.GetToken(ctx)
 			if err != nil {
 				return nil, fmt.Errorf("get authentication token: %w", err)
 			}
-			editors = append(editors, func(_ context.Context, req *http.Request) error {
-				req.Header.Set("Authorization", "Bearer "+token)
-				return nil
-			})
+			req.Header.Set("Authorization", "Bearer "+token)
 		}
 		if c.APIKeyAuth.APIKey != "" {
-			editors = append(editors, func(_ context.Context, req *http.Request) error {
-				q := req.URL.Query()
-				q.Set("X-API-Key", c.APIKeyAuth.APIKey)
-				req.URL.RawQuery = q.Encode()
-				return nil
-			})
+			q := req.URL.Query()
+			q.Set("X-API-Key", c.APIKeyAuth.APIKey)
+			req.URL.RawQuery = q.Encode()
 		}
 		resp, err := c.Client.Do(req)
 		if err != nil {
