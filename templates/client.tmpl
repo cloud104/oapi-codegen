@@ -223,58 +223,38 @@ type rawClientInterface interface {
             }
         }
         return nil, fmt.Errorf("exhausted retry attempts")
-    {{ else }}
+    {{ else -}}
         req, err := new{{$parent.OperationId}}Request{{if .HasBody}}WithBody{{end}}(c.Server{{genParamNames .PathParams}}{{if $hasParams}}, params{{end}}{{if .HasBody}}, contentType, body{{end}})
         if err != nil {
             return nil, err
         }
         req = req.WithContext(ctx)
-        editors := reqEditors
+        if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+        return nil, err
+        }
         {{ range $basic := $basicAuthSchemes -}}
         {{- $name := pascalCaseWithInitialisms $basic.Name -}}
         if c.{{ $name }}.Username != "" && c.{{ $name }}.Password != "" {
-            editors = append(editors, func(_ context.Context, req *http.Request) error {
-                req.SetBasicAuth(c.{{ $name }}.Username, c.{{ $name }}.Password)
-                return nil
-            })
-        }
-        {{ end -}}
-        {{ range $bearer := $bearerAuthSchemes -}}
-        {{- $name := pascalCaseWithInitialisms $bearer.Name -}}
-        if c.{{ $name }}.Provider != nil {
-            token, err := c.{{ $name }}.Provider.GetToken(ctx)
-            if err != nil {
-                return nil, fmt.Errorf("get authentication token: %w", err)
-            }
-            editors = append(editors, func(_ context.Context, req *http.Request) error {
-                req.Header.Set("Authorization", "Bearer "+token)
-                return nil
-            })
+            req.SetBasicAuth(c.{{ $name }}.Username, c.{{ $name }}.Password)
         }
         {{ end -}}
         {{ range $apiKey := $apiKeyAuthSchemes -}}
         {{- $name := pascalCaseWithInitialisms $apiKey.Name -}}
         if c.{{ $name }}.APIKey != "" {
-            editors = append(editors, func(_ context.Context, req *http.Request) error {
-                {{ if eq $apiKey.In "header" -}}
-                req.Header.Set("{{$apiKey.KeyName}}", c.{{ $name }}.APIKey)
-                {{ else if eq $apiKey.In "query" -}}
-                q := req.URL.Query()
-                q.Set("{{$apiKey.KeyName}}", c.{{ $name }}.APIKey)
-                req.URL.RawQuery = q.Encode()
-                {{ else if eq $apiKey.In "cookie" -}}
-                req.AddCookie(&http.Cookie{
-                    Name:  "{{$apiKey.KeyName}}",
-                    Value: c.{{ $name }}.APIKey,
-                })
-                {{ end -}}
-                return nil
+            {{ if eq $apiKey.In "header" -}}
+            req.Header.Set("{{$apiKey.KeyName}}", c.{{ $name }}.APIKey)
+            {{ else if eq $apiKey.In "query" -}}
+            q := req.URL.Query()
+            q.Set("{{$apiKey.KeyName}}", c.{{ $name }}.APIKey)
+            req.URL.RawQuery = q.Encode()
+            {{ else if eq $apiKey.In "cookie" -}}
+            req.AddCookie(&http.Cookie{
+                Name:  "{{$apiKey.KeyName}}",
+                Value: c.{{ $name }}.APIKey,
             })
+            {{ end -}}
         }
         {{ end -}}
-        if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-            return nil, err
-        }
         return c.Client.Do(req)
     {{ end -}}
     }
