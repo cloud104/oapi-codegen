@@ -1,12 +1,12 @@
 // ClientWithResponses builds on ClientInterface to offer response payloads
 type ClientWithResponses struct {
-    ClientInterface
+    rawClientInterface
 }
 
 // NewClientWithResponses creates a new ClientWithResponses, which wraps
 // Client with return type handling
 func NewClientWithResponses(server string, opts ...ClientOption) (*ClientWithResponses, error) {
-    client, err := NewClient(server, opts...)
+    client, err := newRawClient(server, opts...)
     if err != nil {
         return nil, err
     }
@@ -17,7 +17,7 @@ func NewClientWithResponses(server string, opts ...ClientOption) (*ClientWithRes
 
 // WithBaseURL overrides the baseURL.
 func WithBaseURL(baseURL string) ClientOption {
-	return func(c *{{ $clientTypeName }}) error {
+	return func(c *rawClient) error {
 		newBaseURL, err := url.Parse(baseURL)
 		if err != nil {
 			return err
