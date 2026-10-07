@@ -255,9 +255,28 @@ func (r PingResponse) ContentType() string {
 // Returns a wrapper object for the known response body format(s).
 func (c *Client) Ping(ctx context.Context, reqEditors ...RequestEditorFn) (*PingResponse, error) {
 	editors := reqEditors
-	// TODO: autenticate with basic
-	// TODO: autenticate with bearer
-	// TODO: autenticate with apiKey
+	if c.username != "" || c.password != "" {
+		editors = append(editors, func(_ context.Context, req *http.Request) error {
+			req.SetBasicAuth(c.username, c.password)
+			return nil
+		})
+	}
+	if c.tokens != nil {
+		token, err := c.tokens.Get(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("get authentication token: %w", err)
+		}
+		editors = append(editors, func(_ context.Context, req *http.Request) error {
+			req.Header.Set("Authorization", "Bearer "+token)
+			return nil
+		})
+	}
+	if c.apiKey != "" {
+		editors = append(editors, func(_ context.Context, req *http.Request) error {
+			req.Header.Set("X-API-Key", c.apiKey)
+			return nil
+		})
+	}
 	rsp, err := c.ping(ctx, editors...)
 	if err != nil {
 		return nil, err
