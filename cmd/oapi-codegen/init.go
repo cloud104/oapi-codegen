@@ -3,10 +3,25 @@ package main
 import (
 	"fmt"
 	"strings"
+	_ "unsafe"
 
 	sprig "github.com/Masterminds/sprig/v3"
+	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/oapi-codegen/oapi-codegen/v2/pkg/codegen"
 )
+
+// Mirrors the prefix of codegen.globalState up to initialismsMap.
+// This is intentionally coupled to oapi-codegen's internal implementation.
+type codegenGlobalStateLayout struct {
+	options        codegen.Configuration
+	spec           *openapi3.T
+	is31           bool
+	importMapping  map[string]struct{ Name, Path string }
+	initialismsMap map[string]string
+}
+
+//go:linkname codegenGlobalState github.com/oapi-codegen/oapi-codegen/v2/pkg/codegen.globalState
+var codegenGlobalState codegenGlobalStateLayout
 
 func init() {
 	for name, fn := range sprig.FuncMap() {
