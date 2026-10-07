@@ -168,13 +168,17 @@ type rawClientInterface interface {
 func (c *rawClient) heartbeat(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := newHeartbeatRequest(c.Server)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("create GET /heartbeat request: %w", err)
 	}
 	req = req.WithContext(ctx)
 	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("apply editors to GET /heartbeat request: %w", err)
 	}
-	return c.Client.Do(req)
+	resp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("perform GET /heartbeat request: %w", err)
+	}
+	return resp, nil
 }
 
 // ping performs a GET /ping (the `Ping` operationId) request.
@@ -186,7 +190,7 @@ func (c *rawClient) ping(ctx context.Context, reqEditors ...RequestEditorFn) (*h
 		}
 		req = req.WithContext(ctx)
 		if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-			return nil, fmt.Errorf("apply request editors to GET /ping request: %w", err)
+			return nil, fmt.Errorf("apply editors to GET /ping request: %w", err)
 		}
 		if c.BasicAuth.Username != "" && c.BasicAuth.Password != "" {
 			req.SetBasicAuth(c.BasicAuth.Username, c.BasicAuth.Password)

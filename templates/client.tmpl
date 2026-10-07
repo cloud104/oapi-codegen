@@ -201,11 +201,11 @@ type rawClientInterface interface {
         for attempt := 0; attempt < 2; attempt++ {
             req, err := new{{$parent.OperationId}}Request{{if .HasBody}}WithBody{{end}}(c.Server{{genParamNames .PathParams}}{{if $hasParams}}, params{{end}}{{if .HasBody}}, contentType, body{{end}})
             if err != nil {
-                return nil, fmt.Errorf("create {{ printf "%s %s" .Method .Path }} request: %w", err)
+                return nil, fmt.Errorf("create {{ printf "%s %s" $parent.Method $parent.Path }} request: %w", err)
             }
             req = req.WithContext(ctx)
             if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-                return nil, fmt.Errorf("apply editors to {{ printf "%s %s" .Method .Path }} request: %w", err)
+                return nil, fmt.Errorf("apply editors to {{ printf "%s %s" $parent.Method $parent.Path }} request: %w", err)
             }
             {{ range $basic := $basicAuthSchemes -}}
             {{- $name := pascalCaseWithInitialisms $basic.Name -}}
@@ -218,7 +218,7 @@ type rawClientInterface interface {
             if c.{{ $name }}.Provider != nil {
                 token, err := c.{{ $name }}.Provider.GetToken(ctx)
                 if err != nil {
-                    return nil, fmt.Errorf("get authentication token for {{ printf "%s %s" .Method .Path }}: %w", err)
+                    return nil, fmt.Errorf("get authentication token for {{ printf "%s %s" $parent.Method $parent.Path }}: %w", err)
                 }
                 req.Header.Set("Authorization", "Bearer "+token)
             }
@@ -242,7 +242,7 @@ type rawClientInterface interface {
             {{ end -}}
             resp, err := c.Client.Do(req)
             if err != nil {
-                return nil, fmt.Errorf("perform {{ printf "%s %s" .Method .Path }} request: %w", err)
+                return nil, fmt.Errorf("perform {{ printf "%s %s" $parent.Method $parent.Path }} request: %w", err)
             }
             if resp.StatusCode != http.StatusUnauthorized ||
                 c.BearerAuth.Provider == nil ||
@@ -251,18 +251,18 @@ type rawClientInterface interface {
             }
             resp.Body.Close()
             if err := c.BearerAuth.Provider.InvalidateToken(ctx); err != nil {
-                return nil, fmt.Errorf("invalidate token after unauthorized {{ printf "%s %s" .Method .Path }} response: %w", err)
+                return nil, fmt.Errorf("invalidate token after unauthorized {{ printf "%s %s" $parent.Method $parent.Path }} response: %w", err)
             }
         }
-        return nil, fmt.Errorf("{{ printf "%s %s" .Method .Path }} failed after exhausting retry attempts")
+        return nil, fmt.Errorf("{{ printf "%s %s" $parent.Method $parent.Path }} failed after exhausting retry attempts")
     {{ else -}}
         req, err := new{{$parent.OperationId}}Request{{if .HasBody}}WithBody{{end}}(c.Server{{genParamNames .PathParams}}{{if $hasParams}}, params{{end}}{{if .HasBody}}, contentType, body{{end}})
         if err != nil {
-            return nil, err
+            return nil, fmt.Errorf("create {{ printf "%s %s" $parent.Method $parent.Path }} request: %w", err)
         }
         req = req.WithContext(ctx)
         if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-        return nil, err
+            return nil, fmt.Errorf("apply editors to {{ printf "%s %s" $parent.Method $parent.Path }} request: %w", err)
         }
         {{ range $basic := $basicAuthSchemes -}}
         {{- $name := pascalCaseWithInitialisms $basic.Name -}}
@@ -287,7 +287,11 @@ type rawClientInterface interface {
             {{ end -}}
         }
         {{ end -}}
-        return c.Client.Do(req)
+        resp, err := c.Client.Do(req)
+        if err != nil {
+            return nil, fmt.Errorf("perform {{ printf "%s %s" $parent.Method $parent.Path }} request: %w", err)
+        }
+        return resp, nil
     {{ end -}}
     }
 {{ end -}}
