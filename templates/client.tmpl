@@ -157,6 +157,9 @@ type rawClientInterface interface {
 {{$pathParams := .PathParams -}}
 {{$opid := camelCaseWithInitialisms .OperationId -}}
 {{$parent := . }}
+{{- $basicAuthSchemes := basicAuthForOperation . -}}
+{{- $bearerAuthSchemes := bearerAuthForOperation . -}}
+{{- $apiKeyAuthSchemes := apiKeyAuthForOperation . -}}
 
 {{ if not .HasBody }}
     {{ .GenerateFunctionComment $opid "" false }}
@@ -168,7 +171,7 @@ type rawClientInterface interface {
         }
         req = req.WithContext(ctx)
         editors := reqEditors
-        {{ range $basic := basicAuthForOperation . -}}
+        {{ range $basic := $basicAuthSchemes -}}
         {{- $name := pascalCaseWithInitialisms $basic.Name -}}
         if c.{{ $name }}.Username != "" && c.{{ $name }}.Password != "" {
             editors = append(editors, func(_ context.Context, req *http.Request) error {
@@ -177,7 +180,7 @@ type rawClientInterface interface {
             })
         }
         {{ end -}}
-        {{ range $bearer := bearerAuthForOperation . -}}
+        {{ range $bearer := $bearerAuthSchemes -}}
         {{- $name := pascalCaseWithInitialisms $bearer.Name -}}
         if c.{{ $name }}.Provider != nil {
             token, err := c.{{ $name }}.Provider.GetToken(ctx)
@@ -190,7 +193,7 @@ type rawClientInterface interface {
             })
         }
         {{ end -}}
-        {{ range $apiKey := apiKeyAuthForOperation . -}}
+        {{ range $apiKey := $apiKeyAuthSchemes -}}
         {{- $name := pascalCaseWithInitialisms $apiKey.Name -}}
         if c.{{ $name }}.APIKey != "" {
             editors = append(editors, func(_ context.Context, req *http.Request) error {
