@@ -120,6 +120,40 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 	}
 }
 
+{{ range $basic := $globalBasicAuthSchemes }}
+{{- $name := pascalCaseWithInitialisms $basic.Name -}}
+// With{{ $name }} configures HTTP Basic Authentication.
+func With{{ pascalCaseWithInitialisms $basic.Name }}(username, password string) ClientOption {
+	return func(c *rawClient) error {
+		c.{{ $name }}.Username = username
+		c.{{ $name }}.Password = password
+		return nil
+	}
+}
+{{ end }}
+
+{{ range $basic := $globalBearerAuthSchemes }}
+{{- $name := pascalCaseWithInitialisms $basic.Name -}}
+// With{{ $name }} configures bearer-token authentication using the supplied token provider.
+func With{{ $name }}(provider TokenProvider) ClientOption {
+	return func(c *rawClient) error {
+		c.{{ $name }}.Provider = provider
+		return nil
+	}
+}
+{{ end }}
+
+{{ range $basic := $globalApiKeyAuthSchemes }}
+{{- $name := pascalCaseWithInitialisms $basic.Name -}}
+// With{{ $name }} configures authentication using a static API key.
+func With{{ $name }}(apiKey string) ClientOption {
+	return func(c *rawClient) error {
+		c.{{ $name }}.APIKey = apiKey
+		return nil
+	}
+}
+{{ end }}
+
 // The interface specification for the client above.
 type rawClientInterface interface {
 {{range . -}}

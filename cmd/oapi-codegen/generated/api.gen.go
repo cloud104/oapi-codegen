@@ -129,6 +129,31 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 	}
 }
 
+// WithBasicAuth configures HTTP Basic Authentication.
+func WithBasicAuth(username, password string) ClientOption {
+	return func(c *rawClient) error {
+		c.BasicAuth.Username = username
+		c.BasicAuth.Password = password
+		return nil
+	}
+}
+
+// WithBearerAuth configures bearer-token authentication using the supplied token provider.
+func WithBearerAuth(provider TokenProvider) ClientOption {
+	return func(c *rawClient) error {
+		c.BearerAuth.Provider = provider
+		return nil
+	}
+}
+
+// WithAPIKeyAuth configures authentication using a static API key.
+func WithAPIKeyAuth(apiKey string) ClientOption {
+	return func(c *rawClient) error {
+		c.APIKeyAuth.APIKey = apiKey
+		return nil
+	}
+}
+
 // The interface specification for the client above.
 type rawClientInterface interface {
 
