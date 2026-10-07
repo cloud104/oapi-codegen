@@ -6,6 +6,8 @@ paths:
   /ping:
     get:
       operationId: ping
+      security:
+        - bearerAuth: [ ]
       responses:
         '200':
           description: pet response
