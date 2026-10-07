@@ -28,7 +28,7 @@ type rawClient struct {
 	// the network.
 	RequestEditors []RequestEditorFn
 
-	{{ range $security := $globalBasicAuthSchemes -}}
+	{{ range $security := $globalBasicAuthSchemes }}
 	// {{ pascalCaseWithInitialisms $security.Name }} uses a username and password to authenticate requests
 	// with HTTP Basic Authentication when configured.
 	{{ pascalCaseWithInitialisms $security.Name }} struct {
@@ -40,7 +40,7 @@ type rawClient struct {
 	}
     {{ end }}
 
-    {{ range $security := $globalBearerAuthSchemes -}}
+    {{ range $security := $globalBearerAuthSchemes }}
 	// {{ pascalCaseWithInitialisms $security.Name }} uses a token provider to authenticate requests with
 	// an Authorization: Bearer <token> header when configured.
 	{{ pascalCaseWithInitialisms $security.Name }} struct {
@@ -49,7 +49,7 @@ type rawClient struct {
 	}
     {{ end }}
 
-    {{ range $security := $globalApiKeyAuthSchemes -}}
+    {{ range $security := $globalApiKeyAuthSchemes }}
 	// {{ pascalCaseWithInitialisms $security.Name }} uses a static API key to authenticate requests
 	// when configured.
 	{{ pascalCaseWithInitialisms $security.Name }} struct {
