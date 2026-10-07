@@ -1,6 +1,6 @@
 {{$clientTypeName := opts.OutputOptions.ClientTypeName -}}
 
-// {{ $clientTypeName }} builds on ClientInterface to offer response payloads
+// {{ $clientTypeName }} which conforms to the OpenAPI3 specification for this service.
 type {{ $clientTypeName }} struct {
     rawClientInterface
 }
