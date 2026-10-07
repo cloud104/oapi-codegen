@@ -6,6 +6,7 @@ import (
 	_ "unsafe"
 
 	sprig "github.com/Masterminds/sprig/v3"
+	"github.com/ettle/strcase"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/oapi-codegen/oapi-codegen/v2/pkg/codegen"
 )
@@ -39,8 +40,39 @@ func init() {
 		}
 	}
 
+	// Naming
+	codegen.TemplateFunctions["camelCaseWithInitialisms"] = camelCaseWithInitialisms
+	codegen.TemplateFunctions["pascalCaseWithInitialisms"] = pascalCaseWithInitialisms
+
+	// Request / Responses bodies
 	codegen.TemplateFunctions["jsonRequestBody"] = jsonRequestBody
 	codegen.TemplateFunctions["genJSONRequestBodyArg"] = genJSONRequestBodyArg
+}
+
+func camelCaseWithInitialisms(s string) string {
+	overrides := make(map[string]bool)
+
+	// Surround each known initialism with separators so the caser can
+	// recognize it as an independent word, even when acronyms are adjacent.
+	for _, initialism := range codegenGlobalState.initialismsMap {
+		s = strings.ReplaceAll(s, initialism, "_"+initialism+"_")
+		overrides[initialism] = true
+	}
+
+	return strcase.NewCaser(true, overrides, nil).ToCamel(s)
+}
+
+func pascalCaseWithInitialisms(s string) string {
+	overrides := make(map[string]bool)
+
+	// Surround each known initialism with separators so the caser can
+	// recognize it as an independent word, even when acronyms are adjacent.
+	for _, initialism := range codegenGlobalState.initialismsMap {
+		s = strings.ReplaceAll(s, initialism, "_"+initialism+"_")
+		overrides[initialism] = true
+	}
+
+	return strcase.NewCaser(true, overrides, nil).ToPascal(s)
 }
 
 func jsonRequestBody(op *codegen.OperationDefinition) *codegen.RequestBodyDefinition {
