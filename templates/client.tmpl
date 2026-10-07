@@ -75,22 +75,23 @@ type rawClientInterface interface {
 {{$hasParams := .RequiresParamObject -}}
 {{$pathParams := .PathParams -}}
 {{$opid := .OperationId -}}
+{{$unexportedOpid := camelCaseWithInitialisms .OperationId -}}
 {{$parent := . }}
 {{$deprecationComment := .DeprecationComment -}}
     {{ if .HasBody }}
-        {{ .GenerateFunctionComment $opid "WithBody" false }}
+        {{ .GenerateFunctionComment $unexportedOpid "WithBody" false }}
     {{ else -}}
-        {{ .GenerateFunctionComment $opid "" false }}
+        {{ .GenerateFunctionComment $unexportedOpid "" false }}
     {{ end -}}
     {{with $deprecationComment}}//
     {{.}}
-    {{end -}}{{$opid}}{{if .HasBody}}WithBody{{end}}(ctx context.Context{{genParamArgs $pathParams}}{{if $hasParams}}, params *{{$opid}}Params{{end}}{{if .HasBody}}, contentType string, body io.Reader{{end}}, reqEditors... RequestEditorFn) (*http.Response, error)
+    {{end -}}{{$unexportedOpid}}{{if .HasBody}}WithBody{{end}}(ctx context.Context{{genParamArgs $pathParams}}{{if $hasParams}}, params *{{$opid}}Params{{end}}{{if .HasBody}}, contentType string, body io.Reader{{end}}, reqEditors... RequestEditorFn) (*http.Response, error)
 {{range .Bodies}}
     {{if .IsSupportedByClient -}}
     {{ .GenerateFunctionComment $opid $parent .Suffix false }}
     {{with $deprecationComment}}//
     {{.}}
-    {{end -}}{{$opid}}{{.Suffix}}(ctx context.Context{{genParamArgs $pathParams}}{{if $hasParams}}, params *{{$opid}}Params{{end}}, body {{$opid}}{{.NameTag}}RequestBody, reqEditors... RequestEditorFn) (*http.Response, error)
+    {{end -}}{{$unexportedOpid}}{{.Suffix}}(ctx context.Context{{genParamArgs $pathParams}}{{if $hasParams}}, params *{{$opid}}Params{{end}}, body {{$opid}}{{.NameTag}}RequestBody, reqEditors... RequestEditorFn) (*http.Response, error)
     {{end -}}
 {{end}}{{/* range .Bodies */}}
 {{end}}{{/* range . $opid := .OperationId */}}
@@ -102,15 +103,16 @@ type rawClientInterface interface {
 {{$hasParams := .RequiresParamObject -}}
 {{$pathParams := .PathParams -}}
 {{$opid := .OperationId -}}
+{{$unexportedOpid := camelCaseWithInitialisms .OperationId -}}
 {{$parent := . }}
 
 {{ if .HasBody }}
-    {{ .GenerateFunctionComment $opid "WithBody" false }}
+    {{ .GenerateFunctionComment $unexportedOpid "WithBody" false }}
 {{ else }}
-    {{ .GenerateFunctionComment $opid "" false }}
+    {{ .GenerateFunctionComment $unexportedOpid "" false }}
 {{ end -}}
 {{with .DeprecationComment}}{{.}}
-{{end -}}func (c *rawClient) {{$opid}}{{if .HasBody}}WithBody{{end}}(ctx context.Context{{genParamArgs $pathParams}}{{if $hasParams}}, params *{{$opid}}Params{{end}}{{if .HasBody}}, contentType string, body io.Reader{{end}}, reqEditors... RequestEditorFn) (*http.Response, error) {
+{{end -}}func (c *rawClient) {{$unexportedOpid}}{{if .HasBody}}WithBody{{end}}(ctx context.Context{{genParamArgs $pathParams}}{{if $hasParams}}, params *{{$opid}}Params{{end}}{{if .HasBody}}, contentType string, body io.Reader{{end}}, reqEditors... RequestEditorFn) (*http.Response, error) {
     req, err := new{{$opid}}Request{{if .HasBody}}WithBody{{end}}(c.Server{{genParamNames .PathParams}}{{if $hasParams}}, params{{end}}{{if .HasBody}}, contentType, body{{end}})
     if err != nil {
         return nil, err
@@ -125,9 +127,9 @@ type rawClientInterface interface {
 {{$deprecationComment := .DeprecationComment -}}
 {{range .Bodies}}
 {{if .IsSupportedByClient -}}
-{{ .GenerateFunctionComment $opid $parent .Suffix false }}
+{{ .GenerateFunctionComment $unexportedOpid $parent .Suffix false }}
 {{with $deprecationComment}}{{.}}
-{{end -}}func (c *rawClient) {{$opid}}{{.Suffix}}(ctx context.Context{{genParamArgs $pathParams}}{{if $hasParams}}, params *{{$opid}}Params{{end}}, body {{$opid}}{{.NameTag}}RequestBody, reqEditors... RequestEditorFn) (*http.Response, error) {
+{{end -}}func (c *rawClient) {{$unexportedOpid}}{{.Suffix}}(ctx context.Context{{genParamArgs $pathParams}}{{if $hasParams}}, params *{{$opid}}Params{{end}}, body {{$opid}}{{.NameTag}}RequestBody, reqEditors... RequestEditorFn) (*http.Response, error) {
     req, err := new{{$opid}}Request{{.Suffix}}(c.Server{{genParamNames $pathParams}}{{if $hasParams}}, params{{end}}, body)
     if err != nil {
         return nil, err
