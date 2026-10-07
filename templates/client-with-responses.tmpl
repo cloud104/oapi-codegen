@@ -1,40 +1,8 @@
 {{$clientTypeName := opts.OutputOptions.ClientTypeName -}}
 
-{{$securities := securityForOperations . -}}
-
-{{- $hasBearer := false -}}
-{{- range $security := $securities }}
-{{- if and (eq $security.Scheme.Type "http") (eq (lower $security.Scheme.Scheme) "basic") }}
-type {{ $security.Definition.ProviderName }}Credentials struct {
-	Username string
-	Password string
-}
-{{- else if and (eq $security.Scheme.Type "http") (eq (lower $security.Scheme.Scheme) "bearer") }}
-{{- $hasBearer = true -}}
-type {{ $security.Definition.ProviderName }}Credentials struct {
-	Provider TokenProvider
-}
-{{- else if eq $security.Scheme.Type "apiKey" }}
-type {{ $security.Definition.ProviderName }}Credentials struct {
-	Value string
-}
-{{- end }}
-{{- end }}
-
-{{- if $hasBearer }}
-type TokenProvider interface {
-	GetToken(ctx context.Context) (string, error)
-	InvalidateToken(ctx context.Context) error
-}
-{{- end }}
-
 // {{ $clientTypeName }} which conforms to the OpenAPI3 specification for this service.
 type {{ $clientTypeName }} struct {
     rawClientInterface
-
-	{{- range $security := $securities }}
-	{{ $security.Definition.ProviderName }} {{ $security.Definition.ProviderName }}Credentials
-	{{- end }}
 }
 
 // New{{ $clientTypeName }} creates a new {{ $clientTypeName }}, which wraps

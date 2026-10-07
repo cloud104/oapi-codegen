@@ -1,3 +1,31 @@
+{{$securities := securityForOperations . -}}
+
+{{- $hasBearer := false -}}
+{{- range $security := $securities }}
+{{- if and (eq $security.Scheme.Type "http") (eq (lower $security.Scheme.Scheme) "basic") }}
+type {{ $security.Definition.ProviderName }}Credentials struct {
+	Username string
+	Password string
+}
+{{- else if and (eq $security.Scheme.Type "http") (eq (lower $security.Scheme.Scheme) "bearer") }}
+{{- $hasBearer = true -}}
+type {{ $security.Definition.ProviderName }}Credentials struct {
+	Provider TokenProvider
+}
+{{- else if eq $security.Scheme.Type "apiKey" }}
+type {{ $security.Definition.ProviderName }}Credentials struct {
+	Value string
+}
+{{- end }}
+{{- end }}
+
+{{- if $hasBearer }}
+type TokenProvider interface {
+	GetToken(ctx context.Context) (string, error)
+	InvalidateToken(ctx context.Context) error
+}
+{{- end }}
+
 // RequestEditorFn is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
 
@@ -23,6 +51,10 @@ type rawClient struct {
 	// A list of callbacks for modifying requests which are generated before sending over
 	// the network.
 	RequestEditors []RequestEditorFn
+
+	{{- range $security := $securities }}
+	{{ $security.Definition.ProviderName }} {{ $security.Definition.ProviderName }}Credentials
+	{{- end }}
 }
 
 // ClientOption allows setting custom parameters during construction

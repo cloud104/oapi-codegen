@@ -19,6 +19,21 @@ type Pong struct {
 	Ping string `json:"ping"`
 }
 
+type bearerAuthCredentials struct {
+	Provider TokenProvider
+}
+type basicAuthCredentials struct {
+	Username string
+	Password string
+}
+type apiKeyAuthCredentials struct {
+	Value string
+}
+type TokenProvider interface {
+	GetToken(ctx context.Context) (string, error)
+	InvalidateToken(ctx context.Context) error
+}
+
 // RequestEditorFn is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
 
@@ -44,6 +59,9 @@ type rawClient struct {
 	// A list of callbacks for modifying requests which are generated before sending over
 	// the network.
 	RequestEditors []RequestEditorFn
+	bearerAuth     bearerAuthCredentials
+	basicAuth      basicAuthCredentials
+	apiKeyAuth     apiKeyAuthCredentials
 }
 
 // ClientOption allows setting custom parameters during construction
@@ -151,27 +169,9 @@ func (c *rawClient) applyEditors(ctx context.Context, req *http.Request, additio
 	return nil
 }
 
-type bearerAuthCredentials struct {
-	Provider TokenProvider
-}
-type basicAuthCredentials struct {
-	Username string
-	Password string
-}
-type apiKeyAuthCredentials struct {
-	Value string
-}
-type TokenProvider interface {
-	GetToken(ctx context.Context) (string, error)
-	InvalidateToken(ctx context.Context) error
-}
-
-// Client which conforms to the OpenAPI 3 specification for this service.
+// Client which conforms to the OpenAPI3 specification for this service.
 type Client struct {
 	rawClientInterface
-	bearerAuth bearerAuthCredentials
-	basicAuth  basicAuthCredentials
-	apiKeyAuth apiKeyAuthCredentials
 }
 
 // NewClient creates a new Client, which wraps
