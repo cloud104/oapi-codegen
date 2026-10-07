@@ -111,7 +111,6 @@ func groupResponses(types []codegen.ResponseTypeDefinition) []*responseGroup {
 
 	for _, def := range types {
 		typeDecl := def.Schema.TypeDecl()
-
 		if structRE.MatchString(typeDecl) || mapRE.MatchString(typeDecl) {
 			continue
 		}
@@ -131,7 +130,6 @@ func groupResponses(types []codegen.ResponseTypeDefinition) []*responseGroup {
 		}
 
 		group.Fields = append(group.Fields, def.TypeName)
-
 		if !slices.Contains(group.ResponseCodes, def.ResponseName) {
 			group.ResponseCodes = append(group.ResponseCodes, def.ResponseName)
 		}
@@ -163,7 +161,6 @@ func jsonRequestBody(op *codegen.OperationDefinition) *codegen.RequestBodyDefini
 
 	for i := range op.Bodies {
 		candidate := &op.Bodies[i]
-
 		if !candidate.IsJSON() {
 			continue
 		}
@@ -180,6 +177,34 @@ func jsonRequestBody(op *codegen.OperationDefinition) *codegen.RequestBodyDefini
 	return body
 }
 
+type operationSecurityScheme struct {
+	definition codegen.SecurityDefinition
+	scheme     *openapi3.SecurityScheme
+}
+
+func securitySchemes(op *codegen.OperationDefinition) []*operationSecurityScheme {
+	spec := codegenGlobalState.spec
+	if op == nil || spec == nil || spec.Components == nil {
+		return nil
+	}
+
+	var schemes []*operationSecurityScheme
+
+	for _, definition := range op.SecurityDefinitions {
+		ref := spec.Components.SecuritySchemes[definition.ProviderName]
+		if ref == nil || ref.Value == nil {
+			continue
+		}
+
+		schemes = append(schemes, &operationSecurityScheme{
+			definition: definition,
+			scheme:     ref.Value,
+		})
+	}
+
+	return schemes
+}
+
 type basicAuthSecurity struct {
 	Name        string
 	Description string
@@ -187,27 +212,19 @@ type basicAuthSecurity struct {
 }
 
 func basicAuthFromOperation(op *codegen.OperationDefinition) []*basicAuthSecurity {
-	spec := codegenGlobalState.spec
-	if spec == nil || spec.Components == nil || op == nil {
-		return nil
-	}
-
 	var result []*basicAuthSecurity
 
-	for _, definition := range op.SecurityDefinitions {
-		ref, exists := spec.Components.SecuritySchemes[definition.ProviderName]
-		if !exists || ref == nil || ref.Value == nil {
+	for _, security := range securitySchemes(op) {
+		if security.scheme.Type != "http" ||
+			!strings.EqualFold(security.scheme.Scheme, "basic") {
 			continue
 		}
 
-		scheme := ref.Value
-		if scheme.Type == "http" && strings.EqualFold(scheme.Scheme, "basic") {
-			result = append(result, &basicAuthSecurity{
-				Name:        definition.ProviderName,
-				Description: scheme.Description,
-				Scopes:      definition.Scopes,
-			})
-		}
+		result = append(result, &basicAuthSecurity{
+			Name:        security.definition.ProviderName,
+			Description: security.scheme.Description,
+			Scopes:      security.definition.Scopes,
+		})
 	}
 
 	return result
@@ -221,28 +238,20 @@ type bearerAuthSecurity struct {
 }
 
 func bearerAuthFromOperation(op *codegen.OperationDefinition) []*bearerAuthSecurity {
-	spec := codegenGlobalState.spec
-	if spec == nil || spec.Components == nil || op == nil {
-		return nil
-	}
-
 	var result []*bearerAuthSecurity
 
-	for _, definition := range op.SecurityDefinitions {
-		ref, exists := spec.Components.SecuritySchemes[definition.ProviderName]
-		if !exists || ref == nil || ref.Value == nil {
+	for _, security := range securitySchemes(op) {
+		if security.scheme.Type != "http" ||
+			!strings.EqualFold(security.scheme.Scheme, "bearer") {
 			continue
 		}
 
-		scheme := ref.Value
-		if scheme.Type == "http" && strings.EqualFold(scheme.Scheme, "bearer") {
-			result = append(result, &bearerAuthSecurity{
-				Name:         definition.ProviderName,
-				Description:  scheme.Description,
-				BearerFormat: scheme.BearerFormat,
-				Scopes:       definition.Scopes,
-			})
-		}
+		result = append(result, &bearerAuthSecurity{
+			Name:         security.definition.ProviderName,
+			Description:  security.scheme.Description,
+			BearerFormat: security.scheme.BearerFormat,
+			Scopes:       security.definition.Scopes,
+		})
 	}
 
 	return result
@@ -257,30 +266,19 @@ type apiKeyAuthSecurity struct {
 }
 
 func apiKeyAuthFromOperation(op *codegen.OperationDefinition) []*apiKeyAuthSecurity {
-	spec := codegenGlobalState.spec
-	if spec == nil || spec.Components == nil || op == nil {
-		return nil
-	}
-
 	var result []*apiKeyAuthSecurity
 
-	for _, definition := range op.SecurityDefinitions {
-		ref, exists := spec.Components.SecuritySchemes[definition.ProviderName]
-		if !exists || ref == nil || ref.Value == nil {
-			continue
-		}
-
-		scheme := ref.Value
-		if scheme.Type != "apiKey" {
+	for _, security := range securitySchemes(op) {
+		if security.scheme.Type != "apiKey" {
 			continue
 		}
 
 		result = append(result, &apiKeyAuthSecurity{
-			Name:        definition.ProviderName,
-			Description: scheme.Description,
-			KeyName:     scheme.Name,
-			In:          scheme.In,
-			Scopes:      definition.Scopes,
+			Name:        security.definition.ProviderName,
+			Description: security.scheme.Description,
+			KeyName:     security.scheme.Name,
+			In:          security.scheme.In,
+			Scopes:      security.definition.Scopes,
 		})
 	}
 
