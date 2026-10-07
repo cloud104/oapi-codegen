@@ -1,51 +1,5 @@
 {{$securities := securityForOperations . -}}
-
 {{- $hasBearer := false -}}
-{{- range $security := $securities }}
-{{- if and (eq $security.Scheme.Type "http") (eq (lower $security.Scheme.Scheme) "basic") }}
-// {{ pascalCaseWithInitialisms $security.Definition.ProviderName }}Credentials defines credentials for HTTP Basic authentication.
-type {{ pascalCaseWithInitialisms $security.Definition.ProviderName }}Credentials struct {
-	// Username is the username used for authentication.
-	Username string
-
-	// Password is the password used for authentication.
-	Password string
-}
-
-{{ else if and (eq $security.Scheme.Type "http") (eq (lower $security.Scheme.Scheme) "bearer") }}
-{{- $hasBearer = true }}
-// {{ pascalCaseWithInitialisms $security.Definition.ProviderName }}Credentials defines credentials for bearer-token authentication.
-type {{ pascalCaseWithInitialisms $security.Definition.ProviderName }}Credentials struct {
-	// Provider supplies bearer tokens and handles token invalidation.
-	Provider TokenProvider
-}
-
-{{ else if eq $security.Scheme.Type "apiKey" }}
-// {{ pascalCaseWithInitialisms $security.Definition.ProviderName }}Credentials defines credentials for API-key authentication..
-type {{ pascalCaseWithInitialisms $security.Definition.ProviderName }}Credentials struct {
-	// Key is the API key included in authenticated requests.
-	Key string
-}
-
-{{ end -}}
-{{- end }}
-
-{{- if $hasBearer }}
-// TokenProvider provides bearer tokens used to authenticate API requests.
-//
-// Implementations may cache tokens and reuse them for their validity period.
-// GetToken should return a valid token, obtaining or refreshing one when
-// necessary. InvalidateToken signals that the currently cached token should
-// no longer be used, allowing a subsequent call to GetToken to obtain a new
-// token.
-type TokenProvider interface {
-	// GetToken returns a valid bearer token for authenticating an API request.
-	GetToken(ctx context.Context) (string, error)
-
-	// InvalidateToken invalidates the currently cached token, if any.
-	InvalidateToken(ctx context.Context) error
-}
-{{- end }}
 
 // RequestEditorFn is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
@@ -75,9 +29,57 @@ type rawClient struct {
 
 	{{- range $security := $securities }}
 
-	{{ $security.Definition.ProviderName }} *{{ pascalCaseWithInitialisms $security.Definition.ProviderName }}Credentials
-	{{ end -}}
+	{{- if and (eq $security.Scheme.Type "http") (eq (lower $security.Scheme.Scheme) "basic") }}
+
+	// {{ pascalCaseWithInitialisms $security.Definition.ProviderName }} uses a username and password to authenticate requests
+	// with HTTP Basic Authentication when configured.
+	{{ pascalCaseWithInitialisms $security.Definition.ProviderName }} struct {
+		// Username is the username used for authentication.
+		Username string
+
+		// Password is the password used for authentication.
+		Password string
+	}
+
+	{{- else if and (eq $security.Scheme.Type "http") (eq (lower $security.Scheme.Scheme) "bearer") }}
+    {{- $hasBearer = true }}
+
+	// {{ pascalCaseWithInitialisms $security.Definition.ProviderName }} uses a token provider to authenticate requests with
+	// an Authorization: Bearer <token> header when configured.
+	{{ pascalCaseWithInitialisms $security.Definition.ProviderName }} struct {
+		// Provider supplies bearer tokens and handles token invalidation.
+		Provider TokenProvider
+	}
+
+	{{- else if eq $security.Scheme.Type "apiKey" }}
+
+	// {{ pascalCaseWithInitialisms $security.Definition.ProviderName }} uses a static API key to authenticate requests
+	// when configured.
+	{{ pascalCaseWithInitialisms $security.Definition.ProviderName }} struct {
+		// APIKey is the API key included in authenticated requests.
+		APIKey string
+	}
+
+	{{- end }}
+	{{- end }}
 }
+
+{{- if $hasBearer }}
+// TokenProvider provides bearer tokens used to authenticate API requests.
+//
+// Implementations may cache tokens and reuse them for their validity period.
+// GetToken should return a valid token, obtaining or refreshing one when
+// necessary. InvalidateToken signals that the currently cached token should
+// no longer be used, allowing a subsequent call to GetToken to obtain a new
+// token.
+type TokenProvider interface {
+	// GetToken returns a valid bearer token for authenticating an API request.
+	GetToken(ctx context.Context) (string, error)
+
+	// InvalidateToken invalidates the currently cached token, if any.
+	InvalidateToken(ctx context.Context) error
+}
+{{- end }}
 
 // ClientOption allows setting custom parameters during construction
 type ClientOption func(*rawClient) error

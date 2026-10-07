@@ -19,42 +19,6 @@ type Pong struct {
 	Ping string `json:"ping"`
 }
 
-// BearerAuthCredentials defines credentials for bearer-token authentication.
-type BearerAuthCredentials struct {
-	// Provider supplies bearer tokens and handles token invalidation.
-	Provider TokenProvider
-}
-
-// BasicAuthCredentials defines credentials for HTTP Basic authentication.
-type BasicAuthCredentials struct {
-	// Username is the username used for authentication.
-	Username string
-
-	// Password is the password used for authentication.
-	Password string
-}
-
-// APIKeyAuthCredentials defines credentials for API-key authentication..
-type APIKeyAuthCredentials struct {
-	// Key is the API key included in authenticated requests.
-	Key string
-}
-
-// TokenProvider provides bearer tokens used to authenticate API requests.
-//
-// Implementations may cache tokens and reuse them for their validity period.
-// GetToken should return a valid token, obtaining or refreshing one when
-// necessary. InvalidateToken signals that the currently cached token should
-// no longer be used, allowing a subsequent call to GetToken to obtain a new
-// token.
-type TokenProvider interface {
-	// GetToken returns a valid bearer token for authenticating an API request.
-	GetToken(ctx context.Context) (string, error)
-
-	// InvalidateToken invalidates the currently cached token, if any.
-	InvalidateToken(ctx context.Context) error
-}
-
 // RequestEditorFn is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
 
@@ -81,11 +45,44 @@ type rawClient struct {
 	// the network.
 	RequestEditors []RequestEditorFn
 
-	bearerAuth *BearerAuthCredentials
+	// BearerAuth uses a token provider to authenticate requests with
+	// an Authorization: Bearer <token> header when configured.
+	BearerAuth struct {
+		// Provider supplies bearer tokens and handles token invalidation.
+		Provider TokenProvider
+	}
 
-	basicAuth *BasicAuthCredentials
+	// BasicAuth uses a username and password to authenticate requests
+	// with HTTP Basic Authentication when configured.
+	BasicAuth struct {
+		// Username is the username used for authentication.
+		Username string
 
-	apiKeyAuth *APIKeyAuthCredentials
+		// Password is the password used for authentication.
+		Password string
+	}
+
+	// APIKeyAuth uses a static API key to authenticate requests
+	// when configured.
+	APIKeyAuth struct {
+		// APIKey is the API key included in authenticated requests.
+		APIKey string
+	}
+}
+
+// TokenProvider provides bearer tokens used to authenticate API requests.
+//
+// Implementations may cache tokens and reuse them for their validity period.
+// GetToken should return a valid token, obtaining or refreshing one when
+// necessary. InvalidateToken signals that the currently cached token should
+// no longer be used, allowing a subsequent call to GetToken to obtain a new
+// token.
+type TokenProvider interface {
+	// GetToken returns a valid bearer token for authenticating an API request.
+	GetToken(ctx context.Context) (string, error)
+
+	// InvalidateToken invalidates the currently cached token, if any.
+	InvalidateToken(ctx context.Context) error
 }
 
 // ClientOption allows setting custom parameters during construction
