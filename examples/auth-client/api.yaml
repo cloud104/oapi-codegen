@@ -13,7 +13,18 @@ paths:
         - apiKeyAuth: [ ]
       responses:
         '200':
-          description: pet response
+          description: pong response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pong'
+
+  /heartbeat:
+    get:
+      operationId: heartbeat
+      responses:
+        '200':
+          description: Service is alive
           content:
             application/json:
               schema:

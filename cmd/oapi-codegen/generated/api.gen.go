@@ -132,8 +132,24 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 // The interface specification for the client above.
 type rawClientInterface interface {
 
+	// heartbeat performs a GET /heartbeat (the `Heartbeat` operationId) request.
+	heartbeat(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ping performs a GET /ping (the `Ping` operationId) request.
 	ping(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+}
+
+// heartbeat performs a GET /heartbeat (the `Heartbeat` operationId) request.
+func (c *rawClient) heartbeat(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := newHeartbeatRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
 }
 
 // ping performs a GET /ping (the `Ping` operationId) request.
@@ -177,6 +193,33 @@ func (c *rawClient) ping(ctx context.Context, reqEditors ...RequestEditorFn) (*h
 		}
 	}
 	return nil, fmt.Errorf("exhausted retry attempts")
+}
+
+// newHeartbeatRequest constructs an http.Request for the Heartbeat method
+func newHeartbeatRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/heartbeat")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
 }
 
 // newPingRequest constructs an http.Request for the Ping method
@@ -250,10 +293,78 @@ func WithBaseURL(baseURL string) ClientOption {
 // ClientInterface is the interface specification for the client with responses above.
 type ClientInterface interface {
 
+	// Heartbeat performs a GET /heartbeat (the `Heartbeat` operationId) request.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	Heartbeat(ctx context.Context, reqEditors ...RequestEditorFn) (*HeartbeatResponse, error)
+
 	// Ping performs a GET /ping (the `Ping` operationId) request.
 	//
 	// Returns a wrapper object for the known response body format(s).
 	Ping(ctx context.Context, reqEditors ...RequestEditorFn) (*PingResponse, error)
+}
+
+type HeartbeatResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Pong
+}
+
+// GetPong checks if the HTTP response status code is 200, and if so, returns the Pong.
+func (r HeartbeatResponse) GetPong() (*Pong, error) {
+	if r.JSON200 != nil {
+		return r.JSON200, nil
+	}
+	if r.HTTPResponse == nil {
+		return nil, fmt.Errorf("missing HTTP response")
+	}
+	switch r.HTTPResponse.StatusCode {
+	case 200:
+		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
+	default:
+		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
+	}
+}
+
+// GetBody returns the raw response body bytes
+func (r HeartbeatResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Error returns an error when the HTTP response does not indicate success.
+func (r HeartbeatResponse) Error() error {
+	if r.HTTPResponse == nil {
+		return fmt.Errorf("missing HTTP response")
+	}
+	if r.HTTPResponse.StatusCode >= 200 && r.HTTPResponse.StatusCode < 300 {
+		return nil
+	}
+	return fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
+}
+
+// Status returns the HTTP response status.
+func (r HeartbeatResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns the HTTP response status code.
+func (r HeartbeatResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r HeartbeatResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
 }
 
 type PingResponse struct {
@@ -319,6 +430,17 @@ func (r PingResponse) ContentType() string {
 	return ""
 }
 
+// Heartbeat performs a GET /heartbeat (the `Heartbeat` operationId) request.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *Client) Heartbeat(ctx context.Context, reqEditors ...RequestEditorFn) (*HeartbeatResponse, error) {
+	rsp, err := c.heartbeat(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return parseHeartbeatResponse(rsp)
+}
+
 // Ping performs a GET /ping (the `Ping` operationId) request.
 //
 // Returns a wrapper object for the known response body format(s).
@@ -328,6 +450,32 @@ func (c *Client) Ping(ctx context.Context, reqEditors ...RequestEditorFn) (*Ping
 		return nil, err
 	}
 	return parsePingResponse(rsp)
+}
+
+// parseHeartbeatResponse parses an HTTP response from a Heartbeat call
+func parseHeartbeatResponse(rsp *http.Response) (*HeartbeatResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &HeartbeatResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Pong
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
 }
 
 // parsePingResponse parses an HTTP response from a Ping call
