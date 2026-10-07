@@ -165,6 +165,8 @@ type rawClientInterface interface {
     {{ .GenerateFunctionComment $opid "" false }}
     {{with .DeprecationComment}}{{.}}
     {{end -}}func (c *rawClient) {{$opid}}{{if .HasBody}}WithBody{{end}}(ctx context.Context{{genParamArgs $pathParams}}{{if $hasParams}}, params *{{$parent.OperationId}}Params{{end}}{{if .HasBody}}, contentType string, body io.Reader{{end}}, reqEditors... RequestEditorFn) (*http.Response, error) {
+    {{ if $bearerAuthSchemes }}
+    {{ else }}
         req, err := new{{$parent.OperationId}}Request{{if .HasBody}}WithBody{{end}}(c.Server{{genParamNames .PathParams}}{{if $hasParams}}, params{{end}}{{if .HasBody}}, contentType, body{{end}})
         if err != nil {
             return nil, err
@@ -218,6 +220,7 @@ type rawClientInterface interface {
         }
         return c.Client.Do(req)
     }
+    {{ end -}}
 {{ end -}}
 
 {{$deprecationComment := .DeprecationComment -}}

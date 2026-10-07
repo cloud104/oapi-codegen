@@ -138,40 +138,45 @@ type rawClientInterface interface {
 
 // ping performs a GET /ping (the `Ping` operationId) request.
 func (c *rawClient) ping(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := newPingRequest(c.Server)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	editors := reqEditors
-	if c.BasicAuth.Username != "" && c.BasicAuth.Password != "" {
-		editors = append(editors, func(_ context.Context, req *http.Request) error {
-			req.SetBasicAuth(c.BasicAuth.Username, c.BasicAuth.Password)
-			return nil
-		})
-	}
-	if c.BearerAuth.Provider != nil {
-		token, err := c.BearerAuth.Provider.GetToken(ctx)
+	for attempt := 0; attempt < 2; attempt++ {
+		req, err := newPingRequest(c.Server)
 		if err != nil {
-			return nil, fmt.Errorf("get authentication token: %w", err)
+			return nil, err
 		}
-		editors = append(editors, func(_ context.Context, req *http.Request) error {
+		req = req.WithContext(ctx)
+		if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+			return nil, err
+		}
+		if c.BasicAuth.Username != "" && c.BasicAuth.Password != "" {
+			req.SetBasicAuth(c.BasicAuth.Username, c.BasicAuth.Password)
+		}
+		if provider := c.BearerAuth.Provider; provider != nil {
+			token, err := provider.GetToken(ctx)
+			if err != nil {
+				return nil, fmt.Errorf("get authentication token: %w", err)
+			}
 			req.Header.Set("Authorization", "Bearer "+token)
-			return nil
-		})
+		}
+		if apiKey := c.APIKeyAuth.APIKey; apiKey != "" {
+			query := req.URL.Query()
+			query.Set("X-API-Key", apiKey)
+			req.URL.RawQuery = query.Encode()
+		}
+		resp, err := c.Client.Do(req)
+		if err != nil {
+			return nil, err
+		}
+		if resp.StatusCode != http.StatusUnauthorized ||
+			c.BearerAuth.Provider == nil ||
+			attempt > 0 {
+			return resp, nil
+		}
+		resp.Body.Close()
+		if err := c.BearerAuth.Provider.InvalidateToken(ctx); err != nil {
+			return nil, fmt.Errorf("refresh authentication token: %w", err)
+		}
 	}
-	if c.APIKeyAuth.APIKey != "" {
-		editors = append(editors, func(_ context.Context, req *http.Request) error {
-			q := req.URL.Query()
-			q.Set("X-API-Key", c.APIKeyAuth.APIKey)
-			req.URL.RawQuery = q.Encode()
-			return nil
-		})
-	}
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
+	return nil, fmt.Errorf("exhausted retry attempts")
 }
 
 // newPingRequest constructs an http.Request for the Ping method
