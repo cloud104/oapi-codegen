@@ -47,6 +47,7 @@ func init() {
 	codegen.TemplateFunctions["genJSONRequestBodyArg"] = genJSONRequestBodyArg
 	codegen.TemplateFunctions["groupResponses"] = groupResponses
 	codegen.TemplateFunctions["jsonRequestBody"] = jsonRequestBody
+	codegen.TemplateFunctions["securitySchemes"] = securitySchemes
 	codegen.TemplateFunctions["basicAuthFromOperation"] = basicAuthFromOperation
 	codegen.TemplateFunctions["bearerAuthFromOperation"] = bearerAuthFromOperation
 	codegen.TemplateFunctions["apiKeyAuthFromOperation"] = apiKeyAuthFromOperation
