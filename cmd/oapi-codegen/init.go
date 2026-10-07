@@ -47,6 +47,9 @@ func init() {
 	codegen.TemplateFunctions["genJSONRequestBodyArg"] = genJSONRequestBodyArg
 	codegen.TemplateFunctions["groupResponses"] = groupResponses
 	codegen.TemplateFunctions["jsonRequestBody"] = jsonRequestBody
+	codegen.TemplateFunctions["basicAuthFromOperation"] = basicAuthFromOperation
+	codegen.TemplateFunctions["bearerAuthFromOperation"] = bearerAuthFromOperation
+	codegen.TemplateFunctions["apiKeyAuthFromOperation"] = apiKeyAuthFromOperation
 }
 
 func camelCaseWithInitialisms(s string) string {
@@ -175,4 +178,105 @@ func jsonRequestBody(op *codegen.OperationDefinition) *codegen.RequestBodyDefini
 	}
 
 	return body
+}
+
+type basicAuthSecurity struct {
+	Name        string
+	Description string
+	Scopes      []string
+}
+
+func basicAuthFromOperation(op *codegen.OperationDefinition) *basicAuthSecurity {
+	spec := codegenGlobalState.spec
+	if spec == nil || spec.Components == nil || op == nil {
+		return nil
+	}
+
+	for _, definition := range op.SecurityDefinitions {
+		ref, exists := spec.Components.SecuritySchemes[definition.ProviderName]
+		if !exists || ref == nil || ref.Value == nil {
+			continue
+		}
+
+		scheme := ref.Value
+		if scheme.Type == "http" && strings.EqualFold(scheme.Scheme, "basic") {
+			return &basicAuthSecurity{
+				Name:        definition.ProviderName,
+				Description: scheme.Description,
+				Scopes:      definition.Scopes,
+			}
+		}
+	}
+
+	return nil
+}
+
+type bearerAuthSecurity struct {
+	Name         string
+	Description  string
+	BearerFormat string
+	Scopes       []string
+}
+
+func bearerAuthFromOperation(op *codegen.OperationDefinition) *bearerAuthSecurity {
+	spec := codegenGlobalState.spec
+	if spec == nil || spec.Components == nil || op == nil {
+		return nil
+	}
+
+	for _, definition := range op.SecurityDefinitions {
+		ref, exists := spec.Components.SecuritySchemes[definition.ProviderName]
+		if !exists || ref == nil || ref.Value == nil {
+			continue
+		}
+
+		scheme := ref.Value
+		if scheme.Type == "http" && strings.EqualFold(scheme.Scheme, "bearer") {
+			return &bearerAuthSecurity{
+				Name:         definition.ProviderName,
+				Description:  scheme.Description,
+				BearerFormat: scheme.BearerFormat,
+				Scopes:       definition.Scopes,
+			}
+		}
+	}
+
+	return nil
+}
+
+type apiKeyAuthSecurity struct {
+	Name        string
+	Description string
+	KeyName     string
+	In          string
+	Scopes      []string
+}
+
+func apiKeyAuthFromOperation(op *codegen.OperationDefinition) *apiKeyAuthSecurity {
+	spec := codegenGlobalState.spec
+	if spec == nil || spec.Components == nil || op == nil {
+		return nil
+	}
+
+	for _, definition := range op.SecurityDefinitions {
+		ref, exists := spec.Components.SecuritySchemes[definition.ProviderName]
+		if !exists || ref == nil || ref.Value == nil {
+			continue
+		}
+
+		scheme := ref.Value
+		if scheme.Type != "apiKey" {
+			continue
+		}
+
+		return &apiKeyAuthSecurity{
+			Name:        definition.ProviderName,
+			Description: scheme.Description,
+			KeyName:     scheme.Name,
+			In:          scheme.In,
+			Scopes:      definition.Scopes,
+		}
+	}
+
+	return nil
 }
