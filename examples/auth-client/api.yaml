@@ -7,6 +7,7 @@ paths:
     get:
       operationId: ping
       security:
+        - bearerAuth2: [ ]
         - bearerAuth: [ ]
         - basicAuth: [ ]
         - apiKeyAuth: [ ]

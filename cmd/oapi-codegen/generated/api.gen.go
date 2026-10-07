@@ -45,13 +45,6 @@ type rawClient struct {
 	// the network.
 	RequestEditors []RequestEditorFn
 
-	// APIKeyAuth uses a static API key to authenticate requests
-	// when configured.
-	APIKeyAuth struct {
-		// APIKey is the API key included in authenticated requests.
-		APIKey string
-	}
-
 	// BasicAuth uses a username and password to authenticate requests
 	// with HTTP Basic Authentication when configured.
 	BasicAuth struct {
@@ -67,6 +60,13 @@ type rawClient struct {
 	BearerAuth struct {
 		// Provider supplies bearer tokens and handles token invalidation.
 		Provider TokenProvider
+	}
+
+	// APIKeyAuth uses a static API key to authenticate requests
+	// when configured.
+	APIKeyAuth struct {
+		// APIKey is the API key included in authenticated requests.
+		APIKey string
 	}
 }
 

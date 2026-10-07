@@ -1,5 +1,6 @@
-{{$securities := securityForOperations . -}}
-{{- $hasBearer := false -}}
+{{- $globalBasicAuthSchemes := basicAuthForOperations . -}}
+{{- $globalBearerAuthSchemes := bearerAuthForOperations . -}}
+{{- $globalApiKeyAuthSchemes := apiKeyAuthForOperations . -}}
 
 // RequestEditorFn is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
@@ -27,44 +28,38 @@ type rawClient struct {
 	// the network.
 	RequestEditors []RequestEditorFn
 
-	{{- range $security := $securities }}
-
-	{{- if and (eq $security.Scheme.Type "http") (eq (lower $security.Scheme.Scheme) "basic") }}
-
-	// {{ pascalCaseWithInitialisms $security.Definition.ProviderName }} uses a username and password to authenticate requests
+	{{ range $security := $globalBasicAuthSchemes -}}
+	// {{ pascalCaseWithInitialisms $security.Name }} uses a username and password to authenticate requests
 	// with HTTP Basic Authentication when configured.
-	{{ pascalCaseWithInitialisms $security.Definition.ProviderName }} struct {
+	{{ pascalCaseWithInitialisms $security.Name }} struct {
 		// Username is the username used for authentication.
 		Username string
 
 		// Password is the password used for authentication.
 		Password string
 	}
+    {{ end }}
 
-	{{- else if and (eq $security.Scheme.Type "http") (eq (lower $security.Scheme.Scheme) "bearer") }}
-    {{- $hasBearer = true }}
-
-	// {{ pascalCaseWithInitialisms $security.Definition.ProviderName }} uses a token provider to authenticate requests with
+    {{ range $security := $globalBearerAuthSchemes -}}
+	// {{ pascalCaseWithInitialisms $security.Name }} uses a token provider to authenticate requests with
 	// an Authorization: Bearer <token> header when configured.
-	{{ pascalCaseWithInitialisms $security.Definition.ProviderName }} struct {
+	{{ pascalCaseWithInitialisms $security.Name }} struct {
 		// Provider supplies bearer tokens and handles token invalidation.
 		Provider TokenProvider
 	}
+    {{ end }}
 
-	{{- else if eq $security.Scheme.Type "apiKey" }}
-
-	// {{ pascalCaseWithInitialisms $security.Definition.ProviderName }} uses a static API key to authenticate requests
+    {{ range $security := $globalApiKeyAuthSchemes -}}
+	// {{ pascalCaseWithInitialisms $security.Name }} uses a static API key to authenticate requests
 	// when configured.
-	{{ pascalCaseWithInitialisms $security.Definition.ProviderName }} struct {
+	{{ pascalCaseWithInitialisms $security.Name }} struct {
 		// APIKey is the API key included in authenticated requests.
 		APIKey string
 	}
-
-	{{- end }}
-	{{- end }}
+	{{ end -}}
 }
 
-{{- if $hasBearer }}
+{{- if $globalBearerAuthSchemes }}
 // TokenProvider provides bearer tokens used to authenticate API requests.
 //
 // Implementations may cache tokens and reuse them for their validity period.
