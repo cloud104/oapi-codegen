@@ -45,11 +45,11 @@ type rawClient struct {
 	// the network.
 	RequestEditors []RequestEditorFn
 
-	// BearerAuth uses a token provider to authenticate requests with
-	// an Authorization: Bearer <token> header when configured.
-	BearerAuth struct {
-		// Provider supplies bearer tokens and handles token invalidation.
-		Provider TokenProvider
+	// APIKeyAuth uses a static API key to authenticate requests
+	// when configured.
+	APIKeyAuth struct {
+		// APIKey is the API key included in authenticated requests.
+		APIKey string
 	}
 
 	// BasicAuth uses a username and password to authenticate requests
@@ -62,11 +62,11 @@ type rawClient struct {
 		Password string
 	}
 
-	// APIKeyAuth uses a static API key to authenticate requests
-	// when configured.
-	APIKeyAuth struct {
-		// APIKey is the API key included in authenticated requests.
-		APIKey string
+	// BearerAuth uses a token provider to authenticate requests with
+	// an Authorization: Bearer <token> header when configured.
+	BearerAuth struct {
+		// Provider supplies bearer tokens and handles token invalidation.
+		Provider TokenProvider
 	}
 }
 

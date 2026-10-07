@@ -233,10 +233,7 @@ func securityForOperations(ops []codegen.OperationDefinition) []*operationSecuri
 	}
 
 	slices.SortFunc(result, func(a, b *operationSecurity) int {
-		return strings.Compare(
-			a.Definition.ProviderName,
-			b.Definition.ProviderName,
-		)
+		return strings.Compare(a.Definition.ProviderName, b.Definition.ProviderName)
 	})
 
 	return result
@@ -267,6 +264,10 @@ func basicAuthForOperations(ops []codegen.OperationDefinition) []*basicAuth {
 			Scopes:      security.Definition.Scopes,
 		})
 	}
+
+	slices.SortFunc(result, func(a, b *basicAuth) int {
+		return strings.Compare(a.Name, b.Name)
+	})
 
 	return result
 }
@@ -299,6 +300,10 @@ func bearerAuthForOperations(ops []codegen.OperationDefinition) []*bearerAuth {
 		})
 	}
 
+	slices.SortFunc(result, func(a, b *bearerAuth) int {
+		return strings.Compare(a.Name, b.Name)
+	})
+
 	return result
 }
 
@@ -330,6 +335,10 @@ func apiKeyAuthForOperations(ops []codegen.OperationDefinition) []*apiKeyAuth {
 			Scopes:      security.Definition.Scopes,
 		})
 	}
+
+	slices.SortFunc(result, func(a, b *apiKeyAuth) int {
+		return strings.Compare(a.Name, b.Name)
+	})
 
 	return result
 }
