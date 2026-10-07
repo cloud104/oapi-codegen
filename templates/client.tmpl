@@ -29,6 +29,7 @@ type rawClient struct {
 	RequestEditors []RequestEditorFn
 
 	{{ range $basic := $globalBasicAuthSchemes }}
+    {{- $name := pascalCaseWithInitialisms $basic.Name -}}
 	// {{ pascalCaseWithInitialisms $basic.Name }} uses a username and password to authenticate requests
 	// with HTTP Basic Authentication when configured.
 	{{ pascalCaseWithInitialisms $basic.Name }} struct {
@@ -132,8 +133,8 @@ func With{{ pascalCaseWithInitialisms $basic.Name }}(username, password string) 
 }
 {{ end }}
 
-{{ range $basic := $globalBearerAuthSchemes }}
-{{- $name := pascalCaseWithInitialisms $basic.Name -}}
+{{ range $bearer := $globalBearerAuthSchemes }}
+{{- $name := pascalCaseWithInitialisms $bearer.Name -}}
 // With{{ $name }} configures bearer-token authentication using the supplied token provider.
 func With{{ $name }}(provider TokenProvider) ClientOption {
 	return func(c *rawClient) error {
@@ -143,8 +144,8 @@ func With{{ $name }}(provider TokenProvider) ClientOption {
 }
 {{ end }}
 
-{{ range $basic := $globalApiKeyAuthSchemes }}
-{{- $name := pascalCaseWithInitialisms $basic.Name -}}
+{{ range $apiKey := $globalApiKeyAuthSchemes }}
+{{- $name := pascalCaseWithInitialisms $apiKey.Name -}}
 // With{{ $name }} configures authentication using a static API key.
 func With{{ $name }}(apiKey string) ClientOption {
 	return func(c *rawClient) error {
