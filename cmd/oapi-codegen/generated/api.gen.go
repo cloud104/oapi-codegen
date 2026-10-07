@@ -22,13 +22,16 @@ type Pong struct {
 type bearerAuthCredentials struct {
 	Provider TokenProvider
 }
+
 type basicAuthCredentials struct {
 	Username string
 	Password string
 }
+
 type apiKeyAuthCredentials struct {
 	Value string
 }
+
 type TokenProvider interface {
 	GetToken(ctx context.Context) (string, error)
 	InvalidateToken(ctx context.Context) error
