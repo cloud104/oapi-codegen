@@ -3,7 +3,7 @@
 // {{ $clientTypeName }} which conforms to the OpenAPI3 specification for this service.
 type {{ $clientTypeName }} struct {
     rawClientInterface
-    // {{ toJson . }}
+    // {{ securityForOperations . }}
 }
 
 // New{{ $clientTypeName }} creates a new {{ $clientTypeName }}, which wraps
@@ -166,7 +166,7 @@ func (r {{genResponseTypeName $opid | ucFirst}}) ContentType() string {
     {{.}}
     {{end -}}func (c *{{ $clientTypeName }}) {{$opid}}(ctx context.Context{{genParamArgs .PathParams}}{{if .RequiresParamObject}}, params *{{$opid}}Params{{end}}, reqEditors... RequestEditorFn) (*{{genResponseTypeName $opid}}, error){
         editors := reqEditors
-        {{ if basicAuthFromOperation . -}}
+        {{ if basicAuthForOperation . -}}
         if c.username != "" || c.password != "" {
             editors = append(editors, func(_ context.Context, req *http.Request) error {
                 req.SetBasicAuth(c.username, c.password)
@@ -174,7 +174,7 @@ func (r {{genResponseTypeName $opid | ucFirst}}) ContentType() string {
             })
         }
         {{ end -}}
-        {{ if bearerAuthFromOperation . -}}
+        {{ if bearerAuthForOperation . -}}
         if c.tokens != nil {
             token, err := c.tokens.Get(ctx)
             if err != nil {
@@ -186,7 +186,7 @@ func (r {{genResponseTypeName $opid | ucFirst}}) ContentType() string {
             })
         }
         {{ end -}}
-        {{ range $apiKey := apiKeyAuthFromOperation . -}}
+        {{ range $apiKey := apiKeyAuthForOperation . -}}
         if c.apiKey != "" {
             editors = append(editors, func(_ context.Context, req *http.Request) error {
                 {{ if eq $apiKey.In "header" -}}

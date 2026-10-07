@@ -47,10 +47,10 @@ func init() {
 	codegen.TemplateFunctions["genJSONRequestBodyArg"] = genJSONRequestBodyArg
 	codegen.TemplateFunctions["groupResponses"] = groupResponses
 	codegen.TemplateFunctions["jsonRequestBody"] = jsonRequestBody
-	codegen.TemplateFunctions["securitySchemes"] = securitySchemes
-	codegen.TemplateFunctions["basicAuthFromOperation"] = basicAuthFromOperation
-	codegen.TemplateFunctions["bearerAuthFromOperation"] = bearerAuthFromOperation
-	codegen.TemplateFunctions["apiKeyAuthFromOperation"] = apiKeyAuthFromOperation
+	codegen.TemplateFunctions["securityForOperations"] = securityForOperations
+	codegen.TemplateFunctions["basicAuthForOperation"] = basicAuthForOperation
+	codegen.TemplateFunctions["bearerAuthForOperation"] = bearerAuthForOperation
+	codegen.TemplateFunctions["apiKeyAuthForOperation"] = apiKeyAuthForOperation
 }
 
 func camelCaseWithInitialisms(s string) string {
@@ -178,24 +178,24 @@ func jsonRequestBody(op *codegen.OperationDefinition) *codegen.RequestBodyDefini
 	return body
 }
 
-type operationSecurityScheme struct {
+type operationSecurity struct {
 	Definition codegen.SecurityDefinition
 	Scheme     *openapi3.SecurityScheme
 }
 
-func securitySchemes(ops ...*codegen.OperationDefinition) []*operationSecurityScheme {
+func securityForOperation(ops *codegen.OperationDefinition) []*operationSecurity {
+	return securityForOperations([]codegen.OperationDefinition{*ops})
+}
+
+func securityForOperations(ops []codegen.OperationDefinition) []*operationSecurity {
 	spec := codegenGlobalState.spec
 	if spec == nil || spec.Components == nil {
 		return nil
 	}
 
-	schemes := make(map[string]*operationSecurityScheme)
+	schemes := make(map[string]*operationSecurity)
 
 	for _, op := range ops {
-		if op == nil {
-			continue
-		}
-
 		for _, definition := range op.SecurityDefinitions {
 			name := definition.ProviderName
 			if _, exists := schemes[name]; exists {
@@ -207,14 +207,14 @@ func securitySchemes(ops ...*codegen.OperationDefinition) []*operationSecuritySc
 				continue
 			}
 
-			schemes[name] = &operationSecurityScheme{
+			schemes[name] = &operationSecurity{
 				Definition: definition,
 				Scheme:     ref.Value,
 			}
 		}
 	}
 
-	result := make([]*operationSecurityScheme, 0, len(schemes))
+	result := make([]*operationSecurity, 0, len(schemes))
 	for _, scheme := range schemes {
 		result = append(result, scheme)
 	}
@@ -222,22 +222,22 @@ func securitySchemes(ops ...*codegen.OperationDefinition) []*operationSecuritySc
 	return result
 }
 
-type basicAuthSecurity struct {
+type basicAuth struct {
 	Name        string
 	Description string
 	Scopes      []string
 }
 
-func basicAuthFromOperation(op *codegen.OperationDefinition) []*basicAuthSecurity {
-	var result []*basicAuthSecurity
+func basicAuthForOperation(op *codegen.OperationDefinition) []*basicAuth {
+	var result []*basicAuth
 
-	for _, security := range securitySchemes(op) {
+	for _, security := range securityForOperation(op) {
 		if security.Scheme.Type != "http" ||
 			!strings.EqualFold(security.Scheme.Scheme, "basic") {
 			continue
 		}
 
-		result = append(result, &basicAuthSecurity{
+		result = append(result, &basicAuth{
 			Name:        security.Definition.ProviderName,
 			Description: security.Scheme.Description,
 			Scopes:      security.Definition.Scopes,
@@ -247,23 +247,23 @@ func basicAuthFromOperation(op *codegen.OperationDefinition) []*basicAuthSecurit
 	return result
 }
 
-type bearerAuthSecurity struct {
+type bearerAuth struct {
 	Name         string
 	Description  string
 	BearerFormat string
 	Scopes       []string
 }
 
-func bearerAuthFromOperation(op *codegen.OperationDefinition) []*bearerAuthSecurity {
-	var result []*bearerAuthSecurity
+func bearerAuthForOperation(op *codegen.OperationDefinition) []*bearerAuth {
+	var result []*bearerAuth
 
-	for _, security := range securitySchemes(op) {
+	for _, security := range securityForOperation(op) {
 		if security.Scheme.Type != "http" ||
 			!strings.EqualFold(security.Scheme.Scheme, "bearer") {
 			continue
 		}
 
-		result = append(result, &bearerAuthSecurity{
+		result = append(result, &bearerAuth{
 			Name:         security.Definition.ProviderName,
 			Description:  security.Scheme.Description,
 			BearerFormat: security.Scheme.BearerFormat,
@@ -274,7 +274,7 @@ func bearerAuthFromOperation(op *codegen.OperationDefinition) []*bearerAuthSecur
 	return result
 }
 
-type apiKeyAuthSecurity struct {
+type apiKeyAuth struct {
 	Name        string
 	Description string
 	KeyName     string
@@ -282,15 +282,15 @@ type apiKeyAuthSecurity struct {
 	Scopes      []string
 }
 
-func apiKeyAuthFromOperation(op *codegen.OperationDefinition) []*apiKeyAuthSecurity {
-	var result []*apiKeyAuthSecurity
+func apiKeyAuthForOperation(op *codegen.OperationDefinition) []*apiKeyAuth {
+	var result []*apiKeyAuth
 
-	for _, security := range securitySchemes(op) {
+	for _, security := range securityForOperation(op) {
 		if security.Scheme.Type != "apiKey" {
 			continue
 		}
 
-		result = append(result, &apiKeyAuthSecurity{
+		result = append(result, &apiKeyAuth{
 			Name:        security.Definition.ProviderName,
 			Description: security.Scheme.Description,
 			KeyName:     security.Scheme.Name,
