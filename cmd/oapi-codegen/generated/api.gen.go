@@ -19,21 +19,39 @@ type Pong struct {
 	Ping string `json:"ping"`
 }
 
-type bearerAuthCredentials struct {
+// BearerAuthCredentials defines credentials for bearer-token authentication.
+type BearerAuthCredentials struct {
+	// Provider supplies bearer tokens and handles token invalidation.
 	Provider TokenProvider
 }
 
-type basicAuthCredentials struct {
+// BasicAuthCredentials defines credentials for HTTP Basic authentication.
+type BasicAuthCredentials struct {
+	// Username is the username used for authentication.
 	Username string
+
+	// Password is the password used for authentication.
 	Password string
 }
 
-type apiKeyAuthCredentials struct {
-	Value string
+// APIKeyAuthCredentials defines credentials for API-key authentication..
+type APIKeyAuthCredentials struct {
+	// Key is the API key included in authenticated requests.
+	Key string
 }
 
+// TokenProvider provides bearer tokens used to authenticate API requests.
+//
+// Implementations may cache tokens and reuse them for their validity period.
+// GetToken should return a valid token, obtaining or refreshing one when
+// necessary. InvalidateToken signals that the currently cached token should
+// no longer be used, allowing a subsequent call to GetToken to obtain a new
+// token.
 type TokenProvider interface {
+	// GetToken returns a valid bearer token for authenticating an API request.
 	GetToken(ctx context.Context) (string, error)
+
+	// InvalidateToken invalidates the currently cached token, if any.
 	InvalidateToken(ctx context.Context) error
 }
 
@@ -62,9 +80,12 @@ type rawClient struct {
 	// A list of callbacks for modifying requests which are generated before sending over
 	// the network.
 	RequestEditors []RequestEditorFn
-	bearerAuth     bearerAuthCredentials
-	basicAuth      basicAuthCredentials
-	apiKeyAuth     apiKeyAuthCredentials
+
+	bearerAuth *BearerAuthCredentials
+
+	basicAuth *BasicAuthCredentials
+
+	apiKeyAuth *APIKeyAuthCredentials
 }
 
 // ClientOption allows setting custom parameters during construction

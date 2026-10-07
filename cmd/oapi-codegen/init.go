@@ -44,6 +44,7 @@ func init() {
 	}
 
 	codegen.TemplateFunctions["camelCaseWithInitialisms"] = camelCaseWithInitialisms
+	codegen.TemplateFunctions["pascalCaseWithInitialisms"] = pascalCaseWithInitialisms
 	codegen.TemplateFunctions["genJSONRequestBodyArg"] = genJSONRequestBodyArg
 	codegen.TemplateFunctions["groupResponses"] = groupResponses
 	codegen.TemplateFunctions["jsonRequestBody"] = jsonRequestBody
@@ -64,6 +65,19 @@ func camelCaseWithInitialisms(s string) string {
 	}
 
 	return strcase.NewCaser(true, overrides, nil).ToCamel(s)
+}
+
+func pascalCaseWithInitialisms(s string) string {
+	overrides := make(map[string]bool)
+
+	// Surround each known initialism with separators so the caser can
+	// recognize it as an independent word, even when acronyms are adjacent.
+	for _, initialism := range codegenGlobalState.initialismsMap {
+		s = strings.ReplaceAll(s, initialism, "_"+initialism+"_")
+		overrides[initialism] = true
+	}
+
+	return strcase.NewCaser(true, overrides, nil).ToPascal(s)
 }
 
 func genJSONRequestBodyArg(op *codegen.OperationDefinition) string {
@@ -219,6 +233,7 @@ func securityForOperations(ops []codegen.OperationDefinition) []*operationSecuri
 		result = append(result, scheme)
 	}
 
+	// TODO: it should be deterministic
 	return result
 }
 
