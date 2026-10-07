@@ -75,11 +75,7 @@ type rawClientInterface interface {
 {{$hasParams := .RequiresParamObject -}}
 {{$pathParams := .PathParams -}}
 {{$opid := .OperationId -}}
-{{$opidSuffix := ""}}
 {{$parent := . }}
-{{- if .HasBody -}}
-{{- $opidSuffix = "WithBody" -}}
-{{- end -}}
 {{$deprecationComment := .DeprecationComment -}}
     {{ if .HasBody }}
         {{ .GenerateFunctionComment $opid "WithBody" false }}
@@ -107,10 +103,6 @@ type rawClientInterface interface {
 {{$pathParams := .PathParams -}}
 {{$opid := .OperationId -}}
 {{$parent := . }}
-{{$opidSuffix := ""}}
-{{- if .HasBody -}}
-{{- $opidSuffix = "WithBody" -}}
-{{- end -}}
 
 {{ if .HasBody }}
     {{ .GenerateFunctionComment $opid "WithBody" false }}
