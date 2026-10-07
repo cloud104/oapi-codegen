@@ -164,47 +164,7 @@ func (r {{genResponseTypeName $opid | ucFirst}}) ContentType() string {
     {{with $deprecationComment}}//
     {{.}}
     {{end -}}func (c *{{ $clientTypeName }}) {{$opid}}(ctx context.Context{{genParamArgs .PathParams}}{{if .RequiresParamObject}}, params *{{$opid}}Params{{end}}, reqEditors... RequestEditorFn) (*{{genResponseTypeName $opid}}, error){
-        editors := reqEditors
-        {{ if basicAuthForOperation . -}}
-        if c.username != "" || c.password != "" {
-            editors = append(editors, func(_ context.Context, req *http.Request) error {
-                req.SetBasicAuth(c.username, c.password)
-                return nil
-            })
-        }
-        {{ end -}}
-        {{ if bearerAuthForOperation . -}}
-        if c.tokens != nil {
-            token, err := c.tokens.Get(ctx)
-            if err != nil {
-                return nil, fmt.Errorf("get authentication token: %w", err)
-            }
-            editors = append(editors, func(_ context.Context, req *http.Request) error {
-                req.Header.Set("Authorization", "Bearer "+token)
-                return nil
-            })
-        }
-        {{ end -}}
-        {{ range $apiKey := apiKeyAuthForOperation . -}}
-        if c.apiKey != "" {
-            editors = append(editors, func(_ context.Context, req *http.Request) error {
-                {{ if eq $apiKey.In "header" -}}
-                req.Header.Set("{{$apiKey.KeyName}}", c.apiKey)
-                {{ else if eq $apiKey.In "query" -}}
-                q := req.URL.Query()
-                q.Set("{{$apiKey.KeyName}}", c.apiKey)
-                req.URL.RawQuery = q.Encode()
-                {{ else if eq $apiKey.In "cookie" -}}
-                req.AddCookie(&http.Cookie{
-                    Name:  "{{$apiKey.KeyName}}",
-                    Value: c.apiKey,
-                })
-                {{ end -}}
-                return nil
-            })
-        }
-        {{ end -}}
-        rsp, err := c.{{camelCaseWithInitialisms $parent.OperationId}}(ctx{{genParamNames .PathParams}}{{if .RequiresParamObject}}, params{{end}}, editors...)
+        rsp, err := c.{{camelCaseWithInitialisms $parent.OperationId}}(ctx{{genParamNames .PathParams}}{{if .RequiresParamObject}}, params{{end}}, reqEditors...)
         if err != nil {
             return nil, err
         }

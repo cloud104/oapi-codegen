@@ -167,6 +167,47 @@ type rawClientInterface interface {
             return nil, err
         }
         req = req.WithContext(ctx)
+        editors := reqEditors
+        {{ range $basic := basicAuthForOperation . -}}
+        {{- $name := pascalCaseWithInitialisms $basic.Name -}}
+        if c.{{ $name }}.Username != "" && c.{{ $name }}.Password != "" {
+            editors = append(editors, func(_ context.Context, req *http.Request) error {
+                req.SetBasicAuth(c.{{ $name }}.Username, c.{{ $name }}.Password)
+                return nil
+            })
+        }
+        {{ end -}}
+        {{ range $bearer := bearerAuthForOperation . -}}
+        if c.tokens != nil {
+            token, err := c.tokens.Get(ctx)
+            if err != nil {
+                return nil, fmt.Errorf("get authentication token: %w", err)
+            }
+            editors = append(editors, func(_ context.Context, req *http.Request) error {
+                req.Header.Set("Authorization", "Bearer "+token)
+                return nil
+            })
+        }
+        {{ end -}}
+        {{ range $apiKey := apiKeyAuthForOperation . -}}
+        if c.apiKey != "" {
+            editors = append(editors, func(_ context.Context, req *http.Request) error {
+                {{ if eq $apiKey.In "header" -}}
+                req.Header.Set("{{$apiKey.KeyName}}", c.apiKey)
+                {{ else if eq $apiKey.In "query" -}}
+                q := req.URL.Query()
+                q.Set("{{$apiKey.KeyName}}", c.apiKey)
+                req.URL.RawQuery = q.Encode()
+                {{ else if eq $apiKey.In "cookie" -}}
+                req.AddCookie(&http.Cookie{
+                    Name:  "{{$apiKey.KeyName}}",
+                    Value: c.apiKey,
+                })
+                {{ end -}}
+                return nil
+            })
+        }
+        {{ end -}}
         if err := c.applyEditors(ctx, req, reqEditors); err != nil {
             return nil, err
         }

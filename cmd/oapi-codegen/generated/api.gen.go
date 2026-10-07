@@ -143,6 +143,29 @@ func (c *rawClient) ping(ctx context.Context, reqEditors ...RequestEditorFn) (*h
 		return nil, err
 	}
 	req = req.WithContext(ctx)
+	editors := reqEditors
+	if c.BasicAuth.Username != "" && c.BasicAuth.Password != "" {
+		editors = append(editors, func(_ context.Context, req *http.Request) error {
+			req.SetBasicAuth(c.BasicAuth.Username, c.BasicAuth.Password)
+			return nil
+		})
+	}
+	if c.tokens != nil {
+		token, err := c.tokens.Get(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("get authentication token: %w", err)
+		}
+		editors = append(editors, func(_ context.Context, req *http.Request) error {
+			req.Header.Set("Authorization", "Bearer "+token)
+			return nil
+		})
+	}
+	if c.apiKey != "" {
+		editors = append(editors, func(_ context.Context, req *http.Request) error {
+			req.Header.Set("X-API-Key", c.apiKey)
+			return nil
+		})
+	}
 	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
 		return nil, err
 	}
@@ -293,30 +316,7 @@ func (r PingResponse) ContentType() string {
 //
 // Returns a wrapper object for the known response body format(s).
 func (c *Client) Ping(ctx context.Context, reqEditors ...RequestEditorFn) (*PingResponse, error) {
-	editors := reqEditors
-	if c.username != "" || c.password != "" {
-		editors = append(editors, func(_ context.Context, req *http.Request) error {
-			req.SetBasicAuth(c.username, c.password)
-			return nil
-		})
-	}
-	if c.tokens != nil {
-		token, err := c.tokens.Get(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("get authentication token: %w", err)
-		}
-		editors = append(editors, func(_ context.Context, req *http.Request) error {
-			req.Header.Set("Authorization", "Bearer "+token)
-			return nil
-		})
-	}
-	if c.apiKey != "" {
-		editors = append(editors, func(_ context.Context, req *http.Request) error {
-			req.Header.Set("X-API-Key", c.apiKey)
-			return nil
-		})
-	}
-	rsp, err := c.ping(ctx, editors...)
+	rsp, err := c.ping(ctx, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
