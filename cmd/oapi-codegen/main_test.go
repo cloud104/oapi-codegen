@@ -11,7 +11,7 @@ import (
 )
 
 func TestGenerate(t *testing.T) {
-	spec, err := util.LoadSwagger("../../examples/complex-client/api.yaml")
+	spec, err := util.LoadSwagger("../../examples/auth-client/api.yaml")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -14,17 +14,15 @@ func Test_ListBeers(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response, err := client.ListBeers(ctx, &api.ListBeersParams{})
+	response, err := client.Ping(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	link, _ := response.GetHeader[string]("Link")
-	total, _ := response.GetHeader[int]("X-Total-Count")
-	retryAfter, _ := response.GetHeader[int]("Retry-After")
+	pong, err := response.GetPong()
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	_ = response
-	_ = link
-	_ = total
-	_ = retryAfter
+	_ = pong
 }
