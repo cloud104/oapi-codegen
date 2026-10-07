@@ -45,6 +45,13 @@ type rawClient struct {
 	// the network.
 	RequestEditors []RequestEditorFn
 
+	// BearerAuth uses a token provider to authenticate requests with
+	// an Authorization: Bearer <token> header when configured.
+	BearerAuth struct {
+		// Provider supplies bearer tokens and handles token invalidation.
+		Provider TokenProvider
+	}
+
 	// BasicAuth uses a username and password to authenticate requests
 	// with HTTP Basic Authentication when configured.
 	BasicAuth struct {
@@ -61,6 +68,21 @@ type rawClient struct {
 		// APIKey is the API key included in authenticated requests.
 		APIKey string
 	}
+}
+
+// TokenProvider provides bearer tokens used to authenticate API requests.
+//
+// Implementations may cache tokens and reuse them for their validity period.
+// GetToken should return a valid token, obtaining or refreshing one when
+// necessary. InvalidateToken signals that the currently cached token should
+// no longer be used, allowing a subsequent call to GetToken to obtain a new
+// token.
+type TokenProvider interface {
+	// GetToken returns a valid bearer token for authenticating an API request.
+	GetToken(ctx context.Context) (string, error)
+
+	// InvalidateToken invalidates the currently cached token, if any.
+	InvalidateToken(ctx context.Context) error
 }
 
 // ClientOption allows setting custom parameters during construction
@@ -116,23 +138,45 @@ type rawClientInterface interface {
 
 // ping performs a GET /ping (the `Ping` operationId) request.
 func (c *rawClient) ping(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := newPingRequest(c.Server)
-	if err != nil {
-		return nil, err
+	for attempt := 0; attempt < 2; attempt++ {
+		req, err := newPingRequest(c.Server)
+		if err != nil {
+			return nil, err
+		}
+		req = req.WithContext(ctx)
+		if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+			return nil, err
+		}
+		if c.BasicAuth.Username != "" && c.BasicAuth.Password != "" {
+			req.SetBasicAuth(c.BasicAuth.Username, c.BasicAuth.Password)
+		}
+		if c.BearerAuth.Provider != nil {
+			token, err := c.BearerAuth.Provider.GetToken(ctx)
+			if err != nil {
+				return nil, fmt.Errorf("get authentication token: %w", err)
+			}
+			req.Header.Set("Authorization", "Bearer "+token)
+		}
+		if c.APIKeyAuth.APIKey != "" {
+			q := req.URL.Query()
+			q.Set("X-API-Key", c.APIKeyAuth.APIKey)
+			req.URL.RawQuery = q.Encode()
+		}
+		resp, err := c.Client.Do(req)
+		if err != nil {
+			return nil, err
+		}
+		if resp.StatusCode != http.StatusUnauthorized ||
+			c.BearerAuth.Provider == nil ||
+			attempt > 0 {
+			return resp, nil
+		}
+		resp.Body.Close()
+		if err := c.BearerAuth.Provider.InvalidateToken(ctx); err != nil {
+			return nil, fmt.Errorf("refresh authentication token: %w", err)
+		}
 	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	if c.BasicAuth.Username != "" && c.BasicAuth.Password != "" {
-		req.SetBasicAuth(c.BasicAuth.Username, c.BasicAuth.Password)
-	}
-	if c.APIKeyAuth.APIKey != "" {
-		q := req.URL.Query()
-		q.Set("X-API-Key", c.APIKeyAuth.APIKey)
-		req.URL.RawQuery = q.Encode()
-	}
-	return c.Client.Do(req)
+	return nil, fmt.Errorf("exhausted retry attempts")
 }
 
 // newPingRequest constructs an http.Request for the Ping method
