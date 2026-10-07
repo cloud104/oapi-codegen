@@ -165,8 +165,14 @@ func (r {{genResponseTypeName $opid | ucFirst}}) ContentType() string {
     {{.}}
     {{end -}}func (c *{{ $clientTypeName }}) {{$opid}}(ctx context.Context{{genParamArgs .PathParams}}{{if .RequiresParamObject}}, params *{{$opid}}Params{{end}}, reqEditors... RequestEditorFn) (*{{genResponseTypeName $opid}}, error){
         editors := reqEditors
-        {{ if securitySchemes . -}}
-            // TODO: autenticate
+        {{ if basicAuthFromOperation . -}}
+            // TODO: autenticate with basic
+        {{ end -}}
+        {{ if bearerAuthFromOperation . -}}
+            // TODO: autenticate with bearer
+        {{ end -}}
+        {{ if apiKeyAuthFromOperation . -}}
+            // TODO: autenticate with apiKey
         {{ end -}}
         rsp, err := c.{{camelCaseWithInitialisms $parent.OperationId}}(ctx{{genParamNames .PathParams}}{{if .RequiresParamObject}}, params{{end}}, editors...)
         if err != nil {

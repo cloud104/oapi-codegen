@@ -255,7 +255,9 @@ func (r PingResponse) ContentType() string {
 // Returns a wrapper object for the known response body format(s).
 func (c *Client) Ping(ctx context.Context, reqEditors ...RequestEditorFn) (*PingResponse, error) {
 	editors := reqEditors
-	// TODO: autenticate
+	// TODO: autenticate with basic
+	// TODO: autenticate with bearer
+	// TODO: autenticate with apiKey
 	rsp, err := c.ping(ctx, editors...)
 	if err != nil {
 		return nil, err
