@@ -8,6 +8,8 @@ paths:
       operationId: ping
       security:
         - bearerAuth: [ ]
+        - basicAuth: [ ]
+        - apiKeyAuth: [ ]
       responses:
         '200':
           description: pet response
