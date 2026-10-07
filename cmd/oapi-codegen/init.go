@@ -186,11 +186,13 @@ type basicAuthSecurity struct {
 	Scopes      []string
 }
 
-func basicAuthFromOperation(op *codegen.OperationDefinition) *basicAuthSecurity {
+func basicAuthFromOperation(op *codegen.OperationDefinition) []*basicAuthSecurity {
 	spec := codegenGlobalState.spec
 	if spec == nil || spec.Components == nil || op == nil {
 		return nil
 	}
+
+	var result []*basicAuthSecurity
 
 	for _, definition := range op.SecurityDefinitions {
 		ref, exists := spec.Components.SecuritySchemes[definition.ProviderName]
@@ -200,15 +202,15 @@ func basicAuthFromOperation(op *codegen.OperationDefinition) *basicAuthSecurity 
 
 		scheme := ref.Value
 		if scheme.Type == "http" && strings.EqualFold(scheme.Scheme, "basic") {
-			return &basicAuthSecurity{
+			result = append(result, &basicAuthSecurity{
 				Name:        definition.ProviderName,
 				Description: scheme.Description,
 				Scopes:      definition.Scopes,
-			}
+			})
 		}
 	}
 
-	return nil
+	return result
 }
 
 type bearerAuthSecurity struct {
@@ -218,11 +220,13 @@ type bearerAuthSecurity struct {
 	Scopes       []string
 }
 
-func bearerAuthFromOperation(op *codegen.OperationDefinition) *bearerAuthSecurity {
+func bearerAuthFromOperation(op *codegen.OperationDefinition) []*bearerAuthSecurity {
 	spec := codegenGlobalState.spec
 	if spec == nil || spec.Components == nil || op == nil {
 		return nil
 	}
+
+	var result []*bearerAuthSecurity
 
 	for _, definition := range op.SecurityDefinitions {
 		ref, exists := spec.Components.SecuritySchemes[definition.ProviderName]
@@ -232,16 +236,16 @@ func bearerAuthFromOperation(op *codegen.OperationDefinition) *bearerAuthSecurit
 
 		scheme := ref.Value
 		if scheme.Type == "http" && strings.EqualFold(scheme.Scheme, "bearer") {
-			return &bearerAuthSecurity{
+			result = append(result, &bearerAuthSecurity{
 				Name:         definition.ProviderName,
 				Description:  scheme.Description,
 				BearerFormat: scheme.BearerFormat,
 				Scopes:       definition.Scopes,
-			}
+			})
 		}
 	}
 
-	return nil
+	return result
 }
 
 type apiKeyAuthSecurity struct {
@@ -252,11 +256,13 @@ type apiKeyAuthSecurity struct {
 	Scopes      []string
 }
 
-func apiKeyAuthFromOperation(op *codegen.OperationDefinition) *apiKeyAuthSecurity {
+func apiKeyAuthFromOperation(op *codegen.OperationDefinition) []*apiKeyAuthSecurity {
 	spec := codegenGlobalState.spec
 	if spec == nil || spec.Components == nil || op == nil {
 		return nil
 	}
+
+	var result []*apiKeyAuthSecurity
 
 	for _, definition := range op.SecurityDefinitions {
 		ref, exists := spec.Components.SecuritySchemes[definition.ProviderName]
@@ -269,14 +275,14 @@ func apiKeyAuthFromOperation(op *codegen.OperationDefinition) *apiKeyAuthSecurit
 			continue
 		}
 
-		return &apiKeyAuthSecurity{
+		result = append(result, &apiKeyAuthSecurity{
 			Name:        definition.ProviderName,
 			Description: scheme.Description,
 			KeyName:     scheme.Name,
 			In:          scheme.In,
 			Scopes:      definition.Scopes,
-		}
+		})
 	}
 
-	return nil
+	return result
 }

@@ -154,7 +154,6 @@ func (c *rawClient) applyEditors(ctx context.Context, req *http.Request, additio
 // Client which conforms to the OpenAPI3 specification for this service.
 type Client struct {
 	rawClientInterface
-	tokenStore TokenStore
 }
 
 // NewClient creates a new Client, which wraps
@@ -164,7 +163,7 @@ func NewClient(server string, opts ...ClientOption) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Client{rawClientInterface: client}, nil
+	return &Client{client}, nil
 }
 
 // WithBaseURL overrides the baseURL.
@@ -255,30 +254,12 @@ func (r PingResponse) ContentType() string {
 //
 // Returns a wrapper object for the known response body format(s).
 func (c *Client) Ping(ctx context.Context, reqEditors ...RequestEditorFn) (*PingResponse, error) {
-	for attempt := range 2 {
-		editors := reqEditors
-		if c.tokenStore != nil {
-			token, err := c.tokenStore.Get(ctx)
-			if err != nil {
-				return nil, fmt.Errorf("get authentication token: %w", err)
-			}
-			editors = append(editors, func(_ context.Context, req *http.Request) error {
-				req.Header.Set("Authorization", "Bearer "+token)
-				return nil
-			})
-		}
-		rsp, err := c.ping(ctx, editors...)
-		if err != nil {
-			return nil, err
-		}
-		if rsp.StatusCode != http.StatusUnauthorized || c.tokenStore == nil || attempt > 0 {
-			return parsePingResponse(rsp)
-		}
-		if _, err = c.tokenStore.Refresh(ctx); err != nil {
-			return nil, fmt.Errorf("refresh authentication token: %w", err)
-		}
+	// {"bearerAuth":{"scheme":"bearer","type":"http"}}
+	rsp, err := c.ping(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
 	}
-	return nil, fmt.Errorf("exhausted retry attempts")
+	return parsePingResponse(rsp)
 }
 
 // parsePingResponse parses an HTTP response from a Ping call

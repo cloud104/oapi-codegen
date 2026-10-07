@@ -164,6 +164,7 @@ func (r {{genResponseTypeName $opid | ucFirst}}) ContentType() string {
     {{with $deprecationComment}}//
     {{.}}
     {{end -}}func (c *{{ $clientTypeName }}) {{$opid}}(ctx context.Context{{genParamArgs .PathParams}}{{if .RequiresParamObject}}, params *{{$opid}}Params{{end}}, reqEditors... RequestEditorFn) (*{{genResponseTypeName $opid}}, error){
+        // {{ securityFromOperation . | toJson }}
         rsp, err := c.{{camelCaseWithInitialisms $parent.OperationId}}(ctx{{genParamNames .PathParams}}{{if .RequiresParamObject}}, params{{end}}, reqEditors...)
         if err != nil {
             return nil, err
