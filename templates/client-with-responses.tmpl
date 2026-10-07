@@ -27,8 +27,9 @@ func WithBaseURL(baseURL string) ClientOption {
 	}
 }
 
-// ClientWithResponsesInterface is the interface specification for the client with responses above.
-type ClientWithResponsesInterface interface {
+{{ $exportedClientTypeName := pascalCaseWithInitialisms opts.OutputOptions.ClientTypeName -}}
+// {{ $exportedClientTypeName }}Interface is the interface specification for the client with responses above.
+type {{ $exportedClientTypeName }}Interface interface {
 {{range . -}}
 {{$hasParams := .RequiresParamObject -}}
 {{$pathParams := .PathParams -}}
