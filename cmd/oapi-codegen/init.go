@@ -43,11 +43,16 @@ func init() {
 		}
 	}
 
+	// Naming
 	codegen.TemplateFunctions["camelCaseWithInitialisms"] = camelCaseWithInitialisms
 	codegen.TemplateFunctions["pascalCaseWithInitialisms"] = pascalCaseWithInitialisms
+
+	// Request / Responses bodies
 	codegen.TemplateFunctions["genJSONRequestBodyArg"] = genJSONRequestBodyArg
 	codegen.TemplateFunctions["groupResponses"] = groupResponses
 	codegen.TemplateFunctions["jsonRequestBody"] = jsonRequestBody
+
+	// Security / authentication
 	codegen.TemplateFunctions["securityForOperations"] = securityForOperations
 	codegen.TemplateFunctions["basicAuthForOperation"] = basicAuthForOperation
 	codegen.TemplateFunctions["basicAuthForOperations"] = basicAuthForOperations
