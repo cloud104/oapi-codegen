@@ -178,8 +178,9 @@ type rawClientInterface interface {
         }
         {{ end -}}
         {{ range $bearer := bearerAuthForOperation . -}}
-        if c.tokens != nil {
-            token, err := c.tokens.Get(ctx)
+        {{- $name := pascalCaseWithInitialisms $bearer.Name -}}
+        if c.{{ $name }}.Provider != nil {
+            token, err := c.{{ $name }}.Provider.GetToken(ctx)
             if err != nil {
                 return nil, fmt.Errorf("get authentication token: %w", err)
             }
@@ -190,18 +191,19 @@ type rawClientInterface interface {
         }
         {{ end -}}
         {{ range $apiKey := apiKeyAuthForOperation . -}}
-        if c.apiKey != "" {
+        {{- $name := pascalCaseWithInitialisms $apiKey.Name -}}
+        if c.{{ $name }}.APIKey != "" {
             editors = append(editors, func(_ context.Context, req *http.Request) error {
                 {{ if eq $apiKey.In "header" -}}
-                req.Header.Set("{{$apiKey.KeyName}}", c.apiKey)
+                req.Header.Set("{{$apiKey.KeyName}}", c.{{ $name }}.APIKey)
                 {{ else if eq $apiKey.In "query" -}}
                 q := req.URL.Query()
-                q.Set("{{$apiKey.KeyName}}", c.apiKey)
+                q.Set("{{$apiKey.KeyName}}", c.{{ $name }}.APIKey)
                 req.URL.RawQuery = q.Encode()
                 {{ else if eq $apiKey.In "cookie" -}}
                 req.AddCookie(&http.Cookie{
                     Name:  "{{$apiKey.KeyName}}",
-                    Value: c.apiKey,
+                    Value: c.{{ $name }}.APIKey,
                 })
                 {{ end -}}
                 return nil
