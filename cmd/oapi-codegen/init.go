@@ -50,8 +50,11 @@ func init() {
 	codegen.TemplateFunctions["jsonRequestBody"] = jsonRequestBody
 	codegen.TemplateFunctions["securityForOperations"] = securityForOperations
 	codegen.TemplateFunctions["basicAuthForOperation"] = basicAuthForOperation
+	codegen.TemplateFunctions["basicAuthForOperations"] = basicAuthForOperations
 	codegen.TemplateFunctions["bearerAuthForOperation"] = bearerAuthForOperation
+	codegen.TemplateFunctions["bearerAuthForOperations"] = bearerAuthForOperations
 	codegen.TemplateFunctions["apiKeyAuthForOperation"] = apiKeyAuthForOperation
+	codegen.TemplateFunctions["apiKeyAuthForOperations"] = apiKeyAuthForOperations
 }
 
 func camelCaseWithInitialisms(s string) string {
@@ -197,10 +200,6 @@ type operationSecurity struct {
 	Scheme     *openapi3.SecurityScheme
 }
 
-func securityForOperation(ops *codegen.OperationDefinition) []*operationSecurity {
-	return securityForOperations([]codegen.OperationDefinition{*ops})
-}
-
 func securityForOperations(ops []codegen.OperationDefinition) []*operationSecurity {
 	spec := codegenGlobalState.spec
 	if spec == nil || spec.Components == nil {
@@ -233,7 +232,13 @@ func securityForOperations(ops []codegen.OperationDefinition) []*operationSecuri
 		result = append(result, scheme)
 	}
 
-	// TODO: it should be deterministic
+	slices.SortFunc(result, func(a, b *operationSecurity) int {
+		return strings.Compare(
+			a.Definition.ProviderName,
+			b.Definition.ProviderName,
+		)
+	})
+
 	return result
 }
 
@@ -244,9 +249,13 @@ type basicAuth struct {
 }
 
 func basicAuthForOperation(op *codegen.OperationDefinition) []*basicAuth {
+	return basicAuthForOperations([]codegen.OperationDefinition{*op})
+}
+
+func basicAuthForOperations(ops []codegen.OperationDefinition) []*basicAuth {
 	var result []*basicAuth
 
-	for _, security := range securityForOperation(op) {
+	for _, security := range securityForOperations(ops) {
 		if security.Scheme.Type != "http" ||
 			!strings.EqualFold(security.Scheme.Scheme, "basic") {
 			continue
@@ -270,9 +279,13 @@ type bearerAuth struct {
 }
 
 func bearerAuthForOperation(op *codegen.OperationDefinition) []*bearerAuth {
+	return bearerAuthForOperations([]codegen.OperationDefinition{*op})
+}
+
+func bearerAuthForOperations(ops []codegen.OperationDefinition) []*bearerAuth {
 	var result []*bearerAuth
 
-	for _, security := range securityForOperation(op) {
+	for _, security := range securityForOperations(ops) {
 		if security.Scheme.Type != "http" ||
 			!strings.EqualFold(security.Scheme.Scheme, "bearer") {
 			continue
@@ -298,9 +311,13 @@ type apiKeyAuth struct {
 }
 
 func apiKeyAuthForOperation(op *codegen.OperationDefinition) []*apiKeyAuth {
+	return apiKeyAuthForOperations([]codegen.OperationDefinition{*op})
+}
+
+func apiKeyAuthForOperations(ops []codegen.OperationDefinition) []*apiKeyAuth {
 	var result []*apiKeyAuth
 
-	for _, security := range securityForOperation(op) {
+	for _, security := range securityForOperations(ops) {
 		if security.Scheme.Type != "apiKey" {
 			continue
 		}
