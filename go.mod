@@ -4,6 +4,7 @@ go 1.27.1
 
 require (
 	github.com/Masterminds/sprig/v3 v3.3.0
+	github.com/ettle/strcase v0.2.0
 	github.com/getkin/kin-openapi v0.144.0
 	github.com/oapi-codegen/oapi-codegen/v2 v2.8.0
 	go.yaml.in/yaml/v3 v3.0.5
