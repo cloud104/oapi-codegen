@@ -45,6 +45,13 @@ type rawClient struct {
 	// the network.
 	RequestEditors []RequestEditorFn
 
+	// BearerAuth uses a token provider to authenticate requests with
+	// an Authorization: Bearer <token> header when configured.
+	BearerAuth struct {
+		// Provider supplies bearer tokens and handles token invalidation.
+		Provider TokenProvider
+	}
+
 	// BasicAuth uses a username and password to authenticate requests
 	// with HTTP Basic Authentication when configured.
 	BasicAuth struct {
@@ -60,13 +67,6 @@ type rawClient struct {
 	APIKeyAuth struct {
 		// APIKey is the API key included in authenticated requests.
 		APIKey string
-	}
-
-	// BearerAuth uses a token provider to authenticate requests with
-	// an Authorization: Bearer <token> header when configured.
-	BearerAuth struct {
-		// Provider supplies bearer tokens and handles token invalidation.
-		Provider TokenProvider
 	}
 }
 
@@ -162,7 +162,9 @@ func (c *rawClient) ping(ctx context.Context, reqEditors ...RequestEditorFn) (*h
 	}
 	if c.APIKeyAuth.APIKey != "" {
 		editors = append(editors, func(_ context.Context, req *http.Request) error {
-			req.Header.Set("X-API-Key", c.APIKeyAuth.APIKey)
+			q := req.URL.Query()
+			q.Set("X-API-Key", c.APIKeyAuth.APIKey)
+			req.URL.RawQuery = q.Encode()
 			return nil
 		})
 	}

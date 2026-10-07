@@ -29,7 +29,7 @@ components:
 
     apiKeyAuth:
       type: apiKey
-      in: header
+      in: query
       name: X-API-Key
 
   schemas:
