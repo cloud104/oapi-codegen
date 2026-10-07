@@ -182,11 +182,11 @@ func (c *rawClient) ping(ctx context.Context, reqEditors ...RequestEditorFn) (*h
 	for attempt := 0; attempt < 2; attempt++ {
 		req, err := newPingRequest(c.Server)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("create GET /ping request: %w", err)
 		}
 		req = req.WithContext(ctx)
 		if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("apply request editors to GET /ping request: %w", err)
 		}
 		if c.BasicAuth.Username != "" && c.BasicAuth.Password != "" {
 			req.SetBasicAuth(c.BasicAuth.Username, c.BasicAuth.Password)
@@ -194,7 +194,7 @@ func (c *rawClient) ping(ctx context.Context, reqEditors ...RequestEditorFn) (*h
 		if c.BearerAuth.Provider != nil {
 			token, err := c.BearerAuth.Provider.GetToken(ctx)
 			if err != nil {
-				return nil, fmt.Errorf("get authentication token: %w", err)
+				return nil, fmt.Errorf("get authentication token for GET /ping: %w", err)
 			}
 			req.Header.Set("Authorization", "Bearer "+token)
 		}
@@ -205,7 +205,7 @@ func (c *rawClient) ping(ctx context.Context, reqEditors ...RequestEditorFn) (*h
 		}
 		resp, err := c.Client.Do(req)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("perform GET /ping request: %w", err)
 		}
 		if resp.StatusCode != http.StatusUnauthorized ||
 			c.BearerAuth.Provider == nil ||
@@ -214,10 +214,10 @@ func (c *rawClient) ping(ctx context.Context, reqEditors ...RequestEditorFn) (*h
 		}
 		resp.Body.Close()
 		if err := c.BearerAuth.Provider.InvalidateToken(ctx); err != nil {
-			return nil, fmt.Errorf("refresh authentication token: %w", err)
+			return nil, fmt.Errorf("invalidate token after unauthorized GET /ping response: %w", err)
 		}
 	}
-	return nil, fmt.Errorf("exhausted retry attempts")
+	return nil, fmt.Errorf("GET /ping failed after exhausting retry attempts")
 }
 
 // newHeartbeatRequest constructs an http.Request for the Heartbeat method
