@@ -30,9 +30,9 @@ type rawClient struct {
 
 	{{ range $basic := $globalBasicAuthSchemes }}
     {{- $name := pascalCaseWithInitialisms $basic.Name -}}
-	// {{ pascalCaseWithInitialisms $basic.Name }} uses a username and password to authenticate requests
+	// {{ $name }} uses a username and password to authenticate requests
 	// with HTTP Basic Authentication when configured.
-	{{ pascalCaseWithInitialisms $basic.Name }} struct {
+	{{ $name }} struct {
 		// Username is the username used for authentication.
 		Username string
 
@@ -42,18 +42,20 @@ type rawClient struct {
     {{ end }}
 
     {{ range $bearer := $globalBearerAuthSchemes }}
-	// {{ pascalCaseWithInitialisms $bearer.Name }} uses a token provider to authenticate requests with
+    {{- $name := pascalCaseWithInitialisms $bearer.Name -}}
+	// {{ $name }} uses a token provider to authenticate requests with
 	// an Authorization: Bearer <token> header when configured.
-	{{ pascalCaseWithInitialisms $bearer.Name }} struct {
+	{{ $name }} struct {
 		// Provider supplies bearer tokens and handles token invalidation.
 		Provider TokenProvider
 	}
     {{ end }}
 
     {{ range $apiKey := $globalApiKeyAuthSchemes }}
-	// {{ pascalCaseWithInitialisms $apiKey.Name }} uses a static API key to authenticate requests
+    {{- $name := pascalCaseWithInitialisms $apiKey.Name -}}
+	// {{ $name }} uses a static API key to authenticate requests
 	// when configured.
-	{{ pascalCaseWithInitialisms $apiKey.Name }} struct {
+	{{ $name }} struct {
 		// APIKey is the API key included in authenticated requests.
 		APIKey string
 	}
