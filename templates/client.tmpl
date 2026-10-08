@@ -50,6 +50,16 @@ type rawClient struct {
 		Provider TokenProvider
 	}
     {{ end }}
+
+    {{ range $apiKey := $globalApiKeyAuthSchemes }}
+    {{- $name := pascalCaseWithInitialisms $apiKey.Name -}}
+	// {{ $name }} uses a static API key to authenticate requests
+	// when configured.
+	{{ $name }} struct {
+		// APIKey is the API key included in authenticated requests.
+		APIKey string
+	}
+	{{ end -}}
 }
 
 // ClientOption allows setting custom parameters during construction
@@ -114,6 +124,17 @@ func With{{ pascalCaseWithInitialisms $basic.Name }}(username, password string) 
 func With{{ $name }}(provider TokenProvider) ClientOption {
 	return func(c *rawClient) error {
 		c.{{ $name }}.Provider = provider
+		return nil
+	}
+}
+{{ end }}
+
+{{ range $apiKey := $globalApiKeyAuthSchemes }}
+{{- $name := pascalCaseWithInitialisms $apiKey.Name -}}
+// With{{ $name }} configures authentication using a static API key.
+func With{{ $name }}(apiKey string) ClientOption {
+	return func(c *rawClient) error {
+		c.{{ $name }}.APIKey = apiKey
 		return nil
 	}
 }
