@@ -79,10 +79,23 @@ type {{genResponseTypeName $opid | ucFirst}} struct {
 }
 
 {{ if not opts.OutputOptions.SkipResponseBodyGetters }}
-{{- range $responseTypeDefinitions}}
-  // Get{{.TypeName}} returns the response for an HTTP {{ .ResponseName }} `{{ .ContentTypeName }}` response
-  func (r {{genResponseTypeName $opid | ucFirst}}) Get{{.TypeName}}() *{{.Schema.TypeDecl}} {
-      return r.{{.TypeName}}
+{{- range groupResponses $responseTypeDefinitions}}
+  // {{.Method}} checks if the HTTP response status code is {{ .ResponseCodes.String }}, and if so, returns the {{.Type}}.
+  func (r {{genResponseTypeName $opid | ucFirst}}) {{.Method}}() (*{{.Type}}, error) {
+    {{- range .Fields }}
+    if r.{{ . }} != nil {
+        return r.{{ . }}, nil
+    }
+    {{- end }}
+    if r.HTTPResponse == nil {
+        return nil, fmt.Errorf("missing HTTP response")
+    }
+    switch r.HTTPResponse.StatusCode {
+    case {{ .ResponseCodes | join ", " }}:
+        return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
+    default:
+        return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
+    }
   }
 {{- end}}
 
