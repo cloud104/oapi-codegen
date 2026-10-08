@@ -53,8 +53,11 @@ func init() {
 	codegen.TemplateFunctions["groupResponses"] = groupResponses
 
 	// Security / authentication
+	codegen.TemplateFunctions["basicAuthForOperation"] = basicAuthForOperation
 	codegen.TemplateFunctions["basicAuthForOperations"] = basicAuthForOperations
+	codegen.TemplateFunctions["bearerAuthForOperation"] = bearerAuthForOperation
 	codegen.TemplateFunctions["bearerAuthForOperations"] = bearerAuthForOperations
+	codegen.TemplateFunctions["apiKeyAuthForOperation"] = apiKeyAuthForOperation
 	codegen.TemplateFunctions["apiKeyAuthForOperations"] = apiKeyAuthForOperations
 }
 
@@ -247,6 +250,10 @@ type basicAuth struct {
 	Scopes      []string
 }
 
+func basicAuthForOperation(op *codegen.OperationDefinition) []*basicAuth {
+	return basicAuthForOperations([]codegen.OperationDefinition{*op})
+}
+
 func basicAuthForOperations(ops []codegen.OperationDefinition) []*basicAuth {
 	var result []*basicAuth
 
@@ -275,6 +282,10 @@ type bearerAuth struct {
 	Description  string
 	BearerFormat string
 	Scopes       []string
+}
+
+func bearerAuthForOperation(op *codegen.OperationDefinition) []*bearerAuth {
+	return bearerAuthForOperations([]codegen.OperationDefinition{*op})
 }
 
 func bearerAuthForOperations(ops []codegen.OperationDefinition) []*bearerAuth {
@@ -307,6 +318,10 @@ type apiKeyAuth struct {
 	KeyName     string
 	In          string
 	Scopes      []string
+}
+
+func apiKeyAuthForOperation(op *codegen.OperationDefinition) []*apiKeyAuth {
+	return apiKeyAuthForOperations([]codegen.OperationDefinition{*op})
 }
 
 func apiKeyAuthForOperations(ops []codegen.OperationDefinition) []*apiKeyAuth {
