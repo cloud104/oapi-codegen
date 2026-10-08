@@ -51,6 +51,11 @@ func init() {
 	codegen.TemplateFunctions["jsonRequestBody"] = jsonRequestBody
 	codegen.TemplateFunctions["genJSONRequestBodyArg"] = genJSONRequestBodyArg
 	codegen.TemplateFunctions["groupResponses"] = groupResponses
+
+	// Security / authentication
+	codegen.TemplateFunctions["basicAuthForOperations"] = basicAuthForOperations
+	codegen.TemplateFunctions["bearerAuthForOperations"] = bearerAuthForOperations
+	codegen.TemplateFunctions["apiKeyAuthForOperations"] = apiKeyAuthForOperations
 }
 
 func camelCaseWithInitialisms(s string) string {
@@ -187,6 +192,142 @@ func groupResponses(types []codegen.ResponseTypeDefinition) []*responseGroup {
 		}
 
 		return strings.Compare(a.Type, b.Type)
+	})
+
+	return result
+}
+
+type operationSecurity struct {
+	Definition codegen.SecurityDefinition
+	Scheme     *openapi3.SecurityScheme
+}
+
+func securityForOperations(ops []codegen.OperationDefinition) []*operationSecurity {
+	spec := codegenGlobalState.spec
+	if spec == nil || spec.Components == nil {
+		return nil
+	}
+
+	schemes := make(map[string]*operationSecurity)
+
+	for _, op := range ops {
+		for _, definition := range op.SecurityDefinitions {
+			name := definition.ProviderName
+			if _, exists := schemes[name]; exists {
+				continue
+			}
+
+			ref := spec.Components.SecuritySchemes[name]
+			if ref == nil || ref.Value == nil {
+				continue
+			}
+
+			schemes[name] = &operationSecurity{
+				Definition: definition,
+				Scheme:     ref.Value,
+			}
+		}
+	}
+
+	result := make([]*operationSecurity, 0, len(schemes))
+	for _, scheme := range schemes {
+		result = append(result, scheme)
+	}
+
+	slices.SortFunc(result, func(a, b *operationSecurity) int {
+		return strings.Compare(a.Definition.ProviderName, b.Definition.ProviderName)
+	})
+
+	return result
+}
+
+type basicAuth struct {
+	Name        string
+	Description string
+	Scopes      []string
+}
+
+func basicAuthForOperations(ops []codegen.OperationDefinition) []*basicAuth {
+	var result []*basicAuth
+
+	for _, security := range securityForOperations(ops) {
+		if security.Scheme.Type != "http" ||
+			!strings.EqualFold(security.Scheme.Scheme, "basic") {
+			continue
+		}
+
+		result = append(result, &basicAuth{
+			Name:        security.Definition.ProviderName,
+			Description: security.Scheme.Description,
+			Scopes:      security.Definition.Scopes,
+		})
+	}
+
+	slices.SortFunc(result, func(a, b *basicAuth) int {
+		return strings.Compare(a.Name, b.Name)
+	})
+
+	return result
+}
+
+type bearerAuth struct {
+	Name         string
+	Description  string
+	BearerFormat string
+	Scopes       []string
+}
+
+func bearerAuthForOperations(ops []codegen.OperationDefinition) []*bearerAuth {
+	var result []*bearerAuth
+
+	for _, security := range securityForOperations(ops) {
+		if security.Scheme.Type != "http" ||
+			!strings.EqualFold(security.Scheme.Scheme, "bearer") {
+			continue
+		}
+
+		result = append(result, &bearerAuth{
+			Name:         security.Definition.ProviderName,
+			Description:  security.Scheme.Description,
+			BearerFormat: security.Scheme.BearerFormat,
+			Scopes:       security.Definition.Scopes,
+		})
+	}
+
+	slices.SortFunc(result, func(a, b *bearerAuth) int {
+		return strings.Compare(a.Name, b.Name)
+	})
+
+	return result
+}
+
+type apiKeyAuth struct {
+	Name        string
+	Description string
+	KeyName     string
+	In          string
+	Scopes      []string
+}
+
+func apiKeyAuthForOperations(ops []codegen.OperationDefinition) []*apiKeyAuth {
+	var result []*apiKeyAuth
+
+	for _, security := range securityForOperations(ops) {
+		if security.Scheme.Type != "apiKey" {
+			continue
+		}
+
+		result = append(result, &apiKeyAuth{
+			Name:        security.Definition.ProviderName,
+			Description: security.Scheme.Description,
+			KeyName:     security.Scheme.Name,
+			In:          security.Scheme.In,
+			Scopes:      security.Definition.Scopes,
+		})
+	}
+
+	slices.SortFunc(result, func(a, b *apiKeyAuth) int {
+		return strings.Compare(a.Name, b.Name)
 	})
 
 	return result
