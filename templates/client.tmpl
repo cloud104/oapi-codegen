@@ -40,6 +40,16 @@ type rawClient struct {
 		Password string
 	}
     {{ end }}
+
+    {{ range $bearer := $globalBearerAuthSchemes }}
+    {{- $name := pascalCaseWithInitialisms $bearer.Name -}}
+	// {{ $name }} uses a token provider to authenticate requests with
+	// an Authorization: Bearer <token> header when configured.
+	{{ $name }} struct {
+		// Provider supplies bearer tokens and handles token invalidation.
+		Provider TokenProvider
+	}
+    {{ end }}
 }
 
 // ClientOption allows setting custom parameters during construction
@@ -93,6 +103,17 @@ func With{{ pascalCaseWithInitialisms $basic.Name }}(username, password string) 
 	return func(c *rawClient) error {
 		c.{{ $name }}.Username = username
 		c.{{ $name }}.Password = password
+		return nil
+	}
+}
+{{ end }}
+
+{{ range $bearer := $globalBearerAuthSchemes }}
+{{- $name := pascalCaseWithInitialisms $bearer.Name -}}
+// With{{ $name }} configures bearer-token authentication using the supplied token provider.
+func With{{ $name }}(provider TokenProvider) ClientOption {
+	return func(c *rawClient) error {
+		c.{{ $name }}.Provider = provider
 		return nil
 	}
 }
