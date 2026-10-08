@@ -62,6 +62,23 @@ type rawClient struct {
 	{{ end -}}
 }
 
+{{- if $globalBearerAuthSchemes }}
+// TokenProvider provides bearer tokens used to authenticate API requests.
+//
+// Implementations may cache tokens and reuse them for their validity period.
+// GetToken should return a valid token, obtaining or refreshing one when
+// necessary. InvalidateToken signals that the currently cached token should
+// no longer be used, allowing a subsequent call to GetToken to obtain a new
+// token.
+type TokenProvider interface {
+	// GetToken returns a valid bearer token for authenticating an API request.
+	GetToken(ctx context.Context) (string, error)
+
+	// InvalidateToken invalidates the currently cached token, if any.
+	InvalidateToken(ctx context.Context) error
+}
+{{- end }}
+
 // ClientOption allows setting custom parameters during construction
 type ClientOption func(*rawClient) error
 
