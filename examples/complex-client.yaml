@@ -1,0 +1,436 @@
+openapi: "3.0.0"
+
+info:
+  version: 1.0.0
+  title: Craft Beer API
+
+paths:
+  /beers:
+    get:
+      summary: List all beers
+      operationId: listBeers
+      parameters:
+        - name: page
+          in: query
+          description: Page number, starting at 1
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+            example: 1
+
+        - name: pageSize
+          in: query
+          description: Number of beers per page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+            example: 20
+
+      responses:
+        '200':
+          description: Paginated list of beers
+          headers:
+            Link:
+              description: >
+                Pagination links using RFC 8288 format.
+                May contain first, previous, next, and last relations.
+              schema:
+                type: string
+              example: >
+                </beers?page=1&pageSize=20>; rel="first",
+                </beers?page=1&pageSize=20>; rel="prev",
+                </beers?page=3&pageSize=20>; rel="next",
+                </beers?page=5&pageSize=20>; rel="last"
+
+            X-Total-Count:
+              description: Total number of beers
+              schema:
+                type: integer
+              example: 87
+
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BeerPage'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/BeerPage'
+
+        '202':
+          description: Paginated list of beers
+          headers:
+            Link:
+              description: >
+                Pagination links using RFC 8288 format.
+                May contain first, previous, next, and last relations.
+              schema:
+                type: string
+              example: >
+                </beers?page=1&pageSize=20>; rel="first",
+                </beers?page=1&pageSize=20>; rel="prev",
+                </beers?page=3&pageSize=20>; rel="next",
+                </beers?page=5&pageSize=20>; rel="last"
+
+            X-Total-Count:
+              required: true
+              description: Total number of beers
+              schema:
+                type: integer
+              example: 87
+
+            Retry-After:
+              description: Number of seconds to wait before retrying
+              schema:
+                type: integer
+              example: 30
+
+            X-Request-Id:
+              description: Unique identifier for this request
+              schema:
+                type: string
+              example: "8f3a2c91-7b4e-4d6a-9f12-123456789abc"
+
+          content:
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/BeerPage'
+
+    post:
+      summary: Create a new beer
+      operationId: createBeer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BeerCreate'
+          text/plain:
+            schema:
+              type: string
+              example: "Midnight Hops,Imperial IPA,8.5,70,Northern Trail Brewing"
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BeerCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BeerCreate'
+
+      responses:
+        '201':
+          description: Beer created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Beer'
+
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+
+  /beers/{beerId}:
+    parameters:
+      - name: beerId
+        in: path
+        required: true
+        schema:
+          type: integer
+          example: 7
+
+    get:
+      summary: Get a beer by ID
+      operationId: getBeer
+      responses:
+        '200':
+          description: Beer found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    example: 7
+                  name:
+                    type: string
+                    example: "IPA"
+                  style:
+                    type: string
+                    example: "India Pale Ale"
+                  abv:
+                    type: number
+                    format: float
+                    example: 6.5
+                required:
+                  - id
+                  - name
+
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      summary: Replace a beer
+      operationId: replaceBeer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BeerReplace'
+      responses:
+        '200':
+          description: Beer replaced
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Beer'
+
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+
+    patch:
+      summary: Partially update a beer
+      operationId: updateBeer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BeerUpdate'
+      responses:
+        '200':
+          description: Beer updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Beer'
+
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+
+    delete:
+      summary: Delete a beer
+      operationId: deleteBeer
+      responses:
+        '204':
+          description: Beer deleted
+
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                type: object
+
+components:
+  responses:
+    BadRequest:
+      description: The request is invalid
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    NotFound:
+      description: The requested beer was not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    Conflict:
+      description: The request conflicts with the current state of the resource
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    UnsupportedMediaType:
+      description: The request content type is not supported
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    BeerPage:
+      type: object
+      required:
+        - items
+        - page
+        - pageSize
+        - totalItems
+        - totalPages
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Beer'
+        page:
+          type: integer
+          minimum: 1
+          example: 1
+        pageSize:
+          type: integer
+          minimum: 1
+          example: 20
+        totalItems:
+          type: integer
+          minimum: 0
+          example: 87
+        totalPages:
+          type: integer
+          minimum: 0
+          example: 5
+        hasNext:
+          type: boolean
+          example: true
+        hasPrevious:
+          type: boolean
+          example: false
+
+    Beer:
+      type: object
+      required:
+        - id
+        - name
+        - style
+        - abv
+      properties:
+        id:
+          type: integer
+          example: 7
+        name:
+          type: string
+          example: Midnight Hops
+        style:
+          type: string
+          example: Imperial IPA
+        abv:
+          type: number
+          format: float
+          example: 8.5
+        ibu:
+          type: integer
+          example: 70
+        brewery:
+          type: string
+          example: Northern Trail Brewing
+
+    BeerCreate:
+      type: object
+      required:
+        - name
+        - style
+        - abv
+      properties:
+        name:
+          type: string
+          example: Midnight Hops
+        style:
+          type: string
+          example: Imperial IPA
+        abv:
+          type: number
+          format: float
+          example: 8.5
+        ibu:
+          type: integer
+          example: 70
+        brewery:
+          type: string
+          example: Northern Trail Brewing
+
+    BeerReplace:
+      type: object
+      required:
+        - name
+        - style
+        - abv
+      properties:
+        name:
+          type: string
+          example: Midnight Hops Reserve
+        style:
+          type: string
+          example: Double IPA
+        abv:
+          type: number
+          format: float
+          example: 9.2
+        ibu:
+          type: integer
+          example: 85
+        brewery:
+          type: string
+          example: Northern Trail Brewing
+
+    BeerUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          example: Midnight Hops Reserve
+        style:
+          type: string
+          example: Double IPA
+        abv:
+          type: number
+          format: float
+          example: 9.2
+        ibu:
+          type: integer
+          example: 85
+        brewery:
+          type: string
+          example: Northern Trail Brewing
+
+    Error:
+      type: object
+      required:
+        - status
+        - error
+        - message
+      properties:
+        status:
+          type: integer
+          example: 404
+        error:
+          type: string
+          example: Not Found
+        message:
+          type: string
+          example: Beer with id 7 was not found

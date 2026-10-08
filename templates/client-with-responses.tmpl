@@ -1,0 +1,241 @@
+{{$clientTypeName := opts.OutputOptions.ClientTypeName -}}
+
+// {{ $clientTypeName }} which conforms to the OpenAPI3 specification for this service.
+type {{ $clientTypeName }} struct {
+    rawClientInterface
+}
+
+// New{{ $clientTypeName }} creates a new {{ $clientTypeName }}, which wraps
+// Client with return type handling
+func New{{ $clientTypeName }}(server string, opts ...ClientOption) (*{{ $clientTypeName }}, error) {
+    client, err := newRawClient(server, opts...)
+    if err != nil {
+        return nil, err
+    }
+    return &{{ $clientTypeName }}{client}, nil
+}
+
+// WithBaseURL overrides the baseURL.
+func WithBaseURL(baseURL string) ClientOption {
+	return func(c *rawClient) error {
+		newBaseURL, err := url.Parse(baseURL)
+		if err != nil {
+			return err
+		}
+		c.Server = newBaseURL.String()
+		return nil
+	}
+}
+
+{{ $exportedClientTypeName := pascalCaseWithInitialisms opts.OutputOptions.ClientTypeName -}}
+// {{ $exportedClientTypeName }}Interface is the interface specification for the client with responses above.
+type {{ $exportedClientTypeName }}Interface interface {
+{{range . -}}
+{{$hasParams := .RequiresParamObject -}}
+{{$pathParams := .PathParams -}}
+{{$opid := .OperationId -}}
+{{$parent := . }}
+{{$deprecationComment := .DeprecationComment -}}
+    {{ if not .HasBody }}
+        {{ .GenerateFunctionComment $opid "" true }}
+        {{with $deprecationComment}}//
+        {{.}}
+        {{end -}}{{$opid}}(ctx context.Context{{genParamArgs .PathParams}}{{if .RequiresParamObject}}, params *{{$opid}}Params{{end}}, reqEditors... RequestEditorFn) (*{{genResponseTypeName $opid}}, error)
+    {{ end -}}
+{{range .Bodies}}
+    {{if .IsSupportedByClient -}}
+        {{ .GenerateFunctionComment $opid $parent .Suffix true }}
+        {{with $deprecationComment}}//
+        {{.}}
+        {{end -}}{{$opid}}{{.Suffix}}(ctx context.Context{{genParamArgs $pathParams}}{{if $hasParams}}, params *{{$opid}}Params{{end}}, body {{$opid}}{{.NameTag}}RequestBody, reqEditors... RequestEditorFn) (*{{genResponseTypeName $opid}}, error)
+    {{end -}}
+{{end}}{{/* range .Bodies */}}
+{{end}}{{/* range . $opid := .OperationId */}}
+}
+
+{{range .}}{{$opid := .OperationId}}{{$op := .}}
+{{$responseTypeDefinitions := getResponseTypeDefinitions .}}
+{{$headerResponses := responsesWithHeaders .Responses}}
+{{- range $headerResponses}}
+// {{genResponseTypeName $opid | ucFirst}}{{.StatusCode | ucFirst}}Headers the declared response headers of an HTTP {{.StatusCode}} response for {{$opid}}
+type {{genResponseTypeName $opid | ucFirst}}{{.StatusCode | ucFirst}}Headers struct {
+    {{range .Headers -}}
+        {{with .DeprecationComment}}{{.}}
+        {{end -}}{{.GoName}} {{.GoTypeDef}}
+    {{end -}}
+}
+{{end}}
+type {{genResponseTypeName $opid | ucFirst}} struct {
+    Body         []byte
+	HTTPResponse *http.Response
+    {{- range $responseTypeDefinitions}}
+    // {{.TypeName}} the response for an HTTP {{ .ResponseName }} `{{ .ContentTypeName }}` response
+    {{.TypeName}} *{{.Schema.TypeDecl}}
+    {{- end}}
+    {{- range $headerResponses}}
+    // Headers{{.StatusCode | ucFirst}} the parsed response headers for an HTTP {{.StatusCode}} response
+    Headers{{.StatusCode | ucFirst}} *{{genResponseTypeName $opid | ucFirst}}{{.StatusCode | ucFirst}}Headers
+    {{- end}}
+}
+
+{{ if not opts.OutputOptions.SkipResponseBodyGetters }}
+{{- range groupResponses $responseTypeDefinitions}}
+  // {{.Method}} checks if the HTTP response status code is {{ .ResponseCodes.String }}, and if so, returns the {{.Type}}.
+  func (r {{genResponseTypeName $opid | ucFirst}}) {{.Method}}() (*{{.Type}}, error) {
+    {{- range .Fields }}
+    if r.{{ . }} != nil {
+        return r.{{ . }}, nil
+    }
+    {{- end }}
+    if r.HTTPResponse == nil {
+        return nil, fmt.Errorf("missing HTTP response")
+    }
+    switch r.HTTPResponse.StatusCode {
+    case {{ .ResponseCodes | join ", " }}:
+        return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
+    default:
+        return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
+    }
+  }
+{{- end}}
+
+// GetBody returns the raw response body bytes
+func (r {{genResponseTypeName $opid | ucFirst}}) GetBody() []byte {
+    return r.Body
+}
+{{end}}
+
+// Error returns an error when the HTTP response does not indicate success.
+func (r {{genResponseTypeName $opid | ucFirst}}) Error() error {
+	if r.HTTPResponse == nil {
+		return fmt.Errorf("missing HTTP response")
+	}
+	if r.HTTPResponse.StatusCode >= 200 && r.HTTPResponse.StatusCode < 300 {
+		return nil
+	}
+	return fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
+}
+
+// Status returns HTTPResponse.Status
+func (r {{genResponseTypeName $opid | ucFirst}}) Status() string {
+    if r.HTTPResponse != nil {
+        return r.HTTPResponse.Status
+    }
+    return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r {{genResponseTypeName $opid | ucFirst}}) StatusCode() int {
+    if r.HTTPResponse != nil {
+        return r.HTTPResponse.StatusCode
+    }
+    return 0
+}
+
+{{ if opts.OutputOptions.ClientResponseBytesFunction }}
+// Bytes is a convenience method to retrieve the raw bytes from the HTTP response
+func (r {{genResponseTypeName $opid | ucFirst}}) Bytes() []byte {
+    return r.Body
+}
+{{end}}
+
+{{ if not opts.OutputOptions.SkipClientResponseContentType }}
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r {{genResponseTypeName $opid | ucFirst}}) ContentType() string {
+    if r.HTTPResponse != nil {
+        return r.HTTPResponse.Header.Get("Content-Type")
+    }
+    return ""
+}
+{{end}}
+
+{{end}}
+
+
+{{range .}}
+{{$opid := .OperationId -}}
+{{$unexportedOpid := camelCaseWithInitialisms .OperationId -}}
+{{$parent := . }}
+{{$deprecationComment := .DeprecationComment -}}
+{{/* Generate client methods (with responses)*/}}
+
+{{ if not .HasBody }}
+    {{ .GenerateFunctionComment $opid "" true }}
+    {{with $deprecationComment}}//
+    {{.}}
+    {{end -}}func (c *{{ $clientTypeName }}) {{$opid}}(ctx context.Context{{genParamArgs .PathParams}}{{if .RequiresParamObject}}, params *{{$opid}}Params{{end}}, reqEditors... RequestEditorFn) (*{{genResponseTypeName $opid}}, error){
+        rsp, err := c.{{$unexportedOpid}}(ctx{{genParamNames .PathParams}}{{if .RequiresParamObject}}, params{{end}}, reqEditors...)
+        if err != nil {
+            return nil, err
+        }
+        return parse{{genResponseTypeName $opid | ucFirst}}(rsp)
+    }
+{{ end -}}
+
+{{$hasParams := .RequiresParamObject -}}
+{{$pathParams := .PathParams -}}
+{{$bodyRequired := .BodyRequired -}}
+{{range .Bodies}}
+{{if .IsSupportedByClient -}}
+{{ .GenerateFunctionComment $opid $parent .Suffix true }}
+{{with $deprecationComment}}{{.}}
+{{end -}}func (c *{{ $clientTypeName }}) {{$opid}}{{.Suffix}}(ctx context.Context{{genParamArgs $pathParams}}{{if $hasParams}}, params *{{$opid}}Params{{end}}, body {{$opid}}{{.NameTag}}RequestBody, reqEditors... RequestEditorFn) (*{{genResponseTypeName $opid}}, error) {
+    rsp, err := c.{{$unexportedOpid}}{{.Suffix}}(ctx{{genParamNames $pathParams}}{{if $hasParams}}, params{{end}}, body, reqEditors...)
+    if err != nil {
+        return nil, err
+    }
+    return parse{{genResponseTypeName $opid | ucFirst}}(rsp)
+}
+{{end}}
+{{end}}
+
+{{end}}{{/* operations */}}
+
+{{/* Generate parse functions for responses*/}}
+{{range .}}{{$opid := .OperationId}}
+
+// parse{{genResponseTypeName $opid | ucFirst}} parses an HTTP response from a {{$opid}} call
+func parse{{genResponseTypeName $opid | ucFirst}}(rsp *http.Response) (*{{genResponseTypeName $opid}}, error) {
+    bodyBytes, err := io.ReadAll(rsp.Body)
+    defer func() { _ = rsp.Body.Close() }()
+    if err != nil {
+        return nil, err
+    }
+
+    response := {{genResponsePayload $opid}}
+
+    {{genResponseUnmarshal .}}
+    {{- /* Bind declared response headers into the typed Headers<StatusCode>
+    fields. Binding is lenient: an absent header (even a required one) leaves
+    the field at its zero value rather than failing the parse, mirroring the
+    body unmarshal's tolerance of spec-violating servers. A present header
+    that fails to bind to its declared type is an error. */ -}}
+    {{$headerResponses := responsesWithHeaders .Responses}}
+    {{- if $headerResponses}}
+    switch {
+    {{- range $headerResponses}}
+    case {{getConditionOfResponseName "rsp.StatusCode" .StatusCode}}:
+        var headers {{genResponseTypeName $opid | ucFirst}}{{.StatusCode | ucFirst}}Headers
+        {{- range .Headers}}
+        if values := rsp.Header.Values({{.Name | toGoString}}); len(values) > 0 {
+            var value {{.Schema.TypeDecl}}
+            if err := runtime.BindStyledParameterWithOptions("simple", {{.Name | toGoString}}, values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: {{.Required}}, Type: "{{.SchemaType}}", Format: "{{.SchemaFormat}}"}); err != nil {
+                return nil, err
+            }
+            {{- if .IsNullable}}
+            headers.{{.GoName}}.Set(value)
+            {{- else if .IsOptional}}
+            headers.{{.GoName}} = &value
+            {{- else}}
+            headers.{{.GoName}} = value
+            {{- end}}
+        }
+        {{- end}}
+        response.Headers{{.StatusCode | ucFirst}} = &headers
+    {{- end}}
+    }
+    {{- end}}
+
+    return response, nil
+}
+{{end}}{{/* range . $opid := .OperationId */}}
