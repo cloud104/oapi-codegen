@@ -27,6 +27,19 @@ type rawClient struct {
 	// A list of callbacks for modifying requests which are generated before sending over
 	// the network.
 	RequestEditors []RequestEditorFn
+
+	{{ range $basic := $globalBasicAuthSchemes }}
+    {{- $name := pascalCaseWithInitialisms $basic.Name -}}
+	// {{ $name }} uses a username and password to authenticate requests
+	// with HTTP Basic Authentication when configured.
+	{{ $name }} struct {
+		// Username is the username used for authentication.
+		Username string
+
+		// Password is the password used for authentication.
+		Password string
+	}
+    {{ end }}
 }
 
 // ClientOption allows setting custom parameters during construction
@@ -72,6 +85,18 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 		return nil
 	}
 }
+
+{{ range $basic := $globalBasicAuthSchemes }}
+{{- $name := pascalCaseWithInitialisms $basic.Name -}}
+// With{{ $name }} configures HTTP Basic Authentication.
+func With{{ pascalCaseWithInitialisms $basic.Name }}(username, password string) ClientOption {
+	return func(c *rawClient) error {
+		c.{{ $name }}.Username = username
+		c.{{ $name }}.Password = password
+		return nil
+	}
+}
+{{ end }}
 
 // The interface specification for the client above.
 type rawClientInterface interface {
