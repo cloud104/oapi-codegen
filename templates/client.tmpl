@@ -78,14 +78,12 @@ type rawClientInterface interface {
 {{$unexportedOpid := camelCaseWithInitialisms .OperationId -}}
 {{$parent := . }}
 {{$deprecationComment := .DeprecationComment -}}
-    {{ if .HasBody }}
-        {{ .GenerateFunctionComment $unexportedOpid "WithBody" false }}
-    {{ else -}}
+    {{ if not .HasBody }}
         {{ .GenerateFunctionComment $unexportedOpid "" false }}
+        {{with $deprecationComment}}//
+        {{.}}
+        {{end -}}{{$unexportedOpid}}(ctx context.Context{{genParamArgs $pathParams}}{{if $hasParams}}, params *{{$opid}}Params{{end}}, reqEditors... RequestEditorFn) (*http.Response, error)
     {{ end -}}
-    {{with $deprecationComment}}//
-    {{.}}
-    {{end -}}{{$unexportedOpid}}{{if .HasBody}}WithBody{{end}}(ctx context.Context{{genParamArgs $pathParams}}{{if $hasParams}}, params *{{$opid}}Params{{end}}{{if .HasBody}}, contentType string, body io.Reader{{end}}, reqEditors... RequestEditorFn) (*http.Response, error)
 {{range .Bodies}}
     {{if .IsSupportedByClient -}}
     {{ .GenerateFunctionComment $opid $parent .Suffix false }}
@@ -106,23 +104,21 @@ type rawClientInterface interface {
 {{$unexportedOpid := camelCaseWithInitialisms .OperationId -}}
 {{$parent := . }}
 
-{{ if .HasBody }}
-    {{ .GenerateFunctionComment $unexportedOpid "WithBody" false }}
-{{ else }}
+{{ if not .HasBody }}
     {{ .GenerateFunctionComment $unexportedOpid "" false }}
+    {{with .DeprecationComment}}{{.}}
+    {{end -}}func (c *rawClient) {{$unexportedOpid}}(ctx context.Context{{genParamArgs $pathParams}}{{if $hasParams}}, params *{{$opid}}Params{{end}}, reqEditors... RequestEditorFn) (*http.Response, error) {
+        req, err := new{{$opid}}Request(c.Server{{genParamNames .PathParams}}{{if $hasParams}}, params{{end}})
+        if err != nil {
+            return nil, err
+        }
+        req = req.WithContext(ctx)
+        if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+            return nil, err
+        }
+        return c.Client.Do(req)
+    }
 {{ end -}}
-{{with .DeprecationComment}}{{.}}
-{{end -}}func (c *rawClient) {{$unexportedOpid}}{{if .HasBody}}WithBody{{end}}(ctx context.Context{{genParamArgs $pathParams}}{{if $hasParams}}, params *{{$opid}}Params{{end}}{{if .HasBody}}, contentType string, body io.Reader{{end}}, reqEditors... RequestEditorFn) (*http.Response, error) {
-    req, err := new{{$opid}}Request{{if .HasBody}}WithBody{{end}}(c.Server{{genParamNames .PathParams}}{{if $hasParams}}, params{{end}}{{if .HasBody}}, contentType, body{{end}})
-    if err != nil {
-        return nil, err
-    }
-    req = req.WithContext(ctx)
-    if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-        return nil, err
-    }
-    return c.Client.Do(req)
-}
 
 {{$deprecationComment := .DeprecationComment -}}
 {{range .Bodies}}

@@ -36,14 +36,12 @@ type {{ $exportedClientTypeName }}Interface interface {
 {{$opid := .OperationId -}}
 {{$parent := . }}
 {{$deprecationComment := .DeprecationComment -}}
-    {{ if .HasBody }}
-        {{ .GenerateFunctionComment $opid "WithBodyWithResponse" true }}
-    {{ else }}
+    {{ if not .HasBody }}
         {{ .GenerateFunctionComment $opid "WithResponse" true }}
+        {{with $deprecationComment}}//
+        {{.}}
+        {{end -}}{{$opid}}WithResponse(ctx context.Context{{genParamArgs .PathParams}}{{if .RequiresParamObject}}, params *{{$opid}}Params{{end}}, reqEditors... RequestEditorFn) (*{{genResponseTypeName $opid}}, error)
     {{ end -}}
-    {{with $deprecationComment}}//
-    {{.}}
-    {{end -}}{{$opid}}{{if .HasBody}}WithBody{{end}}WithResponse(ctx context.Context{{genParamArgs .PathParams}}{{if .RequiresParamObject}}, params *{{$opid}}Params{{end}}{{if .HasBody}}, contentType string, body io.Reader{{end}}, reqEditors... RequestEditorFn) (*{{genResponseTypeName $opid}}, error)
 {{range .Bodies}}
     {{if .IsSupportedByClient -}}
         {{ .GenerateFunctionComment $opid $parent (printf "%sWithResponse" .Suffix) true }}
@@ -137,20 +135,18 @@ func (r {{genResponseTypeName $opid | ucFirst}}) ContentType() string {
 {{$deprecationComment := .DeprecationComment -}}
 {{/* Generate client methods (with responses)*/}}
 
-{{ if .HasBody }}
-    {{ .GenerateFunctionComment $unexportedOpid "WithBodyWithResponse" true }}
-{{ else }}
+{{ if not .HasBody }}
     {{ .GenerateFunctionComment $unexportedOpid "WithResponse" true }}
-{{ end -}}
-{{with $deprecationComment}}//
-{{.}}
-{{end -}}func (c *{{ $clientTypeName }}) {{$unexportedOpid}}{{if .HasBody}}WithBody{{end}}WithResponse(ctx context.Context{{genParamArgs .PathParams}}{{if .RequiresParamObject}}, params *{{$opid}}Params{{end}}{{if .HasBody}}, contentType string, body io.Reader{{end}}, reqEditors... RequestEditorFn) (*{{genResponseTypeName $opid}}, error){
-    rsp, err := c.{{$unexportedOpid}}{{if .HasBody}}WithBody{{end}}(ctx{{genParamNames .PathParams}}{{if .RequiresParamObject}}, params{{end}}{{if .HasBody}}, contentType, body{{end}}, reqEditors...)
-    if err != nil {
-        return nil, err
+    {{with $deprecationComment}}//
+    {{.}}
+    {{end -}}func (c *{{ $clientTypeName }}) {{$unexportedOpid}}WithResponse(ctx context.Context{{genParamArgs .PathParams}}{{if .RequiresParamObject}}, params *{{$opid}}Params{{end}}, reqEditors... RequestEditorFn) (*{{genResponseTypeName $opid}}, error){
+        rsp, err := c.{{$unexportedOpid}}(ctx{{genParamNames .PathParams}}{{if .RequiresParamObject}}, params{{end}}, reqEditors...)
+        if err != nil {
+            return nil, err
+        }
+        return parse{{genResponseTypeName $opid | ucFirst}}(rsp)
     }
-    return parse{{genResponseTypeName $opid | ucFirst}}(rsp)
-}
+{{ end -}}
 
 {{$hasParams := .RequiresParamObject -}}
 {{$pathParams := .PathParams -}}
