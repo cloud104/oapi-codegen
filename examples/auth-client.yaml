@@ -1,0 +1,56 @@
+openapi: "3.0.0"
+info:
+  version: 1.0.0
+  title: Minimal ping API server
+paths:
+  /ping:
+    get:
+      operationId: ping
+      security:
+        - bearerAuth2: [ ]
+        - bearerAuth: [ ]
+        - basicAuth: [ ]
+        - apiKeyAuth: [ ]
+      responses:
+        '200':
+          description: pong response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pong'
+
+  /heartbeat:
+    get:
+      operationId: heartbeat
+      responses:
+        '200':
+          description: Service is alive
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pong'
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+
+    bearerAuth:
+      type: http
+      scheme: bearer
+
+    apiKeyAuth:
+      type: apiKey
+      in: query
+      name: X-API-Key
+
+  schemas:
+    # base types
+    Pong:
+      type: object
+      required:
+        - ping
+      properties:
+        ping:
+          type: string
+          example: pong
