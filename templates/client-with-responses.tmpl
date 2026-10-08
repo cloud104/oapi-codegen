@@ -92,6 +92,17 @@ func (r {{genResponseTypeName $opid | ucFirst}}) GetBody() []byte {
 }
 {{end}}
 
+// Error returns an error when the HTTP response does not indicate success.
+func (r {{genResponseTypeName $opid | ucFirst}}) Error() error {
+	if r.HTTPResponse == nil {
+		return fmt.Errorf("missing HTTP response")
+	}
+	if r.HTTPResponse.StatusCode >= 200 && r.HTTPResponse.StatusCode < 300 {
+		return nil
+	}
+	return fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
+}
+
 // Status returns HTTPResponse.Status
 func (r {{genResponseTypeName $opid | ucFirst}}) Status() string {
     if r.HTTPResponse != nil {
