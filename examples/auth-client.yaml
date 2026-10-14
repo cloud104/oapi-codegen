@@ -7,6 +7,7 @@ paths:
     get:
       operationId: ping
       security:
+        - oauth2Auth: [ ]
         - bearerAuth2: [ ]
         - bearerAuth: [ ]
         - basicAuth: [ ]
@@ -18,6 +19,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Pong'
+        '401':
+          description: Unauthorized
 
   /heartbeat:
     get:
@@ -31,6 +34,14 @@ paths:
                 $ref: '#/components/schemas/Pong'
 components:
   securitySchemes:
+    oauth2Auth:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://auth.example.com/oauth/authorize
+          tokenUrl: https://auth.example.com/oauth/token
+          scopes: { }
+
     basicAuth:
       type: http
       scheme: basic
