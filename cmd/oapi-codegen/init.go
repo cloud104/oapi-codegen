@@ -161,9 +161,10 @@ func groupResponses(types []codegen.ResponseTypeDefinition) []*responseGroup {
 
 		group, exists := groups[typeDecl]
 		if !exists {
-			method := typeDecl
+			method := sanitizeResponseTypeName(typeDecl)
 			if def.Schema.ArrayType != nil {
-				method = inflection.Plural(def.Schema.ArrayType.TypeDecl())
+				elementType := sanitizeResponseTypeName(def.Schema.ArrayType.TypeDecl())
+				method = inflection.Plural(elementType)
 			}
 
 			group = &responseGroup{
@@ -198,6 +199,17 @@ func groupResponses(types []codegen.ResponseTypeDefinition) []*responseGroup {
 	})
 
 	return result
+}
+
+func sanitizeResponseTypeName(typeDecl string) string {
+	typeDecl = strings.TrimSpace(typeDecl)
+	typeDecl = strings.TrimLeft(typeDecl, "*")
+
+	if idx := strings.LastIndex(typeDecl, "."); idx >= 0 {
+		typeDecl = typeDecl[idx+1:]
+	}
+
+	return typeDecl
 }
 
 type operationSecurity struct {
