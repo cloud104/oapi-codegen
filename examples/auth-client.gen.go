@@ -221,6 +221,13 @@ func (c *rawClient) ping(ctx context.Context, reqEditors ...RequestEditorFn) (*h
 		if err := c.applyEditors(ctx, req, reqEditors); err != nil {
 			return nil, fmt.Errorf("apply editors to GET /ping request: %w", err)
 		}
+		if tokenSource := c.Oauth2Auth.TokenSource; tokenSource != nil {
+			token, err := tokenSource.Token()
+			if err != nil {
+				return nil, fmt.Errorf("get OAuth2 access token for GET /ping request: %w", err)
+			}
+			token.SetAuthHeader(req)
+		}
 		if c.BasicAuth.Username != "" && c.BasicAuth.Password != "" {
 			req.SetBasicAuth(c.BasicAuth.Username, c.BasicAuth.Password)
 		}

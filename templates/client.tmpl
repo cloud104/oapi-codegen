@@ -228,6 +228,7 @@ type rawClientInterface interface {
 {{- $basicAuthSchemes := basicAuthForOperation . -}}
 {{- $bearerAuthSchemes := bearerAuthForOperation . -}}
 {{- $apiKeyAuthSchemes := apiKeyAuthForOperation . -}}
+{{- $oauth2AuthSchemes := oauth2AuthForOperation . -}}
 
 {{ if not .HasBody }}
     {{ .GenerateFunctionComment $unexportedOpid "" false }}
@@ -243,6 +244,16 @@ type rawClientInterface interface {
             if err := c.applyEditors(ctx, req, reqEditors); err != nil {
                 return nil, fmt.Errorf("apply editors to {{ printf "%s %s" $parent.Method $parent.Path }} request: %w", err)
             }
+            {{ range $oauth2 := $oauth2AuthSchemes -}}
+                {{- $name := pascalCaseWithInitialisms $oauth2.Name -}}
+                if tokenSource := c.{{ $name }}.TokenSource; tokenSource != nil {
+                    token, err := tokenSource.Token()
+                    if err != nil {
+                        return nil, fmt.Errorf("get OAuth2 access token for {{ printf "%s %s" $parent.Method $parent.Path }} request: %w", err)
+                    }
+                    token.SetAuthHeader(req)
+                }
+            {{ end -}}
             {{ range $basic := $basicAuthSchemes -}}
             {{- $name := pascalCaseWithInitialisms $basic.Name -}}
             if c.{{ $name }}.Username != "" && c.{{ $name }}.Password != "" {
