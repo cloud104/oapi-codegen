@@ -11,6 +11,8 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+
+	"golang.org/x/oauth2"
 )
 
 // Pong defines model for Pong.
@@ -59,7 +61,7 @@ type rawClient struct {
 	// an Authorization: Bearer <token> header when configured.
 	BearerAuth struct {
 		// Provider supplies bearer tokens and handles token invalidation.
-		Provider TokenProvider
+		Provider BearerTokenProvider
 	}
 
 	// APIKeyAuth uses a static API key to authenticate requests
@@ -68,21 +70,30 @@ type rawClient struct {
 		// APIKey is the API key included in authenticated requests.
 		APIKey string
 	}
+
+	// Oauth2Auth authenticates requests using OAuth 2.0 Password Grant.
+	Oauth2Auth struct {
+		ClientID     string
+		ClientSecret string
+		Username     string
+		Password     string
+		TokenSource  oauth2.TokenSource
+	}
 }
 
-// TokenProvider provides bearer tokens used to authenticate API requests.
+// BearerTokenProvider provides bearer tokens used to authenticate API requests.
 //
 // Implementations may cache tokens and reuse them for their validity period.
-// GetToken should return a valid token, obtaining or refreshing one when
-// necessary. InvalidateToken signals that the currently cached token should
-// no longer be used, allowing a subsequent call to GetToken to obtain a new
+// Token should return a valid token, obtaining or refreshing one when
+// necessary. Invalidate signals that the currently cached token should
+// no longer be used, allowing a subsequent call to Token to obtain a new
 // token.
-type TokenProvider interface {
-	// GetToken returns a valid bearer token for authenticating an API request.
-	GetToken(ctx context.Context) (string, error)
+type BearerTokenProvider interface {
+	// Token returns a valid bearer token for authenticating an API request.
+	Token(ctx context.Context) (string, error)
 
-	// InvalidateToken invalidates the currently cached token, if any.
-	InvalidateToken(ctx context.Context) error
+	// Invalidate invalidates the currently cached token, if any.
+	Invalidate(ctx context.Context) error
 }
 
 // ClientOption allows setting custom parameters during construction
@@ -139,7 +150,7 @@ func WithBasicAuth(username, password string) ClientOption {
 }
 
 // WithBearerAuth configures bearer-token authentication using the supplied token provider.
-func WithBearerAuth(provider TokenProvider) ClientOption {
+func WithBearerAuth(provider BearerTokenProvider) ClientOption {
 	return func(c *rawClient) error {
 		c.BearerAuth.Provider = provider
 		return nil
@@ -150,6 +161,24 @@ func WithBearerAuth(provider TokenProvider) ClientOption {
 func WithAPIKeyAuth(apiKey string) ClientOption {
 	return func(c *rawClient) error {
 		c.APIKeyAuth.APIKey = apiKey
+		return nil
+	}
+}
+
+func WithOauth2Auth(clientID, clientSecret, username, password string) ClientOption {
+	return func(c *rawClient) error {
+		config := &oauth2.Config{
+			ClientID:     clientID,
+			ClientSecret: clientSecret,
+			Endpoint: oauth2.Endpoint{
+				TokenURL: "https://auth.example.com/oauth/token",
+			},
+		}
+		token, err := config.PasswordCredentialsToken(context.TODO(), username, password)
+		if err != nil {
+			return fmt.Errorf("authenticate: %w", err)
+		}
+		c.Oauth2Auth.TokenSource = config.TokenSource(context.TODO(), token)
 		return nil
 	}
 }
@@ -196,7 +225,7 @@ func (c *rawClient) ping(ctx context.Context, reqEditors ...RequestEditorFn) (*h
 			req.SetBasicAuth(c.BasicAuth.Username, c.BasicAuth.Password)
 		}
 		if c.BearerAuth.Provider != nil {
-			token, err := c.BearerAuth.Provider.GetToken(ctx)
+			token, err := c.BearerAuth.Provider.Token(ctx)
 			if err != nil {
 				return nil, fmt.Errorf("get authentication token for GET /ping: %w", err)
 			}
@@ -217,7 +246,7 @@ func (c *rawClient) ping(ctx context.Context, reqEditors ...RequestEditorFn) (*h
 			return resp, nil
 		}
 		resp.Body.Close()
-		if err := c.BearerAuth.Provider.InvalidateToken(ctx); err != nil {
+		if err := c.BearerAuth.Provider.Invalidate(ctx); err != nil {
 			return nil, fmt.Errorf("invalidate token after unauthorized GET /ping response: %w", err)
 		}
 	}

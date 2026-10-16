@@ -59,6 +59,8 @@ func init() {
 	codegen.TemplateFunctions["bearerAuthForOperations"] = bearerAuthForOperations
 	codegen.TemplateFunctions["apiKeyAuthForOperation"] = apiKeyAuthForOperation
 	codegen.TemplateFunctions["apiKeyAuthForOperations"] = apiKeyAuthForOperations
+	codegen.TemplateFunctions["oauth2AuthForOperation"] = oauth2AuthForOperation
+	codegen.TemplateFunctions["oauth2AuthForOperations"] = oauth2AuthForOperations
 }
 
 func camelCaseWithInitialisms(s string) string {
@@ -354,6 +356,44 @@ func apiKeyAuthForOperations(ops []codegen.OperationDefinition) []*apiKeyAuth {
 	}
 
 	slices.SortFunc(result, func(a, b *apiKeyAuth) int {
+		return strings.Compare(a.Name, b.Name)
+	})
+
+	return result
+}
+
+type oauth2Auth struct {
+	Name        string
+	Description string
+	Scopes      []string
+	TokenURL    string
+}
+
+func oauth2AuthForOperation(op *codegen.OperationDefinition) []*oauth2Auth {
+	return oauth2AuthForOperations([]codegen.OperationDefinition{*op})
+}
+
+func oauth2AuthForOperations(ops []codegen.OperationDefinition) []*oauth2Auth {
+	var result []*oauth2Auth
+
+	for _, security := range securityForOperations(ops) {
+		if security.Scheme.Type != "oauth2" ||
+			security.Scheme.Flows == nil ||
+			security.Scheme.Flows.Password == nil {
+			continue
+		}
+
+		flow := security.Scheme.Flows.Password
+
+		result = append(result, &oauth2Auth{
+			Name:        security.Definition.ProviderName,
+			Description: security.Scheme.Description,
+			Scopes:      security.Definition.Scopes,
+			TokenURL:    flow.TokenURL,
+		})
+	}
+
+	slices.SortFunc(result, func(a, b *oauth2Auth) int {
 		return strings.Compare(a.Name, b.Name)
 	})
 
