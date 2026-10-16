@@ -309,25 +309,45 @@ type rawClientInterface interface {
         if err := c.applyEditors(ctx, req, reqEditors); err != nil {
             return nil, fmt.Errorf("apply editors to {{ printf "%s %s" $parent.Method $parent.Path }} request: %w", err)
         }
+        {{ range $oauth2 := $oauth2AuthSchemes -}}
+            {{- $name := pascalCaseWithInitialisms $oauth2.Name -}}
+            if source := c.{{ $name }}.TokenSource; source != nil {
+                token, err := source.Token()
+                if err != nil {
+                    return nil, fmt.Errorf("get OAuth2 access token for {{ printf "%s %s" $parent.Method $parent.Path }} request: %w", err)
+                }
+                token.SetAuthHeader(req)
+            }
+        {{ end -}}
         {{ range $basic := $basicAuthSchemes -}}
         {{- $name := pascalCaseWithInitialisms $basic.Name -}}
-        if c.{{ $name }}.Username != "" && c.{{ $name }}.Password != "" {
-            req.SetBasicAuth(c.{{ $name }}.Username, c.{{ $name }}.Password)
+        if user, pass := c.{{ $name }}.Username, c.{{ $name }}.Password; user != "" && pass != "" {
+            req.SetBasicAuth(user, pass)
+        }
+        {{ end -}}
+        {{ range $bearer := $bearerAuthSchemes -}}
+        {{- $name := pascalCaseWithInitialisms $bearer.Name -}}
+        if provider := c.{{ $name }}.Provider; provider != nil {
+            token, err := provider.Token(ctx)
+            if err != nil {
+                return nil, fmt.Errorf("get authentication token for {{ printf "%s %s" $parent.Method $parent.Path }}: %w", err)
+            }
+            req.Header.Set("Authorization", "Bearer "+token)
         }
         {{ end -}}
         {{ range $apiKey := $apiKeyAuthSchemes -}}
         {{- $name := pascalCaseWithInitialisms $apiKey.Name -}}
-        if c.{{ $name }}.APIKey != "" {
+        if apiKey := c.{{ $name }}.APIKey; apiKey != "" {
             {{ if eq $apiKey.In "header" -}}
-            req.Header.Set("{{$apiKey.KeyName}}", c.{{ $name }}.APIKey)
+            req.Header.Set("{{$apiKey.KeyName}}", apiKey)
             {{ else if eq $apiKey.In "query" -}}
             q := req.URL.Query()
-            q.Set("{{$apiKey.KeyName}}", c.{{ $name }}.APIKey)
+            q.Set("{{$apiKey.KeyName}}", apiKey)
             req.URL.RawQuery = q.Encode()
             {{ else if eq $apiKey.In "cookie" -}}
             req.AddCookie(&http.Cookie{
                 Name:  "{{$apiKey.KeyName}}",
-                Value: c.{{ $name }}.APIKey,
+                Value: apiKey,
             })
             {{ end -}}
         }
