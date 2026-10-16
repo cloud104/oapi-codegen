@@ -221,18 +221,18 @@ func (c *rawClient) ping(ctx context.Context, reqEditors ...RequestEditorFn) (*h
 		if err := c.applyEditors(ctx, req, reqEditors); err != nil {
 			return nil, fmt.Errorf("apply editors to GET /ping request: %w", err)
 		}
-		if tokenSource := c.Oauth2Auth.TokenSource; tokenSource != nil {
-			token, err := tokenSource.Token()
+		if source := c.Oauth2Auth.TokenSource; source != nil {
+			token, err := source.Token()
 			if err != nil {
 				return nil, fmt.Errorf("get OAuth2 access token for GET /ping request: %w", err)
 			}
 			token.SetAuthHeader(req)
 		}
-		if c.BasicAuth.Username != "" && c.BasicAuth.Password != "" {
-			req.SetBasicAuth(c.BasicAuth.Username, c.BasicAuth.Password)
+		if user, pass := c.BasicAuth.Username, c.BasicAuth.Password; user != "" && pass != "" {
+			req.SetBasicAuth(user, pass)
 		}
-		if c.BearerAuth.Provider != nil {
-			token, err := c.BearerAuth.Provider.Token(ctx)
+		if provider := c.BearerAuth.Provider; provider != nil {
+			token, err := provider.Token(ctx)
 			if err != nil {
 				return nil, fmt.Errorf("get authentication token for GET /ping: %w", err)
 			}
@@ -247,9 +247,7 @@ func (c *rawClient) ping(ctx context.Context, reqEditors ...RequestEditorFn) (*h
 		if err != nil {
 			return nil, fmt.Errorf("perform GET /ping request: %w", err)
 		}
-		if resp.StatusCode != http.StatusUnauthorized ||
-			c.BearerAuth.Provider == nil ||
-			attempt > 0 {
+		if resp.StatusCode != http.StatusUnauthorized || c.BearerAuth.Provider == nil || attempt > 0 {
 			return resp, nil
 		}
 		resp.Body.Close()

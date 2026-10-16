@@ -246,8 +246,8 @@ type rawClientInterface interface {
             }
             {{ range $oauth2 := $oauth2AuthSchemes -}}
                 {{- $name := pascalCaseWithInitialisms $oauth2.Name -}}
-                if tokenSource := c.{{ $name }}.TokenSource; tokenSource != nil {
-                    token, err := tokenSource.Token()
+                if source := c.{{ $name }}.TokenSource; source != nil {
+                    token, err := source.Token()
                     if err != nil {
                         return nil, fmt.Errorf("get OAuth2 access token for {{ printf "%s %s" $parent.Method $parent.Path }} request: %w", err)
                     }
@@ -256,14 +256,14 @@ type rawClientInterface interface {
             {{ end -}}
             {{ range $basic := $basicAuthSchemes -}}
             {{- $name := pascalCaseWithInitialisms $basic.Name -}}
-            if c.{{ $name }}.Username != "" && c.{{ $name }}.Password != "" {
-                req.SetBasicAuth(c.{{ $name }}.Username, c.{{ $name }}.Password)
+            if user, pass := c.{{ $name }}.Username, c.{{ $name }}.Password; user != "" && pass != "" {
+                req.SetBasicAuth(user, pass)
             }
             {{ end -}}
             {{ range $bearer := $bearerAuthSchemes -}}
             {{- $name := pascalCaseWithInitialisms $bearer.Name -}}
-            if c.{{ $name }}.Provider != nil {
-                token, err := c.{{ $name }}.Provider.Token(ctx)
+            if provider := c.{{ $name }}.Provider; provider != nil {
+                token, err := provider.Token(ctx)
                 if err != nil {
                     return nil, fmt.Errorf("get authentication token for {{ printf "%s %s" $parent.Method $parent.Path }}: %w", err)
                 }
@@ -291,9 +291,7 @@ type rawClientInterface interface {
             if err != nil {
                 return nil, fmt.Errorf("perform {{ printf "%s %s" $parent.Method $parent.Path }} request: %w", err)
             }
-            if resp.StatusCode != http.StatusUnauthorized ||
-                c.BearerAuth.Provider == nil ||
-                attempt > 0 {
+            if resp.StatusCode != http.StatusUnauthorized || c.BearerAuth.Provider == nil || attempt > 0 {
                 return resp, nil
             }
             resp.Body.Close()
