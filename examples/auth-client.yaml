@@ -8,10 +8,6 @@ paths:
       operationId: ping
       security:
         - oauth2Auth: [ ]
-        - bearerAuth2: [ ]
-        - bearerAuth: [ ]
-        - basicAuth: [ ]
-        - apiKeyAuth: [ ]
       responses:
         '200':
           description: pong response

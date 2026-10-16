@@ -66,10 +66,6 @@ type rawClient struct {
     {{- $name := pascalCaseWithInitialisms $oauth.Name }}
     // {{ $name }} authenticates requests using OAuth 2.0 Password Grant.
     {{ $name }} struct {
-        ClientID     string
-        ClientSecret string
-        Username     string
-        Password     string
         TokenSource  oauth2.TokenSource
     }
     {{ end }}

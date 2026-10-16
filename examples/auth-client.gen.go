@@ -47,53 +47,10 @@ type rawClient struct {
 	// the network.
 	RequestEditors []RequestEditorFn
 
-	// BasicAuth uses a username and password to authenticate requests
-	// with HTTP Basic Authentication when configured.
-	BasicAuth struct {
-		// Username is the username used for authentication.
-		Username string
-
-		// Password is the password used for authentication.
-		Password string
-	}
-
-	// BearerAuth uses a token provider to authenticate requests with
-	// an Authorization: Bearer <token> header when configured.
-	BearerAuth struct {
-		// Provider supplies bearer tokens and handles token invalidation.
-		Provider BearerTokenProvider
-	}
-
-	// APIKeyAuth uses a static API key to authenticate requests
-	// when configured.
-	APIKeyAuth struct {
-		// APIKey is the API key included in authenticated requests.
-		APIKey string
-	}
-
 	// Oauth2Auth authenticates requests using OAuth 2.0 Password Grant.
 	Oauth2Auth struct {
-		ClientID     string
-		ClientSecret string
-		Username     string
-		Password     string
-		TokenSource  oauth2.TokenSource
+		TokenSource oauth2.TokenSource
 	}
-}
-
-// BearerTokenProvider provides bearer tokens used to authenticate API requests.
-//
-// Implementations may cache tokens and reuse them for their validity period.
-// Token should return a valid token, obtaining or refreshing one when
-// necessary. Invalidate signals that the currently cached token should
-// no longer be used, allowing a subsequent call to Token to obtain a new
-// token.
-type BearerTokenProvider interface {
-	// Token returns a valid bearer token for authenticating an API request.
-	Token(ctx context.Context) (string, error)
-
-	// Invalidate invalidates the currently cached token, if any.
-	Invalidate(ctx context.Context) error
 }
 
 // ClientOption allows setting custom parameters during construction
@@ -136,31 +93,6 @@ func WithHTTPClient(doer HttpRequestDoer) ClientOption {
 func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 	return func(c *rawClient) error {
 		c.RequestEditors = append(c.RequestEditors, fn)
-		return nil
-	}
-}
-
-// WithBasicAuth configures HTTP Basic Authentication.
-func WithBasicAuth(username, password string) ClientOption {
-	return func(c *rawClient) error {
-		c.BasicAuth.Username = username
-		c.BasicAuth.Password = password
-		return nil
-	}
-}
-
-// WithBearerAuth configures bearer-token authentication using the supplied token provider.
-func WithBearerAuth(provider BearerTokenProvider) ClientOption {
-	return func(c *rawClient) error {
-		c.BearerAuth.Provider = provider
-		return nil
-	}
-}
-
-// WithAPIKeyAuth configures authentication using a static API key.
-func WithAPIKeyAuth(apiKey string) ClientOption {
-	return func(c *rawClient) error {
-		c.APIKeyAuth.APIKey = apiKey
 		return nil
 	}
 }
@@ -212,50 +144,26 @@ func (c *rawClient) heartbeat(ctx context.Context, reqEditors ...RequestEditorFn
 
 // ping performs a GET /ping (the `Ping` operationId) request.
 func (c *rawClient) ping(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	for attempt := 0; attempt < 2; attempt++ {
-		req, err := newPingRequest(c.Server)
-		if err != nil {
-			return nil, fmt.Errorf("create GET /ping request: %w", err)
-		}
-		req = req.WithContext(ctx)
-		if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-			return nil, fmt.Errorf("apply editors to GET /ping request: %w", err)
-		}
-		if source := c.Oauth2Auth.TokenSource; source != nil {
-			token, err := source.Token()
-			if err != nil {
-				return nil, fmt.Errorf("get OAuth2 access token for GET /ping request: %w", err)
-			}
-			token.SetAuthHeader(req)
-		}
-		if user, pass := c.BasicAuth.Username, c.BasicAuth.Password; user != "" && pass != "" {
-			req.SetBasicAuth(user, pass)
-		}
-		if provider := c.BearerAuth.Provider; provider != nil {
-			token, err := provider.Token(ctx)
-			if err != nil {
-				return nil, fmt.Errorf("get authentication token for GET /ping: %w", err)
-			}
-			req.Header.Set("Authorization", "Bearer "+token)
-		}
-		if apiKey := c.APIKeyAuth.APIKey; apiKey != "" {
-			q := req.URL.Query()
-			q.Set("X-API-Key", apiKey)
-			req.URL.RawQuery = q.Encode()
-		}
-		resp, err := c.Client.Do(req)
-		if err != nil {
-			return nil, fmt.Errorf("perform GET /ping request: %w", err)
-		}
-		if resp.StatusCode != http.StatusUnauthorized || c.BearerAuth.Provider == nil || attempt > 0 {
-			return resp, nil
-		}
-		resp.Body.Close()
-		if err := c.BearerAuth.Provider.Invalidate(ctx); err != nil {
-			return nil, fmt.Errorf("invalidate token after unauthorized GET /ping response: %w", err)
-		}
+	req, err := newPingRequest(c.Server)
+	if err != nil {
+		return nil, fmt.Errorf("create GET /ping request: %w", err)
 	}
-	return nil, fmt.Errorf("GET /ping failed after exhausting retry attempts")
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, fmt.Errorf("apply editors to GET /ping request: %w", err)
+	}
+	if source := c.Oauth2Auth.TokenSource; source != nil {
+		token, err := source.Token()
+		if err != nil {
+			return nil, fmt.Errorf("get OAuth2 access token for GET /ping request: %w", err)
+		}
+		token.SetAuthHeader(req)
+	}
+	resp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("perform GET /ping request: %w", err)
+	}
+	return resp, nil
 }
 
 // newHeartbeatRequest constructs an http.Request for the Heartbeat method
