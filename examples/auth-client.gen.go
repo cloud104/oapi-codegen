@@ -238,9 +238,9 @@ func (c *rawClient) ping(ctx context.Context, reqEditors ...RequestEditorFn) (*h
 			}
 			req.Header.Set("Authorization", "Bearer "+token)
 		}
-		if c.APIKeyAuth.APIKey != "" {
+		if apiKey := c.APIKeyAuth.APIKey; apiKey != "" {
 			q := req.URL.Query()
-			q.Set("X-API-Key", c.APIKeyAuth.APIKey)
+			q.Set("X-API-Key", apiKey)
 			req.URL.RawQuery = q.Encode()
 		}
 		resp, err := c.Client.Do(req)

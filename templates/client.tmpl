@@ -272,17 +272,17 @@ type rawClientInterface interface {
             {{ end -}}
             {{ range $apiKey := $apiKeyAuthSchemes -}}
             {{- $name := pascalCaseWithInitialisms $apiKey.Name -}}
-            if c.{{ $name }}.APIKey != "" {
+            if apiKey := c.{{ $name }}.APIKey; apiKey != "" {
                 {{ if eq $apiKey.In "header" -}}
-                req.Header.Set("{{$apiKey.KeyName}}", c.{{ $name }}.APIKey)
+                req.Header.Set("{{$apiKey.KeyName}}", apiKey)
                 {{ else if eq $apiKey.In "query" -}}
                 q := req.URL.Query()
-                q.Set("{{$apiKey.KeyName}}", c.{{ $name }}.APIKey)
+                q.Set("{{$apiKey.KeyName}}", apiKey)
                 req.URL.RawQuery = q.Encode()
                 {{ else if eq $apiKey.In "cookie" -}}
                 req.AddCookie(&http.Cookie{
                     Name:  "{{$apiKey.KeyName}}",
-                    Value: c.{{ $name }}.APIKey,
+                    Value: apiKey,
                 })
                 {{ end -}}
             }
