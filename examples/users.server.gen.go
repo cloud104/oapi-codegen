@@ -209,7 +209,7 @@ func (siw *ServerInterfaceWrapper) GetUsers(w http.ResponseWriter, r *http.Reque
 func (siw *ServerInterfaceWrapper) CreateUser(w http.ResponseWriter, r *http.Request) {
 
 	// ------------- Request body "application/json" -------------
-	bodyBytes, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 1048576)) // max 1.0 MiB
+	bodyBytes, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 5242880)) // max 5.0 MiB
 	if err != nil {
 		siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
 		return

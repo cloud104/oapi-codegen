@@ -14,6 +14,7 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/jinzhu/inflection"
 	"github.com/oapi-codegen/oapi-codegen/v2/pkg/codegen"
+	"strconv"
 )
 
 // Mirrors the prefix of codegen.globalState up to initialismsMap.
@@ -178,10 +179,22 @@ func bodyLimit(op codegen.OperationDefinition) *BodyLimit {
 		return DefaultBodyLimit()
 	}
 
-	raw := op.Spec.RequestBody.Value.Extensions[maxBodySizeExtension]
-	limit, err := ParseBodyLimit(fmt.Sprint(raw))
-	if err != nil {
+	raw, ok := op.Spec.RequestBody.Value.Extensions[maxBodySizeExtension]
+	if !ok {
 		return DefaultBodyLimit()
+	}
+
+	var value string
+	switch v := raw.(type) {
+	case float64:
+		value = strconv.FormatFloat(v, 'f', -1, 64)
+	default:
+		value = fmt.Sprint(v)
+	}
+
+	limit, err := ParseBodyLimit(value)
+	if err != nil {
+		panic(fmt.Errorf("invalid body limit: %w", err))
 	}
 
 	return limit
