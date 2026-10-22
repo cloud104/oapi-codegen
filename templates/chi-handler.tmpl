@@ -36,11 +36,20 @@ if options.ErrorHandlerFunc == nil {
         http.Error(w, err.Error(), http.StatusBadRequest)
     }
 }
-{{if .}}
+
+{{ if .}}
 validator := NewJSONValidator()
-if err := validator.Register("", ""); err != nil {
+{{- range .}}
+  {{- if not .IsAlias}}
+    {{- $body := jsonRequestBody . }}
+    {{- if $body }}
+        {{- $bodyType := $body.TypeDef .OperationId }}
+if err := validator.Register({{.OperationId | quote}}, {{$bodyType.TypeName}}Schema); err != nil {
     return nil, err
 }
+    {{- end}}
+  {{- end}}
+{{- end}}
 
 wrapper := ServerInterfaceWrapper{
 Handler: si,

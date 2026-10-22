@@ -461,7 +461,13 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) (http.Hand
 	}
 
 	validator := NewJSONValidator()
-	if err := validator.Register("", ""); err != nil {
+	if err := validator.Register("CreateUser", CreateUserJSONRequestBodySchema); err != nil {
+		return nil, err
+	}
+	if err := validator.Register("PatchUser", PatchUserJSONRequestBodySchema); err != nil {
+		return nil, err
+	}
+	if err := validator.Register("UpdateUser", UpdateUserJSONRequestBodySchema); err != nil {
 		return nil, err
 	}
 
