@@ -191,7 +191,7 @@ func (siw *ServerInterfaceWrapper) {{$opid}}(w http.ResponseWriter, r *http.Requ
   // ------------- Request body "{{$body.ContentType}}" -------------
   {{- if .BodyRequired }}
   body := new({{$bodyType.TypeName}})
-  if err = json.NewDecoder(r.Body).Decode(body); err != nil {
+  if err := json.NewDecoder(r.Body).Decode(body); err != nil {
     siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
     return
   }
@@ -199,7 +199,7 @@ func (siw *ServerInterfaceWrapper) {{$opid}}(w http.ResponseWriter, r *http.Requ
   var body *{{$bodyType.TypeName}}
   if r.Body != nil && r.Body != http.NoBody {
   	body = new({{$bodyType.TypeName}})
-  	if err = json.NewDecoder(r.Body).Decode(body); err != nil {
+  	if err := json.NewDecoder(r.Body).Decode(body); err != nil {
         siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
         return
   	}
