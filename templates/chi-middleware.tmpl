@@ -10,22 +10,22 @@ const {{$bodyType.TypeName}}Schema = `{{toPrettyJson .Schema.OAPISchema}}`
   {{- end}}
 {{end}}
 
-type Validator struct {
+type JSONValidator struct {
 	compiler *jsonschema.Compiler
 	schemas  map[string]*jsonschema.Schema
 }
 
-func NewValidator() *Validator {
+func NewJSONValidator() *JSONValidator {
 	compiler := jsonschema.NewCompiler()
 	compiler.AssertFormat()
 
-	return &Validator{
+	return &JSONValidator{
 		compiler: compiler,
 		schemas:  make(map[string]*jsonschema.Schema),
 	}
 }
 
-func (v *Validator) Register(name, schemaStr string) error {
+func (v *JSONValidator) Register(name, schemaStr string) error {
 	doc, err := jsonschema.UnmarshalJSON(strings.NewReader(schemaStr))
 	if err != nil {
 		return fmt.Errorf("parse schema %q: %w", name, err)
@@ -45,7 +45,7 @@ func (v *Validator) Register(name, schemaStr string) error {
 	return nil
 }
 
-func (v *Validator) Validate(name string, data any) error {
+func (v *JSONValidator) Validate(name string, data any) error {
 	schema, ok := v.schemas[name]
 	if !ok {
 		return fmt.Errorf("schema %q not registered", name)
