@@ -28,7 +28,7 @@ paths:
       operationId: createUser
       requestBody:
         required: true
-        x-max-body-size: "5MiB"
+        x-max-body-size: 5242880
         content:
           application/json:
             schema:

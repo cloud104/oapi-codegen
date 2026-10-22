@@ -14,6 +14,7 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/jinzhu/inflection"
 	"github.com/oapi-codegen/oapi-codegen/v2/pkg/codegen"
+	"encoding/json"
 )
 
 // Mirrors the prefix of codegen.globalState up to initialismsMap.
@@ -151,17 +152,44 @@ func NewMaxBodySize(bytes int64) (*MaxBodySize, error) {
 	return &MaxBodySize{bytes: bytes}, nil
 }
 
+func NewMaxBodySizeFromInt[T ~int | ~int8 | ~int16 | ~int32 | ~int64](v T) (*MaxBodySize, error) {
+	return NewMaxBodySize(int64(v))
+}
+
+func NewMaxBodySizeFromUint[T ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64](v T) (*MaxBodySize, error) {
+	if uint64(v) > math.MaxInt64 {
+		return nil, fmt.Errorf("max body size exceeds int64 range")
+	}
+
+	return NewMaxBodySize(int64(v))
+}
+
+func NewMaxBodySizeFromFloat[T ~float32 | ~float64](v T) (*MaxBodySize, error) {
+	n := float64(v)
+
+	if n < 1 || n > float64(maxBodySize) || math.Trunc(n) != n {
+		return nil, fmt.Errorf("invalid max body size: %v", v)
+	}
+
+	return NewMaxBodySize(int64(n))
+}
+
+func NewMaxBodySizeFromJSONNumber(v json.Number) (*MaxBodySize, error) {
+	n, err := v.Int64()
+	if err != nil {
+		return nil, fmt.Errorf("invalid max body size: %w", err)
+	}
+
+	return NewMaxBodySize(n)
+}
+
 func ParseMaxBodySize(raw string) (*MaxBodySize, error) {
 	bytes, err := humanize.ParseBytes(strings.TrimSpace(raw))
 	if err != nil {
 		return nil, fmt.Errorf("parse max body size: %w", err)
 	}
 
-	if bytes > math.MaxInt64 {
-		return nil, fmt.Errorf("max body size exceeds int64 range")
-	}
-
-	return NewMaxBodySize(int64(bytes))
+	return NewMaxBodySizeFromUint(bytes)
 }
 
 func (size *MaxBodySize) Bytes() int64 {
@@ -188,8 +216,30 @@ func getMaxBodySize(op codegen.OperationDefinition) *MaxBodySize {
 		size, _ = ParseMaxBodySize(v)
 	case int:
 		size, _ = NewMaxBodySize(int64(v))
+	case int8:
+		size, _ = NewMaxBodySizeFromInt(v)
+	case int16:
+		size, _ = NewMaxBodySizeFromInt(v)
+	case int32:
+		size, _ = NewMaxBodySizeFromInt(v)
 	case int64:
 		size, _ = NewMaxBodySize(v)
+	case uint:
+		size, _ = NewMaxBodySizeFromUint(v)
+	case uint8:
+		size, _ = NewMaxBodySizeFromUint(v)
+	case uint16:
+		size, _ = NewMaxBodySizeFromUint(v)
+	case uint32:
+		size, _ = NewMaxBodySizeFromUint(v)
+	case uint64:
+		size, _ = NewMaxBodySizeFromUint(v)
+	case float32:
+		size, _ = NewMaxBodySizeFromFloat(v)
+	case float64:
+		size, _ = NewMaxBodySizeFromFloat(v)
+	case json.Number:
+		size, _ = NewMaxBodySizeFromJSONNumber(v)
 	}
 
 	if size == nil {
