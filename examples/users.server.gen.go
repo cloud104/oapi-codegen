@@ -347,8 +347,17 @@ func (siw *ServerInterfaceWrapper) UpdateUser(w http.ResponseWriter, r *http.Req
 	// ------------- Request body "application/json" -------------
 	var body *UpdateUserJSONRequestBody
 	if r.Body != nil && r.Body != http.NoBody {
+		bodyBytes, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 1048576)) // max 1.0 MiB
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
+			return
+		}
+		if err := siw.Validator.Validate("UpdateUser", bytes.NewReader(bodyBytes)); err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
+			return
+		}
 		body = new(UpdateUserJSONRequestBody)
-		if err := json.NewDecoder(r.Body).Decode(body); err != nil {
+		if err := json.Unmarshal(bodyBytes, body); err != nil {
 			siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
 			return
 		}
