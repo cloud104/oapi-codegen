@@ -65,7 +65,6 @@ paths:
       summary: Update a user's name
       operationId: updateUser
       requestBody:
-        required: true
         content:
           application/json:
             schema:

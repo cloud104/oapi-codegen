@@ -317,10 +317,13 @@ func (siw *ServerInterfaceWrapper) UpdateUser(w http.ResponseWriter, r *http.Req
 	}
 
 	// ------------- Request body "application/json" -------------
-	body := new(UpdateUserJSONRequestBody)
-	if err := json.NewDecoder(r.Body).Decode(body); err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
-		return
+	var body *UpdateUserJSONRequestBody
+	if r.Body != nil && r.Body != http.NoBody {
+		body = new(UpdateUserJSONRequestBody)
+		if err := json.NewDecoder(r.Body).Decode(body); err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
+			return
+		}
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
