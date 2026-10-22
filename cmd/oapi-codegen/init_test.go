@@ -10,7 +10,7 @@ import (
 func Test_getMaxBodySize(t *testing.T) {
 	tests := []struct {
 		name string
-		size interface{}
+		size any
 		want int64
 	}{
 		{"valid size", "5 MiB", 5 * 1024 * 1024},
@@ -19,15 +19,16 @@ func Test_getMaxBodySize(t *testing.T) {
 		{"invalid size", "invalid", defaultMaxBodySize},
 		{"zero size", "0 B", defaultMaxBodySize},
 		{"exceeds maximum", "9223372036854775808 B", defaultMaxBodySize},
-		{"valid size", "524288", 524288},
-		{"valid size", 524288, 524288},
+		{"", "524288", 524288},
+		{"", 524288, 524288},
+		{"", "5MiB", 5242880},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			body := &openapi3.RequestBody{}
 			if tt.size != nil {
-				body.Extensions = map[string]interface{}{
+				body.Extensions = map[string]any{
 					maxBodySizeExtension: tt.size,
 				}
 			}
