@@ -25,7 +25,10 @@ type ServerInterface interface {
 	// GetUsersId Get a user by ID
 	// (GET /users/{id})
 	GetUsersId(w http.ResponseWriter, r *http.Request, id int)
-	// PutUsersId Update a user
+	// PatchUsersId Partially update a user
+	// (PATCH /users/{id})
+	PatchUsersId(w http.ResponseWriter, r *http.Request, id int)
+	// PutUsersId Update a user's name
 	// (PUT /users/{id})
 	PutUsersId(w http.ResponseWriter, r *http.Request, id int)
 }
@@ -58,7 +61,13 @@ func (_ Unimplemented) GetUsersId(w http.ResponseWriter, r *http.Request, id int
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// PutUsersId Update a user
+// PatchUsersId Partially update a user
+// (PATCH /users/{id})
+func (_ Unimplemented) PatchUsersId(w http.ResponseWriter, r *http.Request, id int) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// PutUsersId Update a user's name
 // (PUT /users/{id})
 func (_ Unimplemented) PutUsersId(w http.ResponseWriter, r *http.Request, id int) {
 	w.WriteHeader(http.StatusNotImplemented)
@@ -144,6 +153,32 @@ func (siw *ServerInterfaceWrapper) GetUsersId(w http.ResponseWriter, r *http.Req
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetUsersId(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PatchUsersId operation middleware
+func (siw *ServerInterfaceWrapper) PatchUsersId(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id int
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PatchUsersId(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -303,6 +338,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/users/{id}", wrapper.GetUsersId)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/users/{id}", wrapper.PatchUsersId)
 	})
 	r.Group(func(r chi.Router) {
 		r.Put(options.BaseURL+"/users/{id}", wrapper.PutUsersId)
