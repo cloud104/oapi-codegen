@@ -1,4 +1,5 @@
-{{range .}}
+// JSON schemas for validating HTTP request bodies.
+{{- range . }}
   {{- if not .IsAlias}}
     {{- $body := jsonRequestBody . }}
     {{- if $body }}
@@ -6,7 +7,13 @@
 const {{$bodyType.TypeName}}Schema = `{{toPrettyJson $body.Schema.OAPISchema}}`
     {{- end}}
   {{- end}}
-{{end}}
+{{- end -}}
+
+// Binary size units.
+const (
+	KiB = 1024
+	MiB = 1024 * KiB
+)
 
 // JSONValidator validates data against registered JSON schemas.
 type JSONValidator struct {
@@ -252,8 +259,17 @@ func (siw *ServerInterfaceWrapper) {{$opid}}(w http.ResponseWriter, r *http.Requ
 
   // ------------- Request body "{{$body.ContentType}}" -------------
   {{- if .BodyRequired }}
+  bodyBytes, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 1*MiB))
+  if err != nil {
+      siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
+      return
+  }
+  if err := siw.Validator.Validate({{.OperationId | quote}}, bytes.NewReader(bodyBytes)); err != nil {
+      siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
+      return
+  }
   body := new({{$bodyType.TypeName}})
-  if err := json.NewDecoder(r.Body).Decode(body); err != nil {
+  if err := json.Unmarshal(bodyBytes, body); err != nil {
     siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
     return
   }

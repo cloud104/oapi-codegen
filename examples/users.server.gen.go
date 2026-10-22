@@ -4,8 +4,10 @@
 package examples
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 
@@ -76,7 +78,9 @@ func (_ Unimplemented) UpdateUser(w http.ResponseWriter, r *http.Request, id int
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-const CreateUserJSONRequestBodySchema = `{
+const (
+	// JSON schemas for validating HTTP request bodies.
+	CreateUserJSONRequestBodySchema = `{
   "additionalProperties": false,
   "properties": {
     "email": {
@@ -95,8 +99,7 @@ const CreateUserJSONRequestBodySchema = `{
   ],
   "type": "object"
 }`
-
-const PatchUserJSONRequestBodySchema = `{
+	PatchUserJSONRequestBodySchema = `{
   "additionalProperties": false,
   "minProperties": 1,
   "properties": {
@@ -112,8 +115,7 @@ const PatchUserJSONRequestBodySchema = `{
   },
   "type": "object"
 }`
-
-const UpdateUserJSONRequestBodySchema = `{
+	UpdateUserJSONRequestBodySchema = `{
   "additionalProperties": false,
   "properties": {
     "name": {
@@ -125,7 +127,10 @@ const UpdateUserJSONRequestBodySchema = `{
     "name"
   ],
   "type": "object"
-}`
+}` // Binary size units.
+	KiB = 1024
+	MiB = 1024 * KiB
+)
 
 // JSONValidator validates data against registered JSON schemas.
 type JSONValidator struct {
@@ -206,8 +211,17 @@ func (siw *ServerInterfaceWrapper) GetUsers(w http.ResponseWriter, r *http.Reque
 func (siw *ServerInterfaceWrapper) CreateUser(w http.ResponseWriter, r *http.Request) {
 
 	// ------------- Request body "application/json" -------------
+	bodyBytes, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 1*MiB))
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
+		return
+	}
+	if err := siw.Validator.Validate("CreateUser", bytes.NewReader(bodyBytes)); err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
+		return
+	}
 	body := new(CreateUserJSONRequestBody)
-	if err := json.NewDecoder(r.Body).Decode(body); err != nil {
+	if err := json.Unmarshal(bodyBytes, body); err != nil {
 		siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
 		return
 	}
@@ -291,8 +305,17 @@ func (siw *ServerInterfaceWrapper) PatchUser(w http.ResponseWriter, r *http.Requ
 	}
 
 	// ------------- Request body "application/json" -------------
+	bodyBytes, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 1*MiB))
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
+		return
+	}
+	if err := siw.Validator.Validate("PatchUser", bytes.NewReader(bodyBytes)); err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
+		return
+	}
 	body := new(PatchUserJSONRequestBody)
-	if err := json.NewDecoder(r.Body).Decode(body); err != nil {
+	if err := json.Unmarshal(bodyBytes, body); err != nil {
 		siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
 		return
 	}
