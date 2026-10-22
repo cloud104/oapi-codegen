@@ -82,6 +82,7 @@ func TestGenerate(t *testing.T) {
 						Generate:    output.options,
 						OutputOptions: codegen.OutputOptions{
 							UserTemplates: map[string]string{
+								"chi/chi-handler.tmpl":    "../../templates/chi-handler.tmpl",
 								"chi/chi-interface.tmpl":  "../../templates/chi-interface.tmpl",
 								"chi/chi-middleware.tmpl": "../../templates/chi-middleware.tmpl",
 							},
