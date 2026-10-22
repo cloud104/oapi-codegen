@@ -127,6 +127,7 @@ const UpdateUserJSONRequestBodySchema = `{
   "type": "object"
 }`
 
+// JSONValidator validates data against registered JSON schemas.
 type JSONValidator struct {
 	compiler *jsonschema.Compiler
 	schemas  map[string]*jsonschema.Schema
@@ -142,6 +143,7 @@ func NewJSONValidator() *JSONValidator {
 	}
 }
 
+// Register parses, compiles, and stores a JSON schema under the given name.
 func (v *JSONValidator) Register(name, schemaStr string) error {
 	doc, err := jsonschema.UnmarshalJSON(strings.NewReader(schemaStr))
 	if err != nil {
@@ -162,6 +164,7 @@ func (v *JSONValidator) Register(name, schemaStr string) error {
 	return nil
 }
 
+// Validate checks data against a registered JSON schema.
 func (v *JSONValidator) Validate(name string, data any) error {
 	schema, ok := v.schemas[name]
 	if !ok {
