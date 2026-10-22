@@ -76,6 +76,27 @@ paths:
         '404':
           description: User not found
 
+    patch:
+      summary: Partially update a user
+      description: Update the name, email, or both.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchUserInput'
+      responses:
+        '200':
+          description: User partially updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Invalid update payload
+        '404':
+          description: User not found
+
     delete:
       summary: Delete a user
       responses:
@@ -128,3 +149,16 @@ components:
         name:
           type: string
           example: Johnny
+
+    PatchUserInput:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        name:
+          type: string
+          example: Johnny
+        email:
+          type: string
+          format: email
+          example: johnny@example.com
