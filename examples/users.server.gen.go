@@ -74,6 +74,57 @@ func (_ Unimplemented) UpdateUser(w http.ResponseWriter, r *http.Request, id int
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+const CreateUserJSONRequestBodySchema = `{
+  "additionalProperties": false,
+  "properties": {
+    "email": {
+      "example": "john@example.com",
+      "format": "email",
+      "type": "string"
+    },
+    "name": {
+      "example": "John",
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "email"
+  ],
+  "type": "object"
+}`
+
+const PatchUserJSONRequestBodySchema = `{
+  "additionalProperties": false,
+  "minProperties": 1,
+  "properties": {
+    "email": {
+      "example": "johnny@example.com",
+      "format": "email",
+      "type": "string"
+    },
+    "name": {
+      "example": "Johnny",
+      "type": "string"
+    }
+  },
+  "type": "object"
+}`
+
+const UpdateUserJSONRequestBodySchema = `{
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "example": "Johnny",
+      "type": "string"
+    }
+  },
+  "required": [
+    "name"
+  ],
+  "type": "object"
+}`
+
 // ServerInterfaceWrapper converts contexts to parameters.
 type ServerInterfaceWrapper struct {
 	Handler            ServerInterface
