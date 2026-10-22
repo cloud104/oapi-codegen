@@ -168,13 +168,18 @@ func (v *JSONValidator) Register(name, schemaStr string) error {
 }
 
 // Validate checks data against a registered JSON schema.
-func (v *JSONValidator) Validate(name string, data any) error {
+func (v *JSONValidator) Validate(name string, data io.Reader) error {
 	schema, ok := v.schemas[name]
 	if !ok {
 		return fmt.Errorf("validation failed: JSON schema for %q is not registered; register the schema before validating data", name)
 	}
 
-	if err := schema.Validate(data); err != nil {
+	value, err := jsonschema.UnmarshalJSON(data)
+	if err != nil {
+		return fmt.Errorf("invalid JSON: %w", err)
+	}
+
+	if err := schema.Validate(value); err != nil {
 		return fmt.Errorf("validation failed: data does not conform to JSON schema for %q: %w", name, err)
 	}
 
