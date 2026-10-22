@@ -10,6 +10,50 @@ const {{$bodyType.TypeName}}Schema = `{{toPrettyJson .Schema.OAPISchema}}`
   {{- end}}
 {{end}}
 
+type Validator struct {
+	compiler *jsonschema.Compiler
+	schemas  map[string]*jsonschema.Schema
+}
+
+func NewValidator() *Validator {
+	compiler := jsonschema.NewCompiler()
+	compiler.AssertFormat()
+
+	return &Validator{
+		compiler: compiler,
+		schemas:  make(map[string]*jsonschema.Schema),
+	}
+}
+
+func (v *Validator) Register(name, schemaStr string) error {
+	doc, err := jsonschema.UnmarshalJSON(strings.NewReader(schemaStr))
+	if err != nil {
+		return fmt.Errorf("parse schema %q: %w", name, err)
+	}
+
+	if err := v.compiler.AddResource(name, doc); err != nil {
+		return fmt.Errorf("register schema %q: %w", name, err)
+	}
+
+	schema, err := v.compiler.Compile(name)
+	if err != nil {
+		return fmt.Errorf("compile schema %q: %w", name, err)
+	}
+
+	v.schemas[name] = schema
+
+	return nil
+}
+
+func (v *Validator) Validate(name string, data any) error {
+	schema, ok := v.schemas[name]
+	if !ok {
+		return fmt.Errorf("schema %q not registered", name)
+	}
+
+	return schema.Validate(data)
+}
+
 // ServerInterfaceWrapper converts contexts to parameters.
 type ServerInterfaceWrapper struct {
     Handler ServerInterface
