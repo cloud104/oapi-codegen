@@ -1,11 +1,9 @@
 {{range .}}
   {{- if not .IsAlias}}
-    {{- $opid := .OperationId}}
-    {{- range .Bodies}}
-      {{- if .Schema.OAPISchema}}
-        {{- $bodyType := .TypeDef $opid}}
-const {{$bodyType.TypeName}}Schema = `{{toPrettyJson .Schema.OAPISchema}}`
-      {{- end}}
+    {{- $body := jsonRequestBody . }}
+    {{- if $body }}
+        {{- $bodyType := $body.TypeDef .OperationId }}
+const {{$bodyType.TypeName}}Schema = `{{toPrettyJson $body.Schema.OAPISchema}}`
     {{- end}}
   {{- end}}
 {{end}}
