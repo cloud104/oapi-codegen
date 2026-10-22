@@ -145,16 +145,16 @@ func NewJSONValidator() *JSONValidator {
 func (v *JSONValidator) Register(name, schemaStr string) error {
 	doc, err := jsonschema.UnmarshalJSON(strings.NewReader(schemaStr))
 	if err != nil {
-		return fmt.Errorf("parse JSON schema %q: invalid JSON document: %w", name, err)
+		return fmt.Errorf("parse JSON schema for %q: invalid JSON document: %w", name, err)
 	}
 
 	if err := v.compiler.AddResource(name, doc); err != nil {
-		return fmt.Errorf("register JSON schema %q: unable to add schema resource to compiler: %w", name, err)
+		return fmt.Errorf("register JSON schema for %q: unable to add schema resource to compiler: %w", name, err)
 	}
 
 	schema, err := v.compiler.Compile(name)
 	if err != nil {
-		return fmt.Errorf("compile JSON schema %q: schema may contain invalid definitions or unresolved references: %w", name, err)
+		return fmt.Errorf("compile JSON schema for %q: schema may contain invalid definitions or unresolved references: %w", name, err)
 	}
 
 	v.schemas[name] = schema
@@ -165,11 +165,11 @@ func (v *JSONValidator) Register(name, schemaStr string) error {
 func (v *JSONValidator) Validate(name string, data any) error {
 	schema, ok := v.schemas[name]
 	if !ok {
-		return fmt.Errorf("validation failed: JSON schema %q is not registered; register the schema before validating data", name)
+		return fmt.Errorf("validation failed: JSON schema for %q is not registered; register the schema before validating data", name)
 	}
 
 	if err := schema.Validate(data); err != nil {
-		return fmt.Errorf("validation failed: data does not conform to JSON schema %q: %w", name, err)
+		return fmt.Errorf("validation failed: data does not conform to JSON schema for %q: %w", name, err)
 	}
 
 	return nil
