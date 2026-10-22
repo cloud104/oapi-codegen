@@ -218,8 +218,8 @@ func (siw *ServerInterfaceWrapper) CreateUser(w http.ResponseWriter, r *http.Req
 		siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
 		return
 	}
-	body := new(CreateUserJSONRequestBody)
-	if err := json.Unmarshal(bodyBytes, body); err != nil {
+	var body CreateUserJSONRequestBody
+	if err := json.Unmarshal(bodyBytes, &body); err != nil {
 		siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
 		return
 	}
@@ -312,8 +312,8 @@ func (siw *ServerInterfaceWrapper) PatchUser(w http.ResponseWriter, r *http.Requ
 		siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
 		return
 	}
-	body := new(PatchUserJSONRequestBody)
-	if err := json.Unmarshal(bodyBytes, body); err != nil {
+	var body PatchUserJSONRequestBody
+	if err := json.Unmarshal(bodyBytes, &body); err != nil {
 		siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
 		return
 	}
@@ -352,14 +352,16 @@ func (siw *ServerInterfaceWrapper) UpdateUser(w http.ResponseWriter, r *http.Req
 			siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
 			return
 		}
-		if err := siw.Validator.Validate("UpdateUser", bytes.NewReader(bodyBytes)); err != nil {
-			siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
-			return
-		}
-		body = new(UpdateUserJSONRequestBody)
-		if err := json.Unmarshal(bodyBytes, body); err != nil {
-			siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
-			return
+		if len(bodyBytes) > 0 {
+			if err := siw.Validator.Validate("UpdateUser", bytes.NewReader(bodyBytes)); err != nil {
+				siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
+				return
+			}
+			body = new(UpdateUserJSONRequestBody)
+			if err := json.Unmarshal(bodyBytes, body); err != nil {
+				siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
+				return
+			}
 		}
 	}
 
