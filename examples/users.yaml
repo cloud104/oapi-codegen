@@ -29,7 +29,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UserInput'
+              $ref: '#/components/schemas/CreateUserInput'
       responses:
         '201':
           description: User created
@@ -59,13 +59,13 @@ paths:
           description: User not found
 
     put:
-      summary: Update a user
+      summary: Update a user's name
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UserInput'
+              $ref: '#/components/schemas/UpdateUserInput'
       responses:
         '200':
           description: User updated
@@ -88,6 +88,10 @@ components:
   schemas:
     User:
       type: object
+      required:
+        - id
+        - name
+        - email
       properties:
         id:
           type: integer
@@ -97,15 +101,30 @@ components:
           example: John
         email:
           type: string
+          format: email
           example: john@example.com
 
-    UserInput:
+    CreateUserInput:
       type: object
+      additionalProperties: false
       required:
         - name
         - email
       properties:
         name:
           type: string
+          example: John
         email:
           type: string
+          format: email
+          example: john@example.com
+
+    UpdateUserInput:
+      type: object
+      additionalProperties: false
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          example: Johnny
