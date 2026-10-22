@@ -184,8 +184,31 @@ func (siw *ServerInterfaceWrapper) {{$opid}}(w http.ResponseWriter, r *http.Requ
     {{end}}
   {{end}}
 
+  {{- $body := jsonRequestBody . }}
+  {{- if $body }}
+  {{- $bodyType := $body.TypeDef .OperationId }}
+
+  // ------------- Request body "{{$body.ContentType}}" -------------
+  {{- if .BodyRequired }}
+  body := new({{$bodyType.TypeName}})
+  if err := json.NewDecoder(r.Body).Decode(body); err != nil {
+  	http.Error(w, "invalid request body", http.StatusBadRequest)
+  	return
+  }
+  {{- else }}
+  var body *{{$bodyType.TypeName}}
+  if r.Body != nil && r.Body != http.NoBody {
+  	body = new({{$bodyType.TypeName}})
+  	if err := json.NewDecoder(r.Body).Decode(body); err != nil {
+  		http.Error(w, "invalid request body", http.StatusBadRequest)
+  		return
+  	}
+  }
+  {{- end }}
+  {{- end }}
+
   handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-    siw.Handler.{{.OperationId}}(w, r{{genParamNames .PathParams}}{{if .RequiresParamObject}}, params{{end}})
+	siw.Handler.{{.OperationId}}(w, r{{genParamNames .PathParams}}{{if .RequiresParamObject}}, params{{end}}{{if .Bodies}}, body{{end}})
   }))
 
   {{if opts.Compatibility.ApplyChiMiddlewareFirstToLast}}

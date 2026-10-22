@@ -4,6 +4,7 @@
 package examples
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -18,7 +19,7 @@ type ServerInterface interface {
 	GetUsers(w http.ResponseWriter, r *http.Request)
 	// PostUsers Create a user
 	// (POST /users)
-	PostUsers(w http.ResponseWriter, r *http.Request)
+	PostUsers(w http.ResponseWriter, r *http.Request, body *PostUsersJSONRequestBody)
 	// DeleteUsersId Delete a user
 	// (DELETE /users/{id})
 	DeleteUsersId(w http.ResponseWriter, r *http.Request, id int)
@@ -27,10 +28,10 @@ type ServerInterface interface {
 	GetUsersId(w http.ResponseWriter, r *http.Request, id int)
 	// PatchUsersId Partially update a user
 	// (PATCH /users/{id})
-	PatchUsersId(w http.ResponseWriter, r *http.Request, id int)
+	PatchUsersId(w http.ResponseWriter, r *http.Request, id int, body *PatchUsersIdJSONRequestBody)
 	// PutUsersId Update a user's name
 	// (PUT /users/{id})
-	PutUsersId(w http.ResponseWriter, r *http.Request, id int)
+	PutUsersId(w http.ResponseWriter, r *http.Request, id int, body *PutUsersIdJSONRequestBody)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -45,7 +46,7 @@ func (_ Unimplemented) GetUsers(w http.ResponseWriter, r *http.Request) {
 
 // PostUsers Create a user
 // (POST /users)
-func (_ Unimplemented) PostUsers(w http.ResponseWriter, r *http.Request) {
+func (_ Unimplemented) PostUsers(w http.ResponseWriter, r *http.Request, body *PostUsersJSONRequestBody) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -63,13 +64,13 @@ func (_ Unimplemented) GetUsersId(w http.ResponseWriter, r *http.Request, id int
 
 // PatchUsersId Partially update a user
 // (PATCH /users/{id})
-func (_ Unimplemented) PatchUsersId(w http.ResponseWriter, r *http.Request, id int) {
+func (_ Unimplemented) PatchUsersId(w http.ResponseWriter, r *http.Request, id int, body *PatchUsersIdJSONRequestBody) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // PutUsersId Update a user's name
 // (PUT /users/{id})
-func (_ Unimplemented) PutUsersId(w http.ResponseWriter, r *http.Request, id int) {
+func (_ Unimplemented) PutUsersId(w http.ResponseWriter, r *http.Request, id int, body *PutUsersIdJSONRequestBody) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -99,8 +100,15 @@ func (siw *ServerInterfaceWrapper) GetUsers(w http.ResponseWriter, r *http.Reque
 // PostUsers operation middleware
 func (siw *ServerInterfaceWrapper) PostUsers(w http.ResponseWriter, r *http.Request) {
 
+	// ------------- Request body "application/json" -------------
+	body := new(PostUsersJSONRequestBody)
+	if err := json.NewDecoder(r.Body).Decode(body); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.PostUsers(w, r)
+		siw.Handler.PostUsers(w, r, body)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -177,8 +185,15 @@ func (siw *ServerInterfaceWrapper) PatchUsersId(w http.ResponseWriter, r *http.R
 		return
 	}
 
+	// ------------- Request body "application/json" -------------
+	body := new(PatchUsersIdJSONRequestBody)
+	if err := json.NewDecoder(r.Body).Decode(body); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.PatchUsersId(w, r, id)
+		siw.Handler.PatchUsersId(w, r, id, body)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -203,8 +218,15 @@ func (siw *ServerInterfaceWrapper) PutUsersId(w http.ResponseWriter, r *http.Req
 		return
 	}
 
+	// ------------- Request body "application/json" -------------
+	body := new(PutUsersIdJSONRequestBody)
+	if err := json.NewDecoder(r.Body).Decode(body); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.PutUsersId(w, r, id)
+		siw.Handler.PutUsersId(w, r, id, body)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
