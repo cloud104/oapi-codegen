@@ -1,13 +1,15 @@
 // JSON schemas for validating HTTP request bodies.
+const (
 {{- range . }}
-  {{- if not .IsAlias}}
+  {{- if not .IsAlias }}
     {{- $body := jsonRequestBody . }}
     {{- if $body }}
-        {{- $bodyType := $body.TypeDef .OperationId }}
-const {{$bodyType.TypeName}}Schema = `{{toPrettyJson $body.Schema.OAPISchema}}`
-    {{- end}}
-  {{- end}}
-{{- end -}}
+      {{- $bodyType := $body.TypeDef .OperationId }}
+  {{$bodyType.TypeName}}Schema = `{{toPrettyJson $body.Schema.OAPISchema}}`
+    {{- end }}
+  {{- end }}
+{{- end }}
+)
 
 // Binary size units.
 const (

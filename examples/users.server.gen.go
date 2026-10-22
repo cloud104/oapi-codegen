@@ -78,8 +78,8 @@ func (_ Unimplemented) UpdateUser(w http.ResponseWriter, r *http.Request, id int
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// JSON schemas for validating HTTP request bodies.
 const (
-	// JSON schemas for validating HTTP request bodies.
 	CreateUserJSONRequestBodySchema = `{
   "additionalProperties": false,
   "properties": {
@@ -127,7 +127,11 @@ const (
     "name"
   ],
   "type": "object"
-}` // Binary size units.
+}`
+)
+
+// Binary size units.
+const (
 	KiB = 1024
 	MiB = 1024 * KiB
 )
