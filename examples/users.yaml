@@ -113,6 +113,11 @@ paths:
 
 components:
   schemas:
+    Email:
+      type: string
+      format: email
+      example: john@example.com
+
     User:
       type: object
       required:
@@ -127,9 +132,7 @@ components:
           type: string
           example: John
         email:
-          type: string
-          format: email
-          example: john@example.com
+          $ref: '#/components/schemas/Email'
 
     CreateUserInput:
       type: object
@@ -142,9 +145,7 @@ components:
           type: string
           example: John
         email:
-          type: string
-          format: email
-          example: john@example.com
+          $ref: '#/components/schemas/Email'
 
     UpdateUserInput:
       type: object
@@ -165,6 +166,4 @@ components:
           type: string
           example: Johnny
         email:
-          type: string
-          format: email
-          example: johnny@example.com
+          $ref: '#/components/schemas/Email'
