@@ -5,6 +5,7 @@ import (
 	"math"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	_ "unsafe"
 
@@ -14,7 +15,6 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/jinzhu/inflection"
 	"github.com/oapi-codegen/oapi-codegen/v2/pkg/codegen"
-	"strconv"
 )
 
 // Mirrors the prefix of codegen.globalState up to initialismsMap.
@@ -52,6 +52,7 @@ func init() {
 
 	// Request / Responses bodies
 	codegen.TemplateFunctions["jsonRequestBody"] = jsonRequestBody
+	codegen.TemplateFunctions["jsonRequestBodySchema"] = jsonRequestBodySchema
 	codegen.TemplateFunctions["genJSONRequestBodyArg"] = genJSONRequestBodyArg
 	codegen.TemplateFunctions["groupResponses"] = groupResponses
 	codegen.TemplateFunctions["bodyLimit"] = bodyLimit
@@ -189,6 +190,7 @@ func bodyLimit(op codegen.OperationDefinition) *BodyLimit {
 	}
 
 	var value string
+
 	switch v := raw.(type) {
 	case float64:
 		value = strconv.FormatFloat(v, 'f', -1, 64)

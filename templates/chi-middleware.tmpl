@@ -3,9 +3,10 @@ const (
 {{- range . }}
   {{- if not .IsAlias }}
     {{- $body := jsonRequestBody . }}
+    {{- $schema := jsonRequestBodySchema . }}
     {{- if $body }}
       {{- $bodyType := $body.TypeDef .OperationId }}
-  {{$bodyType.TypeName}}Schema = {{printf "%q" (toJson $body.Schema.OAPISchema)}}
+  {{$bodyType.TypeName}}Schema = {{printf "%q" (toJson $schema)}}
     {{- end }}
   {{- end }}
 {{- end }}
