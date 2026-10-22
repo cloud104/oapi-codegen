@@ -419,7 +419,7 @@ func (e *InvalidBodyRequestError) Unwrap() error {
 }
 
 // Handler creates http.Handler with routing matching OpenAPI spec.
-func Handler(si ServerInterface) http.Handler {
+func Handler(si ServerInterface) (http.Handler, error) {
 	return HandlerWithOptions(si, ChiServerOptions{})
 }
 
@@ -431,13 +431,13 @@ type ChiServerOptions struct {
 }
 
 // HandlerFromMux creates http.Handler with routing matching OpenAPI spec based on the provided mux.
-func HandlerFromMux(si ServerInterface, r chi.Router) http.Handler {
+func HandlerFromMux(si ServerInterface, r chi.Router) (http.Handler, error) {
 	return HandlerWithOptions(si, ChiServerOptions{
 		BaseRouter: r,
 	})
 }
 
-func HandlerFromMuxWithBaseURL(si ServerInterface, r chi.Router, baseURL string) http.Handler {
+func HandlerFromMuxWithBaseURL(si ServerInterface, r chi.Router, baseURL string) (http.Handler, error) {
 	return HandlerWithOptions(si, ChiServerOptions{
 		BaseURL:    baseURL,
 		BaseRouter: r,
@@ -445,7 +445,7 @@ func HandlerFromMuxWithBaseURL(si ServerInterface, r chi.Router, baseURL string)
 }
 
 // HandlerWithOptions creates http.Handler with additional options
-func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handler {
+func HandlerWithOptions(si ServerInterface, options ChiServerOptions) (http.Handler, error) {
 	r := options.BaseRouter
 
 	if r == nil {
@@ -456,10 +456,17 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 			http.Error(w, err.Error(), http.StatusBadRequest)
 		}
 	}
+
+	validator := NewJSONValidator()
+	if err := validator.Register("", ""); err != nil {
+		return nil, err
+	}
+
 	wrapper := ServerInterfaceWrapper{
 		Handler:            si,
 		HandlerMiddlewares: options.Middlewares,
 		ErrorHandlerFunc:   options.ErrorHandlerFunc,
+		Validator:          validator,
 	}
 
 	r.Group(func(r chi.Router) {
@@ -481,5 +488,5 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Put(options.BaseURL+"/users/{id}", wrapper.UpdateUser)
 	})
 
-	return r
+	return r, nil
 }
