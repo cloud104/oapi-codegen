@@ -6,16 +6,18 @@ require (
 	github.com/Masterminds/sprig/v3 v3.3.0
 	github.com/ettle/strcase v0.2.0
 	github.com/getkin/kin-openapi v0.149.0
+	github.com/go-chi/chi/v5 v5.5.0
 	github.com/jinzhu/inflection v1.0.0
 	github.com/oapi-codegen/oapi-codegen/v2 v2.8.0
+	github.com/oapi-codegen/runtime v1.7.0
 	go.yaml.in/yaml/v3 v3.0.5
-	golang.org/x/oauth2 v0.37.0
 )
 
 require (
 	dario.cat/mergo v1.0.1 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver/v3 v3.3.0 // indirect
+	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/dprotaso/go-yit v0.0.0-20220510233725-9ba8df137936 // indirect
 	github.com/go-openapi/jsonpointer v0.23.1 // indirect
 	github.com/go-openapi/swag/jsonname v0.26.0 // indirect

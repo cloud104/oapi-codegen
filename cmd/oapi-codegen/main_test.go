@@ -82,3 +82,70 @@ func TestGenerate(t *testing.T) {
 		})
 	}
 }
+
+func TestGenerate2(t *testing.T) {
+	var specs []string
+
+	err := filepath.WalkDir(examplesDir, func(path string, entry fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if entry.IsDir() {
+			return nil
+		}
+
+		switch strings.ToLower(filepath.Ext(path)) {
+		case ".yaml", ".yml":
+			specs = append(specs, path)
+		}
+
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(specs) == 0 {
+		t.Fatalf("no YAML files found in %s", examplesDir)
+	}
+
+	for _, specPath := range specs {
+		t.Run(specPath, func(t *testing.T) {
+			// Arrange
+			spec, err := util.LoadSwagger(specPath)
+			if err != nil {
+				t.Fatalf("load spec %q: %v", specPath, err)
+			}
+
+			// Act
+			result, err := codegen.Generate(spec, codegen.Configuration{
+				PackageName: "examples",
+				Generate: codegen.GenerateOptions{
+					ChiServer: true,
+					Models:    true,
+				},
+				OutputOptions: codegen.OutputOptions{
+					UserTemplates: map[string]string{
+						"chi-interface.tmpl":  "../../templates/chi-interface.tmpl",
+						"chi-middleware.tmpl": "../../templates/chi-middleware.tmpl",
+					},
+				},
+			})
+
+			// Assert
+			if err != nil {
+				t.Fatalf("generate %q: %v", specPath, err)
+			}
+
+			if !*writeResults {
+				return
+			}
+
+			outputPath := strings.TrimSuffix(specPath, filepath.Ext(specPath)) + ".gen.go"
+			if err := os.WriteFile(outputPath, []byte(result), 0o644); err != nil {
+				t.Fatalf("write %q: %v", outputPath, err)
+			}
+		})
+	}
+}
