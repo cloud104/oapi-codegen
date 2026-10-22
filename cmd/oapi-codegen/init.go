@@ -53,7 +53,7 @@ func init() {
 	codegen.TemplateFunctions["jsonRequestBody"] = jsonRequestBody
 	codegen.TemplateFunctions["genJSONRequestBodyArg"] = genJSONRequestBodyArg
 	codegen.TemplateFunctions["groupResponses"] = groupResponses
-	codegen.TemplateFunctions["getMaxBodySize"] = getMaxBodySize
+	codegen.TemplateFunctions["bodyLimit"] = bodyLimit
 
 	// Security / authentication
 	codegen.TemplateFunctions["basicAuthForOperation"] = basicAuthForOperation
@@ -132,64 +132,59 @@ const (
 	maxBodySizeExtension = "x-max-body-size"
 )
 
-type MaxBodySize struct {
+type BodyLimit struct {
 	bytes int64
 }
 
-func DefaultMaxBodySize() *MaxBodySize {
-	return &MaxBodySize{bytes: defaultMaxBodySize}
+func DefaultBodyLimit() *BodyLimit {
+	return &BodyLimit{bytes: defaultMaxBodySize}
 }
 
-func NewMaxBodySize(bytes int64) (*MaxBodySize, error) {
-	if bytes <= 0 || bytes > maxBodySize {
-		return nil, fmt.Errorf(
-			"max body size must be between 1 and %d bytes",
-			maxBodySize,
-		)
+func NewBodyLimit(n int64) (*BodyLimit, error) {
+	if n < 1 || n > maxBodySize {
+		return nil, fmt.Errorf("body limit must be between 1 and %d bytes", maxBodySize)
 	}
 
-	return &MaxBodySize{bytes: bytes}, nil
+	return &BodyLimit{bytes: n}, nil
 }
 
-func NewMaxBodySizeFromUint[T ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64](v T) (*MaxBodySize, error) {
-	if uint64(v) > math.MaxInt64 {
-		return nil, fmt.Errorf("max body size exceeds int64 range")
+func NewBodyLimitFromUint[T ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64](n T) (*BodyLimit, error) {
+	if uint64(n) > math.MaxInt64 {
+		return nil, fmt.Errorf("body limit exceeds int64 range")
 	}
 
-	return NewMaxBodySize(int64(v))
+	return NewBodyLimit(int64(n))
 }
 
-func ParseMaxBodySize(raw string) (*MaxBodySize, error) {
-	bytes, err := humanize.ParseBytes(strings.TrimSpace(raw))
+func ParseBodyLimit(s string) (*BodyLimit, error) {
+	n, err := humanize.ParseBytes(strings.TrimSpace(s))
 	if err != nil {
-		return nil, fmt.Errorf("parse max body size: %w", err)
+		return nil, fmt.Errorf("parse body limit: %w", err)
 	}
 
-	return NewMaxBodySizeFromUint(bytes)
+	return NewBodyLimitFromUint(n)
 }
 
-func (size *MaxBodySize) Bytes() int64 {
-	return size.bytes
+func (l *BodyLimit) Bytes() int64 {
+	return l.bytes
 }
 
-func (size *MaxBodySize) String() string {
-	return humanize.IBytes(uint64(size.bytes))
+func (l *BodyLimit) String() string {
+	return humanize.IBytes(uint64(l.bytes))
 }
 
-func getMaxBodySize(op codegen.OperationDefinition) *MaxBodySize {
-	if op.Spec == nil ||
-		op.Spec.RequestBody == nil ||
-		op.Spec.RequestBody.Value == nil {
-		return DefaultMaxBodySize()
+func bodyLimit(op codegen.OperationDefinition) *BodyLimit {
+	if op.Spec == nil || op.Spec.RequestBody == nil || op.Spec.RequestBody.Value == nil {
+		return DefaultBodyLimit()
 	}
 
 	raw := op.Spec.RequestBody.Value.Extensions[maxBodySizeExtension]
-	size, err := ParseMaxBodySize(fmt.Sprint(raw))
+	limit, err := ParseBodyLimit(fmt.Sprint(raw))
 	if err != nil {
-		return DefaultMaxBodySize()
+		return DefaultBodyLimit()
 	}
 
-	return size
+	return limit
 }
 
 type responseCodes []string

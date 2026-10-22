@@ -255,8 +255,8 @@ func (siw *ServerInterfaceWrapper) {{$opid}}(w http.ResponseWriter, r *http.Requ
 
   // ------------- Request body "{{$body.ContentType}}" -------------
   {{- if .BodyRequired }}
-  {{- $maxBodySize := getMaxBodySize . }}
-  bodyBytes, err := io.ReadAll(http.MaxBytesReader(w, r.Body, {{ $maxBodySize.Bytes }})) // max {{ $maxBodySize.String }}
+  {{- $limit := bodyLimit . }}
+  bodyBytes, err := io.ReadAll(http.MaxBytesReader(w, r.Body, {{ $limit.Bytes }})) // max {{ $limit.String }}
   if err != nil {
       siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
       return
@@ -273,8 +273,8 @@ func (siw *ServerInterfaceWrapper) {{$opid}}(w http.ResponseWriter, r *http.Requ
   {{- else }}
   var body *{{$bodyType.TypeName}}
   if r.Body != nil && r.Body != http.NoBody {
-    {{- $maxBodySize := getMaxBodySize . }}
-    bodyBytes, err := io.ReadAll(http.MaxBytesReader(w, r.Body, {{ $maxBodySize.Bytes }})) // max {{ $maxBodySize.String }}
+    {{- $limit := bodyLimit . }}
+    bodyBytes, err := io.ReadAll(http.MaxBytesReader(w, r.Body, {{ $limit.Bytes }})) // max {{ $limit.String }}
     if err != nil {
         siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
         return

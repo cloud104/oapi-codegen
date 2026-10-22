@@ -106,7 +106,7 @@ func Test_getMaxBodySize(t *testing.T) {
 				},
 			}
 
-			if got := getMaxBodySize(op).Bytes(); got != tt.want {
+			if got := bodyLimit(op).Bytes(); got != tt.want {
 				t.Errorf("getMaxBodySize() = %d, want %d", got, tt.want)
 			}
 		})
