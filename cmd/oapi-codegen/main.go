@@ -24,17 +24,18 @@ import (
 	"runtime/debug"
 	"strings"
 
-	"go.yaml.in/yaml/v3"
-
 	"github.com/oapi-codegen/oapi-codegen/v2/pkg/codegen"
 	"github.com/oapi-codegen/oapi-codegen/v2/pkg/util"
+	yaml "go.yaml.in/yaml/v3"
 )
 
 func errExit(format string, args ...any) {
 	if !strings.HasSuffix(format, "\n") {
 		format = format + "\n"
 	}
+
 	_, _ = fmt.Fprintf(os.Stderr, format, args...)
+
 	os.Exit(1)
 }
 
@@ -126,12 +127,16 @@ func main() {
 			fmt.Fprintln(os.Stderr, "error reading build info")
 			os.Exit(1)
 		}
+
 		fmt.Println(bi.Main.Path + "/cmd/oapi-codegen")
+
 		version := bi.Main.Version
 		if len(noVCSVersionOverride) > 0 {
 			version = noVCSVersionOverride
 		}
+
 		fmt.Println(version)
+
 		return
 	}
 
@@ -156,12 +161,15 @@ func main() {
 		if err != nil {
 			errExit("error reading config file '%s': %v\n", flagConfigFile, err)
 		}
+
 		var oldConfig oldConfiguration
+
 		oldDec := yaml.NewDecoder(bytes.NewReader(configFile))
 		oldDec.KnownFields(true)
 		oldErr := oldDec.Decode(&oldConfig)
 
 		var newConfig configuration
+
 		newDec := yaml.NewDecoder(bytes.NewReader(configFile))
 		newDec.KnownFields(true)
 		newErr := newDec.Decode(&newConfig)
@@ -194,11 +202,13 @@ func main() {
 			"alias-types":          true,
 		}
 		hasDeprecatedFlag := false
+
 		flag.Visit(func(f *flag.Flag) {
 			if deprecatedFlagNames[f.Name] {
 				hasDeprecatedFlag = true
 			}
 		})
+
 		if hasDeprecatedFlag {
 			t := true
 			oldConfigStyle = &t
@@ -209,6 +219,7 @@ func main() {
 	}
 
 	var opts configuration
+
 	if !*oldConfigStyle {
 		// We simply read the configuration from disk.
 		if flagConfigFile != "" {
@@ -216,6 +227,7 @@ func main() {
 			if err != nil {
 				errExit("error reading config file '%s': %v\n", flagConfigFile, err)
 			}
+
 			err = yaml.Unmarshal(buf, &opts)
 			if err != nil {
 				errExit("error parsing'%s' as YAML: %v\n", flagConfigFile, err)
@@ -242,23 +254,26 @@ func main() {
 		}
 	} else {
 		var oldConfig oldConfiguration
+
 		if flagConfigFile != "" {
 			buf, err := os.ReadFile(flagConfigFile)
 			if err != nil {
 				errExit("error reading config file '%s': %v\n", flagConfigFile, err)
 			}
+
 			err = yaml.Unmarshal(buf, &oldConfig)
 			if err != nil {
 				errExit("error parsing'%s' as YAML: %v\n", flagConfigFile, err)
 			}
 		}
+
 		var err error
+
 		opts, err = newConfigFromOldConfig(oldConfig)
 		if err != nil {
 			flag.PrintDefaults()
 			errExit("error creating new config from old config: %v\n", err)
 		}
-
 	}
 
 	// Ensure default values are set if user hasn't specified some needed
@@ -277,6 +292,7 @@ func main() {
 	if warnings := opts.Generate.Warnings(); len(warnings) > 0 {
 		var out strings.Builder
 		out.WriteString("WARNING: A number of warning(s) were returned when validating the GenerateOptions:")
+
 		for k, v := range warnings {
 			out.WriteString("\n- " + k + ": " + v)
 		}
@@ -287,9 +303,11 @@ func main() {
 	if warnings := opts.Warnings(); len(warnings) > 0 {
 		var out strings.Builder
 		out.WriteString("WARNING: A number of cross-field configuration warning(s) were returned:")
+
 		for k, v := range warnings {
 			out.WriteString("\n- " + k + ": " + v)
 		}
+
 		out.WriteString("\n")
 
 		_, _ = fmt.Fprint(os.Stderr, out.String())
@@ -298,13 +316,18 @@ func main() {
 	// If the user asked to output configuration, output it to stdout and exit
 	if flagOutputConfig {
 		var buf bytes.Buffer
+
 		enc := yaml.NewEncoder(&buf)
 		enc.SetIndent(2)
+
 		if err := enc.Encode(opts); err != nil {
 			errExit("error YAML marshaling configuration: %v\n", err)
 		}
+
 		_ = enc.Close()
+
 		fmt.Print(buf.String())
+
 		return
 	}
 
@@ -338,6 +361,7 @@ func main() {
 			if err := os.MkdirAll(filepath.Dir(opts.OutputFile), 0o755); err != nil {
 				errExit("error unable to create directory: %s\n", err)
 			}
+
 			if err := os.WriteFile(opts.OutputFile, []byte(code), 0o644); err != nil {
 				errExit("error writing generated code to file: %s\n", err)
 			}
@@ -372,15 +396,19 @@ func loadTemplateOverrides(templatesDir string) (map[string]string, error) {
 			if err != nil {
 				return nil, err
 			}
+
 			for subDir, subFile := range subFiles {
 				templates[path.Join(f.Name(), subDir)] = subFile
 			}
+
 			continue
 		}
+
 		data, err := os.ReadFile(path.Join(templatesDir, f.Name()))
 		if err != nil {
 			return nil, err
 		}
+
 		templates[f.Name()] = string(data)
 	}
 
@@ -397,6 +425,7 @@ func detectPackageName(cfg *configuration) error {
 		// Determine from the package name of the output file.
 		dir := filepath.Dir(cfg.PackageName)
 		cmd := exec.Command("go", "list", "-f", "{{.Name}}", dir)
+
 		out, err := cmd.CombinedOutput()
 		if err != nil {
 			outStr := string(out)
@@ -437,15 +466,19 @@ func updateConfigFromFlags(cfg *configuration) error {
 			return err
 		}
 	}
+
 	if flagIncludeTags != "" {
 		cfg.OutputOptions.IncludeTags = util.ParseCommandLineList(flagIncludeTags)
 	}
+
 	if flagExcludeTags != "" {
 		cfg.OutputOptions.ExcludeTags = util.ParseCommandLineList(flagExcludeTags)
 	}
+
 	if flagIncludeOperationIDs != "" {
 		cfg.OutputOptions.IncludeOperationIDs = util.ParseCommandLineList(flagIncludeOperationIDs)
 	}
+
 	if flagExcludeOperationIDs != "" {
 		cfg.OutputOptions.ExcludeOperationIDs = util.ParseCommandLineList(flagExcludeOperationIDs)
 	}
@@ -455,21 +488,27 @@ func updateConfigFromFlags(cfg *configuration) error {
 		if err != nil {
 			return fmt.Errorf("load templates from %q: %w", flagTemplatesDir, err)
 		}
+
 		cfg.OutputOptions.UserTemplates = templates
 	}
+
 	if flagImportMapping != "" {
 		var err error
+
 		cfg.ImportMapping, err = util.ParseCommandlineMap(flagImportMapping)
 		if err != nil {
 			return err
 		}
 	}
+
 	if flagExcludeSchemas != "" {
 		cfg.OutputOptions.ExcludeSchemas = util.ParseCommandLineList(flagExcludeSchemas)
 	}
+
 	if flagResponseTypeSuffix != "" {
 		cfg.OutputOptions.ResponseTypeSuffix = flagResponseTypeSuffix
 	}
+
 	if flagAliasTypes {
 		return fmt.Errorf("--alias-types isn't supported any more")
 	}
@@ -488,37 +527,47 @@ func updateOldConfigFromFlags(cfg oldConfiguration) oldConfiguration {
 	if cfg.PackageName == "" {
 		cfg.PackageName = flagPackageName
 	}
+
 	if cfg.GenerateTargets == nil {
 		cfg.GenerateTargets = util.ParseCommandLineList(flagGenerate)
 	}
+
 	if cfg.IncludeTags == nil {
 		cfg.IncludeTags = util.ParseCommandLineList(flagIncludeTags)
 	}
+
 	if cfg.ExcludeTags == nil {
 		cfg.ExcludeTags = util.ParseCommandLineList(flagExcludeTags)
 	}
+
 	if cfg.TemplatesDir == "" {
 		cfg.TemplatesDir = flagTemplatesDir
 	}
+
 	if cfg.ImportMapping == nil && flagImportMapping != "" {
 		var err error
+
 		cfg.ImportMapping, err = util.ParseCommandlineMap(flagImportMapping)
 		if err != nil {
 			errExit("error parsing import-mapping: %s\n", err)
 		}
 	}
+
 	if cfg.ExcludeSchemas == nil {
 		cfg.ExcludeSchemas = util.ParseCommandLineList(flagExcludeSchemas)
 	}
+
 	if cfg.OutputFile == "" {
 		cfg.OutputFile = flagOutputFile
 	}
+
 	return cfg
 }
 
 // generationTargets sets cfg options based on the generation targets.
 func generationTargets(cfg *codegen.Configuration, targets []string) error {
 	opts := codegen.GenerateOptions{} // Blank to start with.
+
 	for _, opt := range targets {
 		switch opt {
 		case "iris", "iris-server":
@@ -555,6 +604,7 @@ func generationTargets(cfg *codegen.Configuration, targets []string) error {
 			return fmt.Errorf("unknown generate option %q", opt)
 		}
 	}
+
 	cfg.Generate = opts
 
 	return nil
@@ -583,6 +633,7 @@ func newConfigFromOldConfig(c oldConfiguration) (configuration, error) {
 	if err != nil {
 		return configuration{}, fmt.Errorf("loading template overrides: %w", err)
 	}
+
 	opts.OutputOptions.UserTemplates = templates
 
 	opts.ImportMapping = cfg.ImportMapping

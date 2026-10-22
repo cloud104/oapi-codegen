@@ -130,12 +130,6 @@ const (
 }`
 )
 
-// Binary size units.
-const (
-	KiB = 1024
-	MiB = 1024 * KiB
-)
-
 // JSONValidator validates data against registered JSON schemas.
 type JSONValidator struct {
 	compiler *jsonschema.Compiler
@@ -215,7 +209,7 @@ func (siw *ServerInterfaceWrapper) GetUsers(w http.ResponseWriter, r *http.Reque
 func (siw *ServerInterfaceWrapper) CreateUser(w http.ResponseWriter, r *http.Request) {
 
 	// ------------- Request body "application/json" -------------
-	bodyBytes, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 1*MiB))
+	bodyBytes, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 1048576)) // max 1.0 MiB
 	if err != nil {
 		siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
 		return
@@ -309,7 +303,7 @@ func (siw *ServerInterfaceWrapper) PatchUser(w http.ResponseWriter, r *http.Requ
 	}
 
 	// ------------- Request body "application/json" -------------
-	bodyBytes, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 1*MiB))
+	bodyBytes, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 1048576)) // max 1.0 MiB
 	if err != nil {
 		siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
 		return

@@ -89,7 +89,6 @@ func TestGenerate(t *testing.T) {
 							},
 						},
 					})
-
 					// Assert
 					if err != nil {
 						t.Fatalf("generate %s for %q: %v", output.name, specPath, err)

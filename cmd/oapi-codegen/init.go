@@ -2,12 +2,14 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"regexp"
 	"slices"
 	"strings"
 	_ "unsafe"
 
 	sprig "github.com/Masterminds/sprig/v3"
+	humanize "github.com/dustin/go-humanize"
 	"github.com/ettle/strcase"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/jinzhu/inflection"
@@ -51,6 +53,7 @@ func init() {
 	codegen.TemplateFunctions["jsonRequestBody"] = jsonRequestBody
 	codegen.TemplateFunctions["genJSONRequestBodyArg"] = genJSONRequestBodyArg
 	codegen.TemplateFunctions["groupResponses"] = groupResponses
+	codegen.TemplateFunctions["getMaxBodySize"] = getMaxBodySize
 
 	// Security / authentication
 	codegen.TemplateFunctions["basicAuthForOperation"] = basicAuthForOperation
@@ -120,6 +123,67 @@ func genJSONRequestBodyArg(op *codegen.OperationDefinition) string {
 	typeName := body.TypeDef(op.OperationId).TypeName
 
 	return fmt.Sprintf(", body *%s", typeName)
+}
+
+const (
+	defaultMaxBodySize = humanize.MiByte
+	maxBodySize        = math.MaxInt64
+
+	maxBodySizeExtension = "x-max-body-size"
+)
+
+type MaxBodySize struct {
+	bytes uint64
+}
+
+func DefaultMaxBodySize() *MaxBodySize {
+	return &MaxBodySize{bytes: defaultMaxBodySize}
+}
+
+func ParseMaxBodySize(raw string) (*MaxBodySize, error) {
+	bytes, err := humanize.ParseBytes(strings.TrimSpace(raw))
+	if err != nil {
+		return nil, fmt.Errorf("parse max body size: %w", err)
+	}
+
+	if bytes == 0 || bytes > maxBodySize {
+		return nil, fmt.Errorf("max body size must be between 1 and %d bytes", maxBodySize)
+	}
+
+	return &MaxBodySize{bytes: bytes}, nil
+}
+
+func (size *MaxBodySize) Bytes() uint64 {
+	return size.bytes
+}
+
+func (size *MaxBodySize) String() string {
+	return humanize.IBytes(size.bytes)
+}
+
+func getMaxBodySize(op codegen.OperationDefinition) *MaxBodySize {
+	if op.Spec == nil ||
+		op.Spec.RequestBody == nil ||
+		op.Spec.RequestBody.Value == nil {
+		return DefaultMaxBodySize()
+	}
+
+	raw, ok := op.Spec.RequestBody.Value.Extensions[maxBodySizeExtension]
+	if !ok {
+		return DefaultMaxBodySize()
+	}
+
+	value, ok := raw.(string)
+	if !ok {
+		return DefaultMaxBodySize()
+	}
+
+	size, err := ParseMaxBodySize(value)
+	if err != nil {
+		return DefaultMaxBodySize()
+	}
+
+	return size
 }
 
 type responseCodes []string
