@@ -305,6 +305,21 @@ func (e *TooManyValuesForParamError) Error() string {
 	return fmt.Sprintf("Expected one value for %s, got %d", e.ParamName, e.Count)
 }
 
+type InvalidBodyRequestError struct {
+	Err error
+}
+
+func (e *InvalidBodyRequestError) Error() string {
+	if e.Err != nil {
+		return fmt.Sprintf("Invalid request body: %s", e.Err.Error())
+	}
+	return "Invalid request body"
+}
+
+func (e *InvalidBodyRequestError) Unwrap() error {
+	return e.Err
+}
+
 // Handler creates http.Handler with routing matching OpenAPI spec.
 func Handler(si ServerInterface) http.Handler {
 	return HandlerWithOptions(si, ChiServerOptions{})
