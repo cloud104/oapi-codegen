@@ -17,21 +17,21 @@ type ServerInterface interface {
 	// GetUsers Get all users
 	// (GET /users)
 	GetUsers(w http.ResponseWriter, r *http.Request)
-	// PostUsers Create a user
+	// CreateUser Create a user
 	// (POST /users)
-	PostUsers(w http.ResponseWriter, r *http.Request, body *PostUsersJSONRequestBody)
-	// DeleteUsersId Delete a user
+	CreateUser(w http.ResponseWriter, r *http.Request, body *CreateUserJSONRequestBody)
+	// DeleteUser Delete a user
 	// (DELETE /users/{id})
-	DeleteUsersId(w http.ResponseWriter, r *http.Request, id int)
-	// GetUsersId Get a user by ID
+	DeleteUser(w http.ResponseWriter, r *http.Request, id int)
+	// GetUserById Get a user by ID
 	// (GET /users/{id})
-	GetUsersId(w http.ResponseWriter, r *http.Request, id int)
-	// PatchUsersId Partially update a user
+	GetUserById(w http.ResponseWriter, r *http.Request, id int)
+	// PatchUser Partially update a user
 	// (PATCH /users/{id})
-	PatchUsersId(w http.ResponseWriter, r *http.Request, id int, body *PatchUsersIdJSONRequestBody)
-	// PutUsersId Update a user's name
+	PatchUser(w http.ResponseWriter, r *http.Request, id int, body *PatchUserJSONRequestBody)
+	// UpdateUser Update a user's name
 	// (PUT /users/{id})
-	PutUsersId(w http.ResponseWriter, r *http.Request, id int, body *PutUsersIdJSONRequestBody)
+	UpdateUser(w http.ResponseWriter, r *http.Request, id int, body *UpdateUserJSONRequestBody)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -44,33 +44,33 @@ func (_ Unimplemented) GetUsers(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// PostUsers Create a user
+// CreateUser Create a user
 // (POST /users)
-func (_ Unimplemented) PostUsers(w http.ResponseWriter, r *http.Request, body *PostUsersJSONRequestBody) {
+func (_ Unimplemented) CreateUser(w http.ResponseWriter, r *http.Request, body *CreateUserJSONRequestBody) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// DeleteUsersId Delete a user
+// DeleteUser Delete a user
 // (DELETE /users/{id})
-func (_ Unimplemented) DeleteUsersId(w http.ResponseWriter, r *http.Request, id int) {
+func (_ Unimplemented) DeleteUser(w http.ResponseWriter, r *http.Request, id int) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// GetUsersId Get a user by ID
+// GetUserById Get a user by ID
 // (GET /users/{id})
-func (_ Unimplemented) GetUsersId(w http.ResponseWriter, r *http.Request, id int) {
+func (_ Unimplemented) GetUserById(w http.ResponseWriter, r *http.Request, id int) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// PatchUsersId Partially update a user
+// PatchUser Partially update a user
 // (PATCH /users/{id})
-func (_ Unimplemented) PatchUsersId(w http.ResponseWriter, r *http.Request, id int, body *PatchUsersIdJSONRequestBody) {
+func (_ Unimplemented) PatchUser(w http.ResponseWriter, r *http.Request, id int, body *PatchUserJSONRequestBody) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// PutUsersId Update a user's name
+// UpdateUser Update a user's name
 // (PUT /users/{id})
-func (_ Unimplemented) PutUsersId(w http.ResponseWriter, r *http.Request, id int, body *PutUsersIdJSONRequestBody) {
+func (_ Unimplemented) UpdateUser(w http.ResponseWriter, r *http.Request, id int, body *UpdateUserJSONRequestBody) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -97,18 +97,18 @@ func (siw *ServerInterfaceWrapper) GetUsers(w http.ResponseWriter, r *http.Reque
 	handler.ServeHTTP(w, r)
 }
 
-// PostUsers operation middleware
-func (siw *ServerInterfaceWrapper) PostUsers(w http.ResponseWriter, r *http.Request) {
+// CreateUser operation middleware
+func (siw *ServerInterfaceWrapper) CreateUser(w http.ResponseWriter, r *http.Request) {
 
 	// ------------- Request body "application/json" -------------
-	body := new(PostUsersJSONRequestBody)
+	body := new(CreateUserJSONRequestBody)
 	if err := json.NewDecoder(r.Body).Decode(body); err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
 		return
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.PostUsers(w, r, body)
+		siw.Handler.CreateUser(w, r, body)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -118,8 +118,8 @@ func (siw *ServerInterfaceWrapper) PostUsers(w http.ResponseWriter, r *http.Requ
 	handler.ServeHTTP(w, r)
 }
 
-// DeleteUsersId operation middleware
-func (siw *ServerInterfaceWrapper) DeleteUsersId(w http.ResponseWriter, r *http.Request) {
+// DeleteUser operation middleware
+func (siw *ServerInterfaceWrapper) DeleteUser(w http.ResponseWriter, r *http.Request) {
 
 	var err error
 	_ = err
@@ -134,7 +134,7 @@ func (siw *ServerInterfaceWrapper) DeleteUsersId(w http.ResponseWriter, r *http.
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.DeleteUsersId(w, r, id)
+		siw.Handler.DeleteUser(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -144,8 +144,8 @@ func (siw *ServerInterfaceWrapper) DeleteUsersId(w http.ResponseWriter, r *http.
 	handler.ServeHTTP(w, r)
 }
 
-// GetUsersId operation middleware
-func (siw *ServerInterfaceWrapper) GetUsersId(w http.ResponseWriter, r *http.Request) {
+// GetUserById operation middleware
+func (siw *ServerInterfaceWrapper) GetUserById(w http.ResponseWriter, r *http.Request) {
 
 	var err error
 	_ = err
@@ -160,7 +160,7 @@ func (siw *ServerInterfaceWrapper) GetUsersId(w http.ResponseWriter, r *http.Req
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetUsersId(w, r, id)
+		siw.Handler.GetUserById(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -170,41 +170,8 @@ func (siw *ServerInterfaceWrapper) GetUsersId(w http.ResponseWriter, r *http.Req
 	handler.ServeHTTP(w, r)
 }
 
-// PatchUsersId operation middleware
-func (siw *ServerInterfaceWrapper) PatchUsersId(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-	_ = err
-
-	// ------------- Path parameter "id" -------------
-	var id int
-
-	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
-		return
-	}
-
-	// ------------- Request body "application/json" -------------
-	body := new(PatchUsersIdJSONRequestBody)
-	if err := json.NewDecoder(r.Body).Decode(body); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
-		return
-	}
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.PatchUsersId(w, r, id, body)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// PutUsersId operation middleware
-func (siw *ServerInterfaceWrapper) PutUsersId(w http.ResponseWriter, r *http.Request) {
+// PatchUser operation middleware
+func (siw *ServerInterfaceWrapper) PatchUser(w http.ResponseWriter, r *http.Request) {
 
 	var err error
 	_ = err
@@ -219,14 +186,47 @@ func (siw *ServerInterfaceWrapper) PutUsersId(w http.ResponseWriter, r *http.Req
 	}
 
 	// ------------- Request body "application/json" -------------
-	body := new(PutUsersIdJSONRequestBody)
+	body := new(PatchUserJSONRequestBody)
 	if err := json.NewDecoder(r.Body).Decode(body); err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
 		return
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.PutUsersId(w, r, id, body)
+		siw.Handler.PatchUser(w, r, id, body)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateUser operation middleware
+func (siw *ServerInterfaceWrapper) UpdateUser(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id int
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Request body "application/json" -------------
+	body := new(UpdateUserJSONRequestBody)
+	if err := json.NewDecoder(r.Body).Decode(body); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateUser(w, r, id, body)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -353,19 +353,19 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/users", wrapper.GetUsers)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/users", wrapper.PostUsers)
+		r.Post(options.BaseURL+"/users", wrapper.CreateUser)
 	})
 	r.Group(func(r chi.Router) {
-		r.Delete(options.BaseURL+"/users/{id}", wrapper.DeleteUsersId)
+		r.Delete(options.BaseURL+"/users/{id}", wrapper.DeleteUser)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/users/{id}", wrapper.GetUsersId)
+		r.Get(options.BaseURL+"/users/{id}", wrapper.GetUserById)
 	})
 	r.Group(func(r chi.Router) {
-		r.Patch(options.BaseURL+"/users/{id}", wrapper.PatchUsersId)
+		r.Patch(options.BaseURL+"/users/{id}", wrapper.PatchUser)
 	})
 	r.Group(func(r chi.Router) {
-		r.Put(options.BaseURL+"/users/{id}", wrapper.PutUsersId)
+		r.Put(options.BaseURL+"/users/{id}", wrapper.UpdateUser)
 	})
 
 	return r

@@ -12,6 +12,7 @@ paths:
   /users:
     get:
       summary: Get all users
+      operationId: getUsers
       responses:
         '200':
           description: List of users
@@ -24,6 +25,7 @@ paths:
 
     post:
       summary: Create a user
+      operationId: createUser
       requestBody:
         required: true
         content:
@@ -48,6 +50,7 @@ paths:
 
     get:
       summary: Get a user by ID
+      operationId: getUserById
       responses:
         '200':
           description: User found
@@ -60,6 +63,7 @@ paths:
 
     put:
       summary: Update a user's name
+      operationId: updateUser
       requestBody:
         required: true
         content:
@@ -78,6 +82,7 @@ paths:
 
     patch:
       summary: Partially update a user
+      operationId: patchUser
       description: Update the name, email, or both.
       requestBody:
         required: true
@@ -99,6 +104,7 @@ paths:
 
     delete:
       summary: Delete a user
+      operationId: deleteUser
       responses:
         '204':
           description: User deleted

@@ -31,11 +31,11 @@ type User struct {
 	Name  string              `json:"name"`
 }
 
-// PostUsersJSONRequestBody defines body for PostUsers for application/json ContentType.
-type PostUsersJSONRequestBody = CreateUserInput
+// CreateUserJSONRequestBody defines body for CreateUser for application/json ContentType.
+type CreateUserJSONRequestBody = CreateUserInput
 
-// PatchUsersIdJSONRequestBody defines body for PatchUsersId for application/json ContentType.
-type PatchUsersIdJSONRequestBody = PatchUserInput
+// PatchUserJSONRequestBody defines body for PatchUser for application/json ContentType.
+type PatchUserJSONRequestBody = PatchUserInput
 
-// PutUsersIdJSONRequestBody defines body for PutUsersId for application/json ContentType.
-type PutUsersIdJSONRequestBody = UpdateUserInput
+// UpdateUserJSONRequestBody defines body for UpdateUser for application/json ContentType.
+type UpdateUserJSONRequestBody = UpdateUserInput
