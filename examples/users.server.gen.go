@@ -102,8 +102,8 @@ func (siw *ServerInterfaceWrapper) CreateUser(w http.ResponseWriter, r *http.Req
 
 	// ------------- Request body "application/json" -------------
 	body := new(CreateUserJSONRequestBody)
-	if err := json.NewDecoder(r.Body).Decode(body); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
+	if err = json.NewDecoder(r.Body).Decode(body); err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
 		return
 	}
 
@@ -187,8 +187,8 @@ func (siw *ServerInterfaceWrapper) PatchUser(w http.ResponseWriter, r *http.Requ
 
 	// ------------- Request body "application/json" -------------
 	body := new(PatchUserJSONRequestBody)
-	if err := json.NewDecoder(r.Body).Decode(body); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
+	if err = json.NewDecoder(r.Body).Decode(body); err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
 		return
 	}
 
@@ -220,8 +220,8 @@ func (siw *ServerInterfaceWrapper) UpdateUser(w http.ResponseWriter, r *http.Req
 
 	// ------------- Request body "application/json" -------------
 	body := new(UpdateUserJSONRequestBody)
-	if err := json.NewDecoder(r.Body).Decode(body); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
+	if err = json.NewDecoder(r.Body).Decode(body); err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
 		return
 	}
 
