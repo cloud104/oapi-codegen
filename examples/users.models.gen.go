@@ -9,14 +9,17 @@ import (
 
 // CreateUserInput defines model for CreateUserInput.
 type CreateUserInput struct {
-	Email openapi_types.Email `json:"email"`
-	Name  string              `json:"name"`
+	Email Email  `json:"email"`
+	Name  string `json:"name"`
 }
+
+// Email defines model for Email.
+type Email = openapi_types.Email
 
 // PatchUserInput defines model for PatchUserInput.
 type PatchUserInput struct {
-	Email *openapi_types.Email `json:"email,omitempty"`
-	Name  *string              `json:"name,omitempty"`
+	Email *Email  `json:"email,omitempty"`
+	Name  *string `json:"name,omitempty"`
 }
 
 // UpdateUserInput defines model for UpdateUserInput.
@@ -26,9 +29,9 @@ type UpdateUserInput struct {
 
 // User defines model for User.
 type User struct {
-	Email openapi_types.Email `json:"email"`
-	Id    int                 `json:"id"`
-	Name  string              `json:"name"`
+	Email Email  `json:"email"`
+	Id    int    `json:"id"`
+	Name  string `json:"name"`
 }
 
 // CreateUserJSONRequestBody defines body for CreateUser for application/json ContentType.
