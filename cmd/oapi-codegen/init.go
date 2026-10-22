@@ -169,7 +169,7 @@ func (size *MaxBodySize) Bytes() int64 {
 }
 
 func (size *MaxBodySize) String() string {
-	return humanize.Bytes(uint64(size.bytes))
+	return humanize.IBytes(uint64(size.bytes))
 }
 
 func getMaxBodySize(op codegen.OperationDefinition) *MaxBodySize {
