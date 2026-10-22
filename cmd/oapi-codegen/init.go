@@ -123,6 +123,10 @@ func genJSONRequestBodyArg(op *codegen.OperationDefinition) string {
 
 	typeName := body.TypeDef(op.OperationId).TypeName
 
+	if body.Required {
+		return fmt.Sprintf(", body %s", typeName)
+	}
+
 	return fmt.Sprintf(", body *%s", typeName)
 }
 

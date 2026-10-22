@@ -23,7 +23,7 @@ type ServerInterface interface {
 	GetUsers(w http.ResponseWriter, r *http.Request)
 	// CreateUser Create a user
 	// (POST /users)
-	CreateUser(w http.ResponseWriter, r *http.Request, body *CreateUserJSONRequestBody)
+	CreateUser(w http.ResponseWriter, r *http.Request, body CreateUserJSONRequestBody)
 	// DeleteUser Delete a user
 	// (DELETE /users/{id})
 	DeleteUser(w http.ResponseWriter, r *http.Request, id int)
@@ -32,7 +32,7 @@ type ServerInterface interface {
 	GetUserById(w http.ResponseWriter, r *http.Request, id int)
 	// PatchUser Partially update a user
 	// (PATCH /users/{id})
-	PatchUser(w http.ResponseWriter, r *http.Request, id int, body *PatchUserJSONRequestBody)
+	PatchUser(w http.ResponseWriter, r *http.Request, id int, body PatchUserJSONRequestBody)
 	// UpdateUser Update a user's name
 	// (PUT /users/{id})
 	UpdateUser(w http.ResponseWriter, r *http.Request, id int, body *UpdateUserJSONRequestBody)
@@ -50,7 +50,7 @@ func (_ Unimplemented) GetUsers(w http.ResponseWriter, r *http.Request) {
 
 // CreateUser Create a user
 // (POST /users)
-func (_ Unimplemented) CreateUser(w http.ResponseWriter, r *http.Request, body *CreateUserJSONRequestBody) {
+func (_ Unimplemented) CreateUser(w http.ResponseWriter, r *http.Request, body CreateUserJSONRequestBody) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -68,7 +68,7 @@ func (_ Unimplemented) GetUserById(w http.ResponseWriter, r *http.Request, id in
 
 // PatchUser Partially update a user
 // (PATCH /users/{id})
-func (_ Unimplemented) PatchUser(w http.ResponseWriter, r *http.Request, id int, body *PatchUserJSONRequestBody) {
+func (_ Unimplemented) PatchUser(w http.ResponseWriter, r *http.Request, id int, body PatchUserJSONRequestBody) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
