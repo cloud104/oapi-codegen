@@ -80,54 +80,9 @@ func (_ Unimplemented) UpdateUser(w http.ResponseWriter, r *http.Request, id int
 
 // JSON schemas for validating HTTP request bodies.
 const (
-	CreateUserJSONRequestBodySchema = `{
-  "additionalProperties": false,
-  "properties": {
-    "email": {
-      "example": "john@example.com",
-      "format": "email",
-      "type": "string"
-    },
-    "name": {
-      "example": "John",
-      "type": "string"
-    }
-  },
-  "required": [
-    "name",
-    "email"
-  ],
-  "type": "object"
-}`
-	PatchUserJSONRequestBodySchema = `{
-  "additionalProperties": false,
-  "minProperties": 1,
-  "properties": {
-    "email": {
-      "example": "johnny@example.com",
-      "format": "email",
-      "type": "string"
-    },
-    "name": {
-      "example": "Johnny",
-      "type": "string"
-    }
-  },
-  "type": "object"
-}`
-	UpdateUserJSONRequestBodySchema = `{
-  "additionalProperties": false,
-  "properties": {
-    "name": {
-      "example": "Johnny",
-      "type": "string"
-    }
-  },
-  "required": [
-    "name"
-  ],
-  "type": "object"
-}`
+	CreateUserJSONRequestBodySchema = "{\"additionalProperties\":false,\"properties\":{\"email\":{\"example\":\"john@example.com\",\"format\":\"email\",\"type\":\"string\"},\"name\":{\"example\":\"John\",\"type\":\"string\"}},\"required\":[\"name\",\"email\"],\"type\":\"object\"}"
+	PatchUserJSONRequestBodySchema  = "{\"additionalProperties\":false,\"minProperties\":1,\"properties\":{\"email\":{\"example\":\"johnny@example.com\",\"format\":\"email\",\"type\":\"string\"},\"name\":{\"example\":\"Johnny\",\"type\":\"string\"}},\"type\":\"object\"}"
+	UpdateUserJSONRequestBodySchema = "{\"additionalProperties\":false,\"properties\":{\"name\":{\"example\":\"Johnny\",\"type\":\"string\"}},\"required\":[\"name\"],\"type\":\"object\"}"
 )
 
 // JSONValidator validates data against registered JSON schemas.

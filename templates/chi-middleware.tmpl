@@ -5,7 +5,7 @@ const (
     {{- $body := jsonRequestBody . }}
     {{- if $body }}
       {{- $bodyType := $body.TypeDef .OperationId }}
-  {{$bodyType.TypeName}}Schema = `{{toPrettyJson $body.Schema.OAPISchema}}`
+  {{$bodyType.TypeName}}Schema = {{printf "%q" (toJson $body.Schema.OAPISchema)}}
     {{- end }}
   {{- end }}
 {{- end }}
