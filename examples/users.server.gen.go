@@ -11,25 +11,6 @@ import (
 	"github.com/oapi-codegen/runtime"
 )
 
-// User defines model for User.
-type User struct {
-	Email *string `json:"email,omitempty"`
-	Id    *int    `json:"id,omitempty"`
-	Name  *string `json:"name,omitempty"`
-}
-
-// UserInput defines model for UserInput.
-type UserInput struct {
-	Email string `json:"email"`
-	Name  string `json:"name"`
-}
-
-// PostUsersJSONRequestBody defines body for PostUsers for application/json ContentType.
-type PostUsersJSONRequestBody = UserInput
-
-// PutUsersIdJSONRequestBody defines body for PutUsersId for application/json ContentType.
-type PutUsersIdJSONRequestBody = UserInput
-
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 	// GetUsers Get all users

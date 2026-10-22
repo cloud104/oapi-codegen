@@ -118,33 +118,56 @@ func TestGenerate2(t *testing.T) {
 				t.Fatalf("load spec %q: %v", specPath, err)
 			}
 
-			// Act
-			result, err := codegen.Generate(spec, codegen.Configuration{
-				PackageName: "examples",
-				Generate: codegen.GenerateOptions{
-					ChiServer: true,
-					Models:    true,
-				},
-				OutputOptions: codegen.OutputOptions{
-					UserTemplates: map[string]string{
-						"chi-interface.tmpl":  "../../templates/chi-interface.tmpl",
-						"chi-middleware.tmpl": "../../templates/chi-middleware.tmpl",
+			basePath := strings.TrimSuffix(specPath, filepath.Ext(specPath))
+
+			outputs := []struct {
+				name     string
+				filename string
+				options  codegen.GenerateOptions
+			}{
+				{
+					name:     "models",
+					filename: basePath + ".models.gen.go",
+					options: codegen.GenerateOptions{
+						Models: true,
 					},
 				},
-			})
-
-			// Assert
-			if err != nil {
-				t.Fatalf("generate %q: %v", specPath, err)
+				{
+					name:     "server",
+					filename: basePath + ".server.gen.go",
+					options: codegen.GenerateOptions{
+						ChiServer: true,
+					},
+				},
 			}
 
-			if !*writeResults {
-				return
-			}
+			for _, output := range outputs {
+				t.Run(output.name, func(t *testing.T) {
+					// Act
+					result, err := codegen.Generate(spec, codegen.Configuration{
+						PackageName: "examples",
+						Generate:    output.options,
+						OutputOptions: codegen.OutputOptions{
+							UserTemplates: map[string]string{
+								"chi-interface.tmpl":  "../../templates/chi-interface.tmpl",
+								"chi-middleware.tmpl": "../../templates/chi-middleware.tmpl",
+							},
+						},
+					})
 
-			outputPath := strings.TrimSuffix(specPath, filepath.Ext(specPath)) + ".gen.go"
-			if err := os.WriteFile(outputPath, []byte(result), 0o644); err != nil {
-				t.Fatalf("write %q: %v", outputPath, err)
+					// Assert
+					if err != nil {
+						t.Fatalf("generate %s for %q: %v", output.name, specPath, err)
+					}
+
+					if !*writeResults {
+						return
+					}
+
+					if err := os.WriteFile(output.filename, []byte(result), 0o644); err != nil {
+						t.Fatalf("write %q: %v", output.filename, err)
+					}
+				})
 			}
 		})
 	}
