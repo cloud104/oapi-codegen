@@ -133,11 +133,22 @@ const (
 )
 
 type MaxBodySize struct {
-	bytes uint64
+	bytes int64
 }
 
 func DefaultMaxBodySize() *MaxBodySize {
 	return &MaxBodySize{bytes: defaultMaxBodySize}
+}
+
+func NewMaxBodySize(bytes int64) (*MaxBodySize, error) {
+	if bytes <= 0 || bytes > maxBodySize {
+		return nil, fmt.Errorf(
+			"max body size must be between 1 and %d bytes",
+			maxBodySize,
+		)
+	}
+
+	return &MaxBodySize{bytes: bytes}, nil
 }
 
 func ParseMaxBodySize(raw string) (*MaxBodySize, error) {
@@ -146,19 +157,19 @@ func ParseMaxBodySize(raw string) (*MaxBodySize, error) {
 		return nil, fmt.Errorf("parse max body size: %w", err)
 	}
 
-	if bytes == 0 || bytes > maxBodySize {
-		return nil, fmt.Errorf("max body size must be between 1 and %d bytes", maxBodySize)
+	if bytes > math.MaxInt64 {
+		return nil, fmt.Errorf("max body size exceeds int64 range")
 	}
 
-	return &MaxBodySize{bytes: bytes}, nil
+	return NewMaxBodySize(int64(bytes))
 }
 
-func (size *MaxBodySize) Bytes() uint64 {
+func (size *MaxBodySize) Bytes() int64 {
 	return size.bytes
 }
 
 func (size *MaxBodySize) String() string {
-	return humanize.IBytes(size.bytes)
+	return humanize.Bytes(uint64(size.bytes))
 }
 
 func getMaxBodySize(op codegen.OperationDefinition) *MaxBodySize {
@@ -168,18 +179,20 @@ func getMaxBodySize(op codegen.OperationDefinition) *MaxBodySize {
 		return DefaultMaxBodySize()
 	}
 
-	raw, ok := op.Spec.RequestBody.Value.Extensions[maxBodySizeExtension]
-	if !ok {
-		return DefaultMaxBodySize()
+	raw := op.Spec.RequestBody.Value.Extensions[maxBodySizeExtension]
+
+	var size *MaxBodySize
+
+	switch v := raw.(type) {
+	case string:
+		size, _ = ParseMaxBodySize(v)
+	case int:
+		size, _ = NewMaxBodySize(int64(v))
+	case int64:
+		size, _ = NewMaxBodySize(v)
 	}
 
-	value, ok := raw.(string)
-	if !ok {
-		return DefaultMaxBodySize()
-	}
-
-	size, err := ParseMaxBodySize(value)
-	if err != nil {
+	if size == nil {
 		return DefaultMaxBodySize()
 	}
 
