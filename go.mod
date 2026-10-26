@@ -1,6 +1,6 @@
 module github.com/cloud104/oapi-codegen
 
-go 1.27.1
+go 1.27.3
 
 require (
 	github.com/Masterminds/sprig/v3 v3.3.0
