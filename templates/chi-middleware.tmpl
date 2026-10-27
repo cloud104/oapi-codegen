@@ -1,3 +1,16 @@
+{{- range . }}
+  {{- if not .IsAlias }}
+    {{- $body := jsonRequestBody . }}
+    {{- $schema := jsonRequestSchema . }}
+    {{- if $body }}
+      {{- $bodyType := $body.TypeDef .OperationId }}
+
+// {{$bodyType.TypeName}}Schema defines the JSON schema used to validate {{$bodyType.TypeName}} request bodies.
+const {{$bodyType.TypeName}}Schema = `{{toPrettyJson $schema}}`
+    {{- end }}
+  {{- end }}
+{{- end }}
+
 // ServerInterfaceWrapper converts contexts to parameters.
 type ServerInterfaceWrapper struct {
     Handler ServerInterface

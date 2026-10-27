@@ -37,6 +37,7 @@ func init() {
 
 	// Request / Responses bodies
 	codegen.TemplateFunctions["jsonRequestBody"] = jsonRequestBody
+	codegen.TemplateFunctions["jsonRequestSchema"] = jsonRequestSchema
 	codegen.TemplateFunctions["genJSONRequestBodyArg"] = genJSONRequestBodyArg
 	codegen.TemplateFunctions["groupResponses"] = groupResponses
 
@@ -95,6 +96,29 @@ func jsonRequestBody(op *codegen.OperationDefinition) *codegen.RequestBodyDefini
 	}
 
 	return body
+}
+
+func jsonRequestSchema(op *codegen.OperationDefinition) *openapi3.Schema {
+	operations, err := codegenstate.Operations()
+	if err != nil {
+		panic(err)
+	}
+
+	for i := range operations {
+		bundledOp := &operations[i]
+		if bundledOp.Path != op.Path || !strings.EqualFold(bundledOp.Method, op.Method) {
+			continue
+		}
+
+		body := jsonRequestBody(bundledOp)
+		if body == nil {
+			continue
+		}
+
+		return body.Schema.OAPISchema
+	}
+
+	return &openapi3.Schema{}
 }
 
 func genJSONRequestBodyArg(op *codegen.OperationDefinition) string {
