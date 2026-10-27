@@ -349,6 +349,58 @@ func (siw *ServerInterfaceWrapper) {{$opid}}(w http.ResponseWriter, r *http.Requ
     {{end}}
   {{end}}
 
+  {{- $body := jsonRequestBody . }}
+  {{- if $body }}
+  {{- $bodyType := $body.TypeDef .OperationId }}
+
+  // ------------- Request body "{{$body.ContentType}}" -------------
+  {{- $limit := bodyLimit . }}
+  {{- if .BodyRequired }}
+  bodyBytes, err := io.ReadAll(http.MaxBytesReader(w, r.Body, {{ $limit.Bytes }})) // max {{ $limit.String }}
+  if err != nil {
+      siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
+      return
+  }
+
+  r.Body = io.NopCloser(bytes.NewReader(bodyBytes))
+  r.ContentLength = int64(len(bodyBytes))
+
+  validator, err := siw.SchemaRegistry.Validator({{.OperationId | quote}})
+  if err != nil {
+  	siw.ErrorHandlerFunc(w, r, err)
+  	return
+  }
+
+  if err := validator.Validate(bytes.NewReader(bodyBytes)); err != nil {
+      siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
+      return
+  }
+  {{- else }}
+  if r.Body != nil && r.Body != http.NoBody {
+    bodyBytes, err := io.ReadAll(http.MaxBytesReader(w, r.Body, {{ $limit.Bytes }})) // max {{ $limit.String }}
+    if err != nil {
+        siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
+        return
+    }
+    if len(bodyBytes) > 0 {
+      r.Body = io.NopCloser(bytes.NewReader(bodyBytes))
+      r.ContentLength = int64(len(bodyBytes))
+
+      validator, err := siw.SchemaRegistry.Validator({{.OperationId | quote}})
+      if err != nil {
+        siw.ErrorHandlerFunc(w, r, err)
+        return
+      }
+
+      if err := validator.Validate(bytes.NewReader(bodyBytes)); err != nil {
+          siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
+          return
+      }
+    }
+  }
+  {{- end }}
+  {{- end }}
+
   handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
     siw.Handler.{{.OperationId}}(w, r{{genParamNames .PathParams}}{{if .RequiresParamObject}}, params{{end}})
   }))
