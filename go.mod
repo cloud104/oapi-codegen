@@ -4,6 +4,7 @@ go 1.27.3
 
 require (
 	github.com/Masterminds/sprig/v3 v3.3.0
+	github.com/dustin/go-humanize v1.1.0
 	github.com/ettle/strcase v0.2.0
 	github.com/getkin/kin-openapi v0.152.0
 	github.com/jinzhu/inflection v1.0.0
