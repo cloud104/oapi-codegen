@@ -5,27 +5,15 @@ import (
 	"regexp"
 	"slices"
 	"strings"
-	_ "unsafe"
 
 	sprig "github.com/Masterminds/sprig/v3"
 	"github.com/ettle/strcase"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/jinzhu/inflection"
 	"github.com/oapi-codegen/oapi-codegen/v2/pkg/codegen"
+
+	"github.com/cloud104/oapi-codegen/internal/codegenstate"
 )
-
-// Mirrors the prefix of codegen.globalState up to initialismsMap.
-// This is intentionally coupled to oapi-codegen's internal implementation.
-type codegenGlobalStateLayout struct {
-	options        codegen.Configuration
-	spec           *openapi3.T
-	is31           bool
-	importMapping  map[string]struct{ Name, Path string }
-	initialismsMap map[string]string
-}
-
-//go:linkname codegenGlobalState github.com/oapi-codegen/oapi-codegen/v2/pkg/codegen.globalState
-var codegenGlobalState codegenGlobalStateLayout
 
 func init() {
 	for name, fn := range sprig.FuncMap() {
@@ -66,7 +54,7 @@ func camelCaseWithInitialisms(s string) string {
 
 	// Surround each known initialism with separators so the caser can
 	// recognize it as an independent word, even when acronyms are adjacent.
-	for _, initialism := range codegenGlobalState.initialismsMap {
+	for _, initialism := range codegenstate.Initialisms() {
 		s = strings.ReplaceAll(s, initialism, "_"+initialism+"_")
 		overrides[initialism] = true
 	}
@@ -79,7 +67,7 @@ func pascalCaseWithInitialisms(s string) string {
 
 	// Surround each known initialism with separators so the caser can
 	// recognize it as an independent word, even when acronyms are adjacent.
-	for _, initialism := range codegenGlobalState.initialismsMap {
+	for _, initialism := range codegenstate.Initialisms() {
 		s = strings.ReplaceAll(s, initialism, "_"+initialism+"_")
 		overrides[initialism] = true
 	}
@@ -206,8 +194,8 @@ type operationSecurity struct {
 }
 
 func securityForOperations(ops []codegen.OperationDefinition) []*operationSecurity {
-	spec := codegenGlobalState.spec
-	if spec == nil || spec.Components == nil {
+	components, ok := codegenstate.Components()
+	if !ok {
 		return nil
 	}
 
@@ -220,7 +208,7 @@ func securityForOperations(ops []codegen.OperationDefinition) []*operationSecuri
 				continue
 			}
 
-			ref := spec.Components.SecuritySchemes[name]
+			ref := components.SecuritySchemes[name]
 			if ref == nil || ref.Value == nil {
 				continue
 			}
