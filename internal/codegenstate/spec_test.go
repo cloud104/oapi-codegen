@@ -22,7 +22,8 @@ func TestInlineSpec(t *testing.T) {
 	config := codegen.Configuration{
 		PackageName: "testapi",
 		Generate: codegen.GenerateOptions{
-			Models: true,
+			ChiServer: true,
+			Models:    true,
 		},
 	}
 
