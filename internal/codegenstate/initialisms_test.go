@@ -2,6 +2,7 @@ package codegenstate
 
 import (
 	"path/filepath"
+	"slices"
 	"testing"
 
 	"github.com/getkin/kin-openapi/openapi3"
@@ -40,14 +41,7 @@ func TestInitialisms(t *testing.T) {
 		t.Fatal("expected initialisms, got none")
 	}
 
-	found := false
-
-	for _, initialism := range got {
-		if initialism == "api" {
-			found = true
-			break
-		}
-	}
+	found := slices.Contains(got, "api")
 
 	if !found {
 		t.Error("expected initialisms to contain api")
