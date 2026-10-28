@@ -1,0 +1,47 @@
+# golangci-lint configuration
+# Reference: https://raw.githubusercontent.com/golangci/golangci-lint/refs/tags/v2.15.0/.golangci.reference.yml
+version: "2"
+
+formatters:
+  enable:
+    - gofmt
+    - gofumpt
+    - goimports
+
+  settings:
+    gofmt:
+      rewrite-rules:
+        - pattern: 'interface{}'
+          replacement: 'any'
+
+    gofumpt:
+      module-path: github.com/cloud104/oapi-codegen
+      extra:
+        group-params: true
+        clothe-returns: true
+
+    goimports:
+      local-prefixes:
+        - github.com/cloud104/oapi-codegen
+
+  exclusions:
+    warn-unused: true
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  uniq-by-line: false
+  fix: true
+
+output:
+  sort-order:
+    - file # filepath, line, and column.
+    - linter
+    - severity
+
+run:
+  timeout: 5m
+  relative-path-mode: gomod
+  modules-download-mode: readonly
+  allow-parallel-runners: true
+  allow-serial-runners: true
