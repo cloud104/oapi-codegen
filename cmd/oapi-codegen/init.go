@@ -2,30 +2,21 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
-	_ "unsafe"
 
 	sprig "github.com/Masterminds/sprig/v3"
+	humanize "github.com/dustin/go-humanize"
 	"github.com/ettle/strcase"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/jinzhu/inflection"
 	"github.com/oapi-codegen/oapi-codegen/v2/pkg/codegen"
+
+	"github.com/cloud104/oapi-codegen/internal/codegenstate"
 )
-
-// Mirrors the prefix of codegen.globalState up to initialismsMap.
-// This is intentionally coupled to oapi-codegen's internal implementation.
-type codegenGlobalStateLayout struct {
-	options        codegen.Configuration
-	spec           *openapi3.T
-	is31           bool
-	importMapping  map[string]struct{ Name, Path string }
-	initialismsMap map[string]string
-}
-
-//go:linkname codegenGlobalState github.com/oapi-codegen/oapi-codegen/v2/pkg/codegen.globalState
-var codegenGlobalState codegenGlobalStateLayout
 
 func init() {
 	for name, fn := range sprig.FuncMap() {
@@ -49,8 +40,10 @@ func init() {
 
 	// Request / Responses bodies
 	codegen.TemplateFunctions["jsonRequestBody"] = jsonRequestBody
+	codegen.TemplateFunctions["jsonRequestSchema"] = jsonRequestSchema
 	codegen.TemplateFunctions["genJSONRequestBodyArg"] = genJSONRequestBodyArg
 	codegen.TemplateFunctions["groupResponses"] = groupResponses
+	codegen.TemplateFunctions["bodyLimit"] = bodyLimit
 
 	// Security / authentication
 	codegen.TemplateFunctions["basicAuthForOperation"] = basicAuthForOperation
@@ -66,7 +59,7 @@ func camelCaseWithInitialisms(s string) string {
 
 	// Surround each known initialism with separators so the caser can
 	// recognize it as an independent word, even when acronyms are adjacent.
-	for _, initialism := range codegenGlobalState.initialismsMap {
+	for _, initialism := range codegenstate.Initialisms() {
 		s = strings.ReplaceAll(s, initialism, "_"+initialism+"_")
 		overrides[initialism] = true
 	}
@@ -79,7 +72,7 @@ func pascalCaseWithInitialisms(s string) string {
 
 	// Surround each known initialism with separators so the caser can
 	// recognize it as an independent word, even when acronyms are adjacent.
-	for _, initialism := range codegenGlobalState.initialismsMap {
+	for _, initialism := range codegenstate.Initialisms() {
 		s = strings.ReplaceAll(s, initialism, "_"+initialism+"_")
 		overrides[initialism] = true
 	}
@@ -107,6 +100,29 @@ func jsonRequestBody(op *codegen.OperationDefinition) *codegen.RequestBodyDefini
 	}
 
 	return body
+}
+
+func jsonRequestSchema(op *codegen.OperationDefinition) *openapi3.Schema {
+	operations, err := codegenstate.Operations()
+	if err != nil {
+		panic(err)
+	}
+
+	for i := range operations {
+		bundledOp := &operations[i]
+		if bundledOp.Path != op.Path || !strings.EqualFold(bundledOp.Method, op.Method) {
+			continue
+		}
+
+		body := jsonRequestBody(bundledOp)
+		if body == nil {
+			continue
+		}
+
+		return body.Schema.OAPISchema
+	}
+
+	return &openapi3.Schema{}
 }
 
 func genJSONRequestBodyArg(op *codegen.OperationDefinition) string {
@@ -200,14 +216,89 @@ func groupResponses(types []codegen.ResponseTypeDefinition) []*responseGroup {
 	return result
 }
 
+const (
+	defaultMaxBodySize = humanize.MiByte
+	maxBodySize        = math.MaxInt64
+
+	maxBodySizeExtension = "x-max-body-size"
+)
+
+type BodyLimit struct {
+	bytes int64
+}
+
+func bodyLimit(op codegen.OperationDefinition) *BodyLimit {
+	if op.Spec == nil || op.Spec.RequestBody == nil || op.Spec.RequestBody.Value == nil {
+		return defaultBodyLimit()
+	}
+
+	raw, ok := op.Spec.RequestBody.Value.Extensions[maxBodySizeExtension]
+	if !ok {
+		return defaultBodyLimit()
+	}
+
+	var value string
+
+	switch v := raw.(type) {
+	case float64:
+		value = strconv.FormatFloat(v, 'f', -1, 64)
+	default:
+		value = fmt.Sprint(v)
+	}
+
+	limit, err := parseBodyLimit(value)
+	if err != nil {
+		panic(fmt.Errorf("invalid body limit: %w", err))
+	}
+
+	return limit
+}
+
+func (l *BodyLimit) Bytes() int64 {
+	return l.bytes
+}
+
+func (l *BodyLimit) String() string {
+	return humanize.IBytes(uint64(l.bytes))
+}
+
+func defaultBodyLimit() *BodyLimit {
+	return &BodyLimit{bytes: defaultMaxBodySize}
+}
+
+func newBodyLimit(n int64) (*BodyLimit, error) {
+	if n < 1 || n > maxBodySize {
+		return nil, fmt.Errorf("body limit must be between 1 and %d bytes", maxBodySize)
+	}
+
+	return &BodyLimit{bytes: n}, nil
+}
+
+func newBodyLimitFromUint[T ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64](n T) (*BodyLimit, error) {
+	if uint64(n) > math.MaxInt64 {
+		return nil, fmt.Errorf("body limit exceeds int64 range")
+	}
+
+	return newBodyLimit(int64(n))
+}
+
+func parseBodyLimit(s string) (*BodyLimit, error) {
+	n, err := humanize.ParseBytes(strings.TrimSpace(s))
+	if err != nil {
+		return nil, fmt.Errorf("parse body limit: %w", err)
+	}
+
+	return newBodyLimitFromUint(n)
+}
+
 type operationSecurity struct {
 	Definition codegen.SecurityDefinition
 	Scheme     *openapi3.SecurityScheme
 }
 
 func securityForOperations(ops []codegen.OperationDefinition) []*operationSecurity {
-	spec := codegenGlobalState.spec
-	if spec == nil || spec.Components == nil {
+	components, ok := codegenstate.Components()
+	if !ok {
 		return nil
 	}
 
@@ -220,7 +311,7 @@ func securityForOperations(ops []codegen.OperationDefinition) []*operationSecuri
 				continue
 			}
 
-			ref := spec.Components.SecuritySchemes[name]
+			ref := components.SecuritySchemes[name]
 			if ref == nil || ref.Value == nil {
 				continue
 			}
