@@ -55,7 +55,6 @@ jobs:
           fi
           echo "oapi-codegen entrypoint is up to date."
 
-
   test:
     runs-on: tks-gha-runner
     needs: build
@@ -78,6 +77,19 @@ jobs:
     runs-on: tks-gha-runner
     needs: build
     steps:
+      - name: Clone the code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+
+      - name: Download dependencies
+        run: go mod download
+
       - name: Run linter
         uses: reviewdog/action-golangci-lint@284129a3ac23bc5d8ac1522e0b6511df74a8836d # v2.10.2
         with:
