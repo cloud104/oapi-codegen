@@ -5,6 +5,7 @@ package examples
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -24,22 +25,22 @@ import (
 type ServerInterface interface {
 	// ListBeers List all beers
 	// (GET /beers)
-	ListBeers(w http.ResponseWriter, r *http.Request, params ListBeersParams)
+	ListBeers(ctx context.Context, w http.ResponseWriter, params ListBeersParams)
 	// CreateBeer Create a new beer
 	// (POST /beers)
-	CreateBeer(w http.ResponseWriter, r *http.Request, body CreateBeerJSONRequestBody)
+	CreateBeer(ctx context.Context, w http.ResponseWriter, body CreateBeerJSONRequestBody)
 	// DeleteBeer Delete a beer
 	// (DELETE /beers/{beerId})
-	DeleteBeer(w http.ResponseWriter, r *http.Request, beerID int)
+	DeleteBeer(ctx context.Context, w http.ResponseWriter, beerID int)
 	// GetBeer Get a beer by ID
 	// (GET /beers/{beerId})
-	GetBeer(w http.ResponseWriter, r *http.Request, beerID int)
+	GetBeer(ctx context.Context, w http.ResponseWriter, beerID int)
 	// UpdateBeer Partially update a beer
 	// (PATCH /beers/{beerId})
-	UpdateBeer(w http.ResponseWriter, r *http.Request, beerID int, body UpdateBeerJSONRequestBody)
+	UpdateBeer(ctx context.Context, w http.ResponseWriter, beerID int, body UpdateBeerJSONRequestBody)
 	// ReplaceBeer Replace a beer
 	// (PUT /beers/{beerId})
-	ReplaceBeer(w http.ResponseWriter, r *http.Request, beerID int, body ReplaceBeerJSONRequestBody)
+	ReplaceBeer(ctx context.Context, w http.ResponseWriter, beerID int, body ReplaceBeerJSONRequestBody)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -48,37 +49,37 @@ type Unimplemented struct{}
 
 // ListBeers List all beers
 // (GET /beers)
-func (_ Unimplemented) ListBeers(w http.ResponseWriter, r *http.Request, params ListBeersParams) {
+func (_ Unimplemented) ListBeers(ctx context.Context, w http.ResponseWriter, params ListBeersParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // CreateBeer Create a new beer
 // (POST /beers)
-func (_ Unimplemented) CreateBeer(w http.ResponseWriter, r *http.Request, body CreateBeerJSONRequestBody) {
+func (_ Unimplemented) CreateBeer(ctx context.Context, w http.ResponseWriter, body CreateBeerJSONRequestBody) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // DeleteBeer Delete a beer
 // (DELETE /beers/{beerId})
-func (_ Unimplemented) DeleteBeer(w http.ResponseWriter, r *http.Request, beerID int) {
+func (_ Unimplemented) DeleteBeer(ctx context.Context, w http.ResponseWriter, beerID int) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // GetBeer Get a beer by ID
 // (GET /beers/{beerId})
-func (_ Unimplemented) GetBeer(w http.ResponseWriter, r *http.Request, beerID int) {
+func (_ Unimplemented) GetBeer(ctx context.Context, w http.ResponseWriter, beerID int) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // UpdateBeer Partially update a beer
 // (PATCH /beers/{beerId})
-func (_ Unimplemented) UpdateBeer(w http.ResponseWriter, r *http.Request, beerID int, body UpdateBeerJSONRequestBody) {
+func (_ Unimplemented) UpdateBeer(ctx context.Context, w http.ResponseWriter, beerID int, body UpdateBeerJSONRequestBody) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // ReplaceBeer Replace a beer
 // (PUT /beers/{beerId})
-func (_ Unimplemented) ReplaceBeer(w http.ResponseWriter, r *http.Request, beerID int, body ReplaceBeerJSONRequestBody) {
+func (_ Unimplemented) ReplaceBeer(ctx context.Context, w http.ResponseWriter, beerID int, body ReplaceBeerJSONRequestBody) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -358,7 +359,7 @@ func (siw *ServerInterfaceWrapper) ListBeers(w http.ResponseWriter, r *http.Requ
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.ListBeers(w, r, params)
+		siw.Handler.ListBeers(r.Context(), w, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -399,7 +400,7 @@ func (siw *ServerInterfaceWrapper) CreateBeer(w http.ResponseWriter, r *http.Req
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.CreateBeer(w, r, body)
+		siw.Handler.CreateBeer(r.Context(), w, body)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -425,7 +426,7 @@ func (siw *ServerInterfaceWrapper) DeleteBeer(w http.ResponseWriter, r *http.Req
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.DeleteBeer(w, r, beerID)
+		siw.Handler.DeleteBeer(r.Context(), w, beerID)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -451,7 +452,7 @@ func (siw *ServerInterfaceWrapper) GetBeer(w http.ResponseWriter, r *http.Reques
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetBeer(w, r, beerID)
+		siw.Handler.GetBeer(r.Context(), w, beerID)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -504,7 +505,7 @@ func (siw *ServerInterfaceWrapper) UpdateBeer(w http.ResponseWriter, r *http.Req
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.UpdateBeer(w, r, beerID, body)
+		siw.Handler.UpdateBeer(r.Context(), w, beerID, body)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -557,7 +558,7 @@ func (siw *ServerInterfaceWrapper) ReplaceBeer(w http.ResponseWriter, r *http.Re
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.ReplaceBeer(w, r, beerID, body)
+		siw.Handler.ReplaceBeer(r.Context(), w, beerID, body)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
