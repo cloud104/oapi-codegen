@@ -375,7 +375,14 @@ func (siw *ServerInterfaceWrapper) {{$opid}}(w http.ResponseWriter, r *http.Requ
       siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
       return
   }
+
+  var body {{$bodyType.TypeName}}
+  if err := json.Unmarshal(bodyBytes, &body); err != nil {
+    siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
+    return
+  }
   {{- else }}
+  var body *{{$bodyType.TypeName}}
   if r.Body != nil && r.Body != http.NoBody {
     bodyBytes, err := io.ReadAll(http.MaxBytesReader(w, r.Body, {{ $limit.Bytes }})) // max {{ $limit.String }}
     if err != nil {
@@ -396,13 +403,19 @@ func (siw *ServerInterfaceWrapper) {{$opid}}(w http.ResponseWriter, r *http.Requ
           siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
           return
       }
+
+      body = new({{$bodyType.TypeName}})
+      if err := json.Unmarshal(bodyBytes, body); err != nil {
+          siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
+          return
+      }
     }
   }
   {{- end }}
   {{- end }}
 
   handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-    siw.Handler.{{.OperationId}}(w, r{{genParamNames .PathParams}}{{if .RequiresParamObject}}, params{{end}})
+    siw.Handler.{{.OperationId}}(w, r{{genParamNames .PathParams}}{{if .RequiresParamObject}}, params{{end}}{{if .Bodies}}, body{{end}})
   }))
 
   {{if opts.Compatibility.ApplyChiMiddlewareFirstToLast}}
