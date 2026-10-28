@@ -415,7 +415,9 @@ func (siw *ServerInterfaceWrapper) {{$opid}}(w http.ResponseWriter, r *http.Requ
   {{- end }}
   {{- end }}
 
-    siw.Handler.{{.OperationId}}(r.Context(), w{{genParamNames .PathParams}}{{if .RequiresParamObject}}, params{{end}}{{if .Bodies}}, body{{end}})
+    if err := siw.Handler.{{.OperationId}}(r.Context(), w{{genParamNames .PathParams}}{{if .RequiresParamObject}}, params{{end}}{{if .Bodies}}, body{{end}}); err != nil {
+      siw.ErrorHandlerFunc(w, r, err)
+    }
   }))
 
   {{if opts.Compatibility.ApplyChiMiddlewareFirstToLast}}

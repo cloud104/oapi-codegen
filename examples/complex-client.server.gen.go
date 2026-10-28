@@ -365,7 +365,9 @@ func (siw *ServerInterfaceWrapper) ListBeers(w http.ResponseWriter, r *http.Requ
 			return
 		}
 
-		siw.Handler.ListBeers(r.Context(), w, params)
+		if err := siw.Handler.ListBeers(r.Context(), w, params); err != nil {
+			siw.ErrorHandlerFunc(w, r, err)
+		}
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -406,7 +408,9 @@ func (siw *ServerInterfaceWrapper) CreateBeer(w http.ResponseWriter, r *http.Req
 			return
 		}
 
-		siw.Handler.CreateBeer(r.Context(), w, body)
+		if err := siw.Handler.CreateBeer(r.Context(), w, body); err != nil {
+			siw.ErrorHandlerFunc(w, r, err)
+		}
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -432,7 +436,9 @@ func (siw *ServerInterfaceWrapper) DeleteBeer(w http.ResponseWriter, r *http.Req
 			return
 		}
 
-		siw.Handler.DeleteBeer(r.Context(), w, beerID)
+		if err := siw.Handler.DeleteBeer(r.Context(), w, beerID); err != nil {
+			siw.ErrorHandlerFunc(w, r, err)
+		}
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -458,7 +464,9 @@ func (siw *ServerInterfaceWrapper) GetBeer(w http.ResponseWriter, r *http.Reques
 			return
 		}
 
-		siw.Handler.GetBeer(r.Context(), w, beerID)
+		if err := siw.Handler.GetBeer(r.Context(), w, beerID); err != nil {
+			siw.ErrorHandlerFunc(w, r, err)
+		}
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -511,7 +519,9 @@ func (siw *ServerInterfaceWrapper) UpdateBeer(w http.ResponseWriter, r *http.Req
 			return
 		}
 
-		siw.Handler.UpdateBeer(r.Context(), w, beerID, body)
+		if err := siw.Handler.UpdateBeer(r.Context(), w, beerID, body); err != nil {
+			siw.ErrorHandlerFunc(w, r, err)
+		}
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -564,7 +574,9 @@ func (siw *ServerInterfaceWrapper) ReplaceBeer(w http.ResponseWriter, r *http.Re
 			return
 		}
 
-		siw.Handler.ReplaceBeer(r.Context(), w, beerID, body)
+		if err := siw.Handler.ReplaceBeer(r.Context(), w, beerID, body); err != nil {
+			siw.ErrorHandlerFunc(w, r, err)
+		}
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
