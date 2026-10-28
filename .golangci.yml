@@ -5,7 +5,6 @@ version: "2"
 formatters:
   enable:
     - gofmt
-    - gofumpt
     - goimports
 
   settings:
@@ -13,12 +12,6 @@ formatters:
       rewrite-rules:
         - pattern: 'interface{}'
           replacement: 'any'
-
-    gofumpt:
-      module-path: github.com/cloud104/oapi-codegen
-      extra:
-        group-params: true
-        clothe-returns: true
 
     goimports:
       local-prefixes:
