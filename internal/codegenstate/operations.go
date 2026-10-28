@@ -2,6 +2,7 @@ package codegenstate
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 
 	"github.com/getkin/kin-openapi/openapi3"
@@ -37,6 +38,9 @@ func Operations() ([]codegen.OperationDefinition, error) {
 		clearExamples(spec)
 
 		operations, operationsErr = codegen.OperationDefinitions(spec)
+		if operationsErr != nil {
+			operationsErr = fmt.Errorf("generate OpenAPI operation definitions: %w", operationsErr)
+		}
 	})
 
 	return operations, operationsErr
