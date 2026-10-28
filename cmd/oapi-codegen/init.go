@@ -10,12 +10,12 @@ import (
 
 	sprig "github.com/Masterminds/sprig/v3"
 	humanize "github.com/dustin/go-humanize"
-	"github.com/ettle/strcase"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/jinzhu/inflection"
 	"github.com/oapi-codegen/oapi-codegen/v2/pkg/codegen"
 
 	"github.com/cloud104/oapi-codegen/internal/codegenstate"
+	"github.com/cloud104/oapi-codegen/internal/naming"
 	"github.com/cloud104/oapi-codegen/internal/security"
 )
 
@@ -36,8 +36,10 @@ func init() {
 	}
 
 	// Naming
-	codegen.TemplateFunctions["camelCaseWithInitialisms"] = camelCaseWithInitialisms
-	codegen.TemplateFunctions["pascalCaseWithInitialisms"] = pascalCaseWithInitialisms
+	initialisms := codegenstate.Initialisms()
+	caser := naming.NewCaser(initialisms)
+	codegen.TemplateFunctions["camelCaseWithInitialisms"] = caser.Camel
+	codegen.TemplateFunctions["pascalCaseWithInitialisms"] = caser.Pascal
 
 	// Request / Responses bodies
 	codegen.TemplateFunctions["jsonRequestBody"] = jsonRequestBody
@@ -53,32 +55,6 @@ func init() {
 	codegen.TemplateFunctions["bearerAuthFromList"] = security.BearerForOperations
 	codegen.TemplateFunctions["apiKeyAuth"] = security.APIKeyForOperation
 	codegen.TemplateFunctions["apiKeyAuthFromList"] = security.APIKeyForOperations
-}
-
-func camelCaseWithInitialisms(s string) string {
-	overrides := make(map[string]bool)
-
-	// Surround each known initialism with separators so the caser can
-	// recognize it as an independent word, even when acronyms are adjacent.
-	for _, initialism := range codegenstate.Initialisms() {
-		s = strings.ReplaceAll(s, initialism, "_"+initialism+"_")
-		overrides[initialism] = true
-	}
-
-	return strcase.NewCaser(true, overrides, nil).ToCamel(s)
-}
-
-func pascalCaseWithInitialisms(s string) string {
-	overrides := make(map[string]bool)
-
-	// Surround each known initialism with separators so the caser can
-	// recognize it as an independent word, even when acronyms are adjacent.
-	for _, initialism := range codegenstate.Initialisms() {
-		s = strings.ReplaceAll(s, initialism, "_"+initialism+"_")
-		overrides[initialism] = true
-	}
-
-	return strcase.NewCaser(true, overrides, nil).ToPascal(s)
 }
 
 func jsonRequestBody(op *codegen.OperationDefinition) *codegen.RequestBodyDefinition {
