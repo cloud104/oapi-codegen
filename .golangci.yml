@@ -26,6 +26,7 @@ linters:
   enable:
     - gocyclo
     - makezero
+    - modernize
     - prealloc
     - unconvert
     - wrapcheck
