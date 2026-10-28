@@ -81,12 +81,13 @@ func TestGenerate(t *testing.T) {
 						PackageName: "examples",
 						Generate:    output.options,
 						OutputOptions: codegen.OutputOptions{
-							// SkipFmt: true,
 							UserTemplates: map[string]string{
 								"chi/chi-handler.tmpl":    "../../templates/chi-handler.tmpl",
 								"chi/chi-interface.tmpl":  "../../templates/chi-interface.tmpl",
 								"chi/chi-middleware.tmpl": "../../templates/chi-middleware.tmpl",
 							},
+							NameNormalizer:        "ToCamelCaseWithInitialisms",
+							AdditionalInitialisms: []string{"ID", "IBU"},
 						},
 					})
 

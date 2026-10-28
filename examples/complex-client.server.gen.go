@@ -30,16 +30,16 @@ type ServerInterface interface {
 	CreateBeer(w http.ResponseWriter, r *http.Request, body CreateBeerJSONRequestBody)
 	// DeleteBeer Delete a beer
 	// (DELETE /beers/{beerId})
-	DeleteBeer(w http.ResponseWriter, r *http.Request, beerId int)
+	DeleteBeer(w http.ResponseWriter, r *http.Request, beerID int)
 	// GetBeer Get a beer by ID
 	// (GET /beers/{beerId})
-	GetBeer(w http.ResponseWriter, r *http.Request, beerId int)
+	GetBeer(w http.ResponseWriter, r *http.Request, beerID int)
 	// UpdateBeer Partially update a beer
 	// (PATCH /beers/{beerId})
-	UpdateBeer(w http.ResponseWriter, r *http.Request, beerId int, body UpdateBeerJSONRequestBody)
+	UpdateBeer(w http.ResponseWriter, r *http.Request, beerID int, body UpdateBeerJSONRequestBody)
 	// ReplaceBeer Replace a beer
 	// (PUT /beers/{beerId})
-	ReplaceBeer(w http.ResponseWriter, r *http.Request, beerId int, body ReplaceBeerJSONRequestBody)
+	ReplaceBeer(w http.ResponseWriter, r *http.Request, beerID int, body ReplaceBeerJSONRequestBody)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -60,25 +60,25 @@ func (_ Unimplemented) CreateBeer(w http.ResponseWriter, r *http.Request, body C
 
 // DeleteBeer Delete a beer
 // (DELETE /beers/{beerId})
-func (_ Unimplemented) DeleteBeer(w http.ResponseWriter, r *http.Request, beerId int) {
+func (_ Unimplemented) DeleteBeer(w http.ResponseWriter, r *http.Request, beerID int) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // GetBeer Get a beer by ID
 // (GET /beers/{beerId})
-func (_ Unimplemented) GetBeer(w http.ResponseWriter, r *http.Request, beerId int) {
+func (_ Unimplemented) GetBeer(w http.ResponseWriter, r *http.Request, beerID int) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // UpdateBeer Partially update a beer
 // (PATCH /beers/{beerId})
-func (_ Unimplemented) UpdateBeer(w http.ResponseWriter, r *http.Request, beerId int, body UpdateBeerJSONRequestBody) {
+func (_ Unimplemented) UpdateBeer(w http.ResponseWriter, r *http.Request, beerID int, body UpdateBeerJSONRequestBody) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // ReplaceBeer Replace a beer
 // (PUT /beers/{beerId})
-func (_ Unimplemented) ReplaceBeer(w http.ResponseWriter, r *http.Request, beerId int, body ReplaceBeerJSONRequestBody) {
+func (_ Unimplemented) ReplaceBeer(w http.ResponseWriter, r *http.Request, beerID int, body ReplaceBeerJSONRequestBody) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -416,16 +416,16 @@ func (siw *ServerInterfaceWrapper) DeleteBeer(w http.ResponseWriter, r *http.Req
 	_ = err
 
 	// ------------- Path parameter "beerId" -------------
-	var beerId int
+	var beerID int
 
-	err = runtime.BindStyledParameterWithOptions("simple", "beerId", chi.URLParam(r, "beerId"), &beerId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	err = runtime.BindStyledParameterWithOptions("simple", "beerId", chi.URLParam(r, "beerId"), &beerID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
 	if err != nil {
 		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "beerId", Err: err})
 		return
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.DeleteBeer(w, r, beerId)
+		siw.Handler.DeleteBeer(w, r, beerID)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -442,16 +442,16 @@ func (siw *ServerInterfaceWrapper) GetBeer(w http.ResponseWriter, r *http.Reques
 	_ = err
 
 	// ------------- Path parameter "beerId" -------------
-	var beerId int
+	var beerID int
 
-	err = runtime.BindStyledParameterWithOptions("simple", "beerId", chi.URLParam(r, "beerId"), &beerId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	err = runtime.BindStyledParameterWithOptions("simple", "beerId", chi.URLParam(r, "beerId"), &beerID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
 	if err != nil {
 		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "beerId", Err: err})
 		return
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetBeer(w, r, beerId)
+		siw.Handler.GetBeer(w, r, beerID)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -468,9 +468,9 @@ func (siw *ServerInterfaceWrapper) UpdateBeer(w http.ResponseWriter, r *http.Req
 	_ = err
 
 	// ------------- Path parameter "beerId" -------------
-	var beerId int
+	var beerID int
 
-	err = runtime.BindStyledParameterWithOptions("simple", "beerId", chi.URLParam(r, "beerId"), &beerId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	err = runtime.BindStyledParameterWithOptions("simple", "beerId", chi.URLParam(r, "beerId"), &beerID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
 	if err != nil {
 		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "beerId", Err: err})
 		return
@@ -504,7 +504,7 @@ func (siw *ServerInterfaceWrapper) UpdateBeer(w http.ResponseWriter, r *http.Req
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.UpdateBeer(w, r, beerId, body)
+		siw.Handler.UpdateBeer(w, r, beerID, body)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -521,9 +521,9 @@ func (siw *ServerInterfaceWrapper) ReplaceBeer(w http.ResponseWriter, r *http.Re
 	_ = err
 
 	// ------------- Path parameter "beerId" -------------
-	var beerId int
+	var beerID int
 
-	err = runtime.BindStyledParameterWithOptions("simple", "beerId", chi.URLParam(r, "beerId"), &beerId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	err = runtime.BindStyledParameterWithOptions("simple", "beerId", chi.URLParam(r, "beerId"), &beerID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
 	if err != nil {
 		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "beerId", Err: err})
 		return
@@ -557,7 +557,7 @@ func (siw *ServerInterfaceWrapper) ReplaceBeer(w http.ResponseWriter, r *http.Re
 	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.ReplaceBeer(w, r, beerId, body)
+		siw.Handler.ReplaceBeer(w, r, beerID, body)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {

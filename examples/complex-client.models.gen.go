@@ -7,8 +7,8 @@ package examples
 type Beer struct {
 	Abv     float32 `json:"abv"`
 	Brewery *string `json:"brewery,omitempty"`
-	Ibu     *int    `json:"ibu,omitempty"`
-	Id      int     `json:"id"`
+	IBU     *int    `json:"ibu,omitempty"`
+	ID      int     `json:"id"`
 	Name    string  `json:"name"`
 	Style   string  `json:"style"`
 }
@@ -17,7 +17,7 @@ type Beer struct {
 type BeerCreate struct {
 	Abv     float32 `json:"abv"`
 	Brewery *string `json:"brewery,omitempty"`
-	Ibu     *int    `json:"ibu,omitempty"`
+	IBU     *int    `json:"ibu,omitempty"`
 	Name    string  `json:"name"`
 	Style   string  `json:"style"`
 }
@@ -37,7 +37,7 @@ type BeerPage struct {
 type BeerReplace struct {
 	Abv     float32 `json:"abv"`
 	Brewery *string `json:"brewery,omitempty"`
-	Ibu     *int    `json:"ibu,omitempty"`
+	IBU     *int    `json:"ibu,omitempty"`
 	Name    string  `json:"name"`
 	Style   string  `json:"style"`
 }
@@ -46,7 +46,7 @@ type BeerReplace struct {
 type BeerUpdate struct {
 	Abv     *float32 `json:"abv,omitempty"`
 	Brewery *string  `json:"brewery,omitempty"`
-	Ibu     *int     `json:"ibu,omitempty"`
+	IBU     *int     `json:"ibu,omitempty"`
 	Name    *string  `json:"name,omitempty"`
 	Style   *string  `json:"style,omitempty"`
 }
