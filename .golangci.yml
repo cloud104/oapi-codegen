@@ -20,6 +20,14 @@ formatters:
   exclusions:
     warn-unused: true
 
+linters:
+  enable:
+    - gocyclo
+    - makezero
+    - prealloc
+    - unconvert
+    - wrapcheck
+
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
