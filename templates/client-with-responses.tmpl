@@ -27,7 +27,7 @@ func WithBaseURL(baseURL string) ClientOption {
 	}
 }
 
-{{ $exportedClientTypeName := pascalCaseWithInitialisms opts.OutputOptions.ClientTypeName -}}
+{{ $exportedClientTypeName := goPascalCase opts.OutputOptions.ClientTypeName -}}
 // {{ $exportedClientTypeName }}Interface is the interface specification for the client with responses above.
 type {{ $exportedClientTypeName }}Interface interface {
 {{range . -}}
@@ -154,7 +154,7 @@ func (r {{genResponseTypeName $opid | ucFirst}}) ContentType() string {
 
 {{range .}}
 {{$opid := .OperationId -}}
-{{$unexportedOpid := camelCaseWithInitialisms .OperationId -}}
+{{$unexportedOpid := goCamelCase .OperationId -}}
 {{$parent := . }}
 {{$deprecationComment := .DeprecationComment -}}
 {{/* Generate client methods (with responses)*/}}

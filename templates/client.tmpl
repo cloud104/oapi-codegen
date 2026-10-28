@@ -29,7 +29,7 @@ type rawClient struct {
 	RequestEditors []RequestEditorFn
 
 	{{ range $basic := $globalBasicAuthSchemes }}
-    {{- $name := pascalCaseWithInitialisms $basic.Name -}}
+    {{- $name := goPascalCase $basic.Name -}}
 	// {{ $name }} uses a username and password to authenticate requests
 	// with HTTP Basic Authentication when configured.
 	{{ $name }} struct {
@@ -42,7 +42,7 @@ type rawClient struct {
     {{ end }}
 
     {{ range $bearer := $globalBearerAuthSchemes }}
-    {{- $name := pascalCaseWithInitialisms $bearer.Name -}}
+    {{- $name := goPascalCase $bearer.Name -}}
 	// {{ $name }} uses a token provider to authenticate requests with
 	// an Authorization: Bearer <token> header when configured.
 	{{ $name }} struct {
@@ -52,7 +52,7 @@ type rawClient struct {
     {{ end }}
 
     {{ range $apiKey := $globalApiKeyAuthSchemes }}
-    {{- $name := pascalCaseWithInitialisms $apiKey.Name -}}
+    {{- $name := goPascalCase $apiKey.Name -}}
 	// {{ $name }} uses a static API key to authenticate requests
 	// when configured.
 	{{ $name }} struct {
@@ -124,9 +124,9 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 }
 
 {{ range $basic := $globalBasicAuthSchemes }}
-{{- $name := pascalCaseWithInitialisms $basic.Name -}}
+{{- $name := goPascalCase $basic.Name -}}
 // With{{ $name }} configures HTTP Basic Authentication.
-func With{{ pascalCaseWithInitialisms $basic.Name }}(username, password string) ClientOption {
+func With{{ goPascalCase $basic.Name }}(username, password string) ClientOption {
 	return func(c *rawClient) error {
 		c.{{ $name }}.Username = username
 		c.{{ $name }}.Password = password
@@ -136,7 +136,7 @@ func With{{ pascalCaseWithInitialisms $basic.Name }}(username, password string) 
 {{ end }}
 
 {{ range $bearer := $globalBearerAuthSchemes }}
-{{- $name := pascalCaseWithInitialisms $bearer.Name -}}
+{{- $name := goPascalCase $bearer.Name -}}
 // With{{ $name }} configures bearer-token authentication using the supplied token provider.
 func With{{ $name }}(provider TokenProvider) ClientOption {
 	return func(c *rawClient) error {
@@ -147,7 +147,7 @@ func With{{ $name }}(provider TokenProvider) ClientOption {
 {{ end }}
 
 {{ range $apiKey := $globalApiKeyAuthSchemes }}
-{{- $name := pascalCaseWithInitialisms $apiKey.Name -}}
+{{- $name := goPascalCase $apiKey.Name -}}
 // With{{ $name }} configures authentication using a static API key.
 func With{{ $name }}(apiKey string) ClientOption {
 	return func(c *rawClient) error {
@@ -163,7 +163,7 @@ type rawClientInterface interface {
 {{$hasParams := .RequiresParamObject -}}
 {{$pathParams := .PathParams -}}
 {{$opid := .OperationId -}}
-{{$unexportedOpid := camelCaseWithInitialisms .OperationId -}}
+{{$unexportedOpid := goCamelCase .OperationId -}}
 {{$parent := . }}
 {{$deprecationComment := .DeprecationComment -}}
     {{ if not .HasBody }}
@@ -189,7 +189,7 @@ type rawClientInterface interface {
 {{$hasParams := .RequiresParamObject -}}
 {{$pathParams := .PathParams -}}
 {{$opid := .OperationId -}}
-{{$unexportedOpid := camelCaseWithInitialisms .OperationId -}}
+{{$unexportedOpid := goCamelCase .OperationId -}}
 {{$parent := . }}
 {{- $basicAuthSchemes := basicAuth . -}}
 {{- $bearerAuthSchemes := bearerAuth . -}}
@@ -210,13 +210,13 @@ type rawClientInterface interface {
                 return nil, fmt.Errorf("apply editors to {{ printf "%s %s" $parent.Method $parent.Path }} request: %w", err)
             }
             {{ range $basic := $basicAuthSchemes -}}
-            {{- $name := pascalCaseWithInitialisms $basic.Name -}}
+            {{- $name := goPascalCase $basic.Name -}}
             if c.{{ $name }}.Username != "" && c.{{ $name }}.Password != "" {
                 req.SetBasicAuth(c.{{ $name }}.Username, c.{{ $name }}.Password)
             }
             {{ end -}}
             {{ range $bearer := $bearerAuthSchemes -}}
-            {{- $name := pascalCaseWithInitialisms $bearer.Name -}}
+            {{- $name := goPascalCase $bearer.Name -}}
             if c.{{ $name }}.Provider != nil {
                 token, err := c.{{ $name }}.Provider.GetToken(ctx)
                 if err != nil {
@@ -226,7 +226,7 @@ type rawClientInterface interface {
             }
             {{ end -}}
             {{ range $apiKey := $apiKeyAuthSchemes -}}
-            {{- $name := pascalCaseWithInitialisms $apiKey.Name -}}
+            {{- $name := goPascalCase $apiKey.Name -}}
             if c.{{ $name }}.APIKey != "" {
                 {{ if eq $apiKey.In "header" -}}
                 req.Header.Set("{{$apiKey.KeyName}}", c.{{ $name }}.APIKey)
@@ -267,13 +267,13 @@ type rawClientInterface interface {
             return nil, fmt.Errorf("apply editors to {{ printf "%s %s" $parent.Method $parent.Path }} request: %w", err)
         }
         {{ range $basic := $basicAuthSchemes -}}
-        {{- $name := pascalCaseWithInitialisms $basic.Name -}}
+        {{- $name := goPascalCase $basic.Name -}}
         if c.{{ $name }}.Username != "" && c.{{ $name }}.Password != "" {
             req.SetBasicAuth(c.{{ $name }}.Username, c.{{ $name }}.Password)
         }
         {{ end -}}
         {{ range $apiKey := $apiKeyAuthSchemes -}}
-        {{- $name := pascalCaseWithInitialisms $apiKey.Name -}}
+        {{- $name := goPascalCase $apiKey.Name -}}
         if c.{{ $name }}.APIKey != "" {
             {{ if eq $apiKey.In "header" -}}
             req.Header.Set("{{$apiKey.KeyName}}", c.{{ $name }}.APIKey)

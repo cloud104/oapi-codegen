@@ -38,8 +38,8 @@ func init() {
 	// Naming
 	initialisms := codegenstate.Initialisms()
 	caser := naming.NewCaser(initialisms)
-	codegen.TemplateFunctions["camelCaseWithInitialisms"] = caser.Camel
-	codegen.TemplateFunctions["pascalCaseWithInitialisms"] = caser.Pascal
+	codegen.TemplateFunctions["goCamelCase"] = caser.Camel
+	codegen.TemplateFunctions["goPascalCase"] = caser.Pascal
 
 	// Request / Responses bodies
 	codegen.TemplateFunctions["jsonRequestBody"] = jsonRequestBody
