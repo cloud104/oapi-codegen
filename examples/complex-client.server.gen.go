@@ -25,46 +25,136 @@ import (
 type ServerInterface interface {
 	// ListBeers List all beers
 	// (GET /beers)
-	ListBeers(ctx context.Context, w http.ResponseWriter, params ListBeersParams) error
+	ListBeers(ctx context.Context, response ListBeersResponseBuilder, params ListBeersParams) error
 	// CreateBeer Create a new beer
 	// (POST /beers)
-	CreateBeer(ctx context.Context, w http.ResponseWriter, body CreateBeerJSONRequestBody) error
+	CreateBeer(ctx context.Context, response CreateBeerResponseBuilder, body CreateBeerJSONRequestBody) error
 	// DeleteBeer Delete a beer
 	// (DELETE /beers/{beerId})
-	DeleteBeer(ctx context.Context, w http.ResponseWriter, beerID int) error
+	DeleteBeer(ctx context.Context, response DeleteBeerResponseBuilder, beerID int) error
 	// GetBeer Get a beer by ID
 	// (GET /beers/{beerId})
-	GetBeer(ctx context.Context, w http.ResponseWriter, beerID int) error
+	GetBeer(ctx context.Context, response GetBeerResponseBuilder, beerID int) error
 	// UpdateBeer Partially update a beer
 	// (PATCH /beers/{beerId})
-	UpdateBeer(ctx context.Context, w http.ResponseWriter, beerID int, body UpdateBeerJSONRequestBody) error
+	UpdateBeer(ctx context.Context, response UpdateBeerResponseBuilder, beerID int, body UpdateBeerJSONRequestBody) error
 	// ReplaceBeer Replace a beer
 	// (PUT /beers/{beerId})
-	ReplaceBeer(ctx context.Context, w http.ResponseWriter, beerID int, body ReplaceBeerJSONRequestBody) error
+	ReplaceBeer(ctx context.Context, response ReplaceBeerResponseBuilder, beerID int, body ReplaceBeerJSONRequestBody) error
 }
 
 type ListBeersResponseBuilder struct {
 	writer http.ResponseWriter
 }
 
+func (l *ListBeersResponseBuilder) NotImplemented() *ListBeers501ResponseBuilder {
+	return &ListBeers501ResponseBuilder{
+		writer: l.writer,
+	}
+}
+
+type ListBeers501ResponseBuilder struct {
+	writer http.ResponseWriter
+}
+
+func (b *ListBeers501ResponseBuilder) Build() error {
+	b.writer.WriteHeader(http.StatusNotImplemented)
+	return nil
+}
+
 type CreateBeerResponseBuilder struct {
 	writer http.ResponseWriter
+}
+
+func (l *CreateBeerResponseBuilder) NotImplemented() *CreateBeer501ResponseBuilder {
+	return &CreateBeer501ResponseBuilder{
+		writer: l.writer,
+	}
+}
+
+type CreateBeer501ResponseBuilder struct {
+	writer http.ResponseWriter
+}
+
+func (b *CreateBeer501ResponseBuilder) Build() error {
+	b.writer.WriteHeader(http.StatusNotImplemented)
+	return nil
 }
 
 type DeleteBeerResponseBuilder struct {
 	writer http.ResponseWriter
 }
 
+func (l *DeleteBeerResponseBuilder) NotImplemented() *DeleteBeer501ResponseBuilder {
+	return &DeleteBeer501ResponseBuilder{
+		writer: l.writer,
+	}
+}
+
+type DeleteBeer501ResponseBuilder struct {
+	writer http.ResponseWriter
+}
+
+func (b *DeleteBeer501ResponseBuilder) Build() error {
+	b.writer.WriteHeader(http.StatusNotImplemented)
+	return nil
+}
+
 type GetBeerResponseBuilder struct {
 	writer http.ResponseWriter
+}
+
+func (l *GetBeerResponseBuilder) NotImplemented() *GetBeer501ResponseBuilder {
+	return &GetBeer501ResponseBuilder{
+		writer: l.writer,
+	}
+}
+
+type GetBeer501ResponseBuilder struct {
+	writer http.ResponseWriter
+}
+
+func (b *GetBeer501ResponseBuilder) Build() error {
+	b.writer.WriteHeader(http.StatusNotImplemented)
+	return nil
 }
 
 type UpdateBeerResponseBuilder struct {
 	writer http.ResponseWriter
 }
 
+func (l *UpdateBeerResponseBuilder) NotImplemented() *UpdateBeer501ResponseBuilder {
+	return &UpdateBeer501ResponseBuilder{
+		writer: l.writer,
+	}
+}
+
+type UpdateBeer501ResponseBuilder struct {
+	writer http.ResponseWriter
+}
+
+func (b *UpdateBeer501ResponseBuilder) Build() error {
+	b.writer.WriteHeader(http.StatusNotImplemented)
+	return nil
+}
+
 type ReplaceBeerResponseBuilder struct {
 	writer http.ResponseWriter
+}
+
+func (l *ReplaceBeerResponseBuilder) NotImplemented() *ReplaceBeer501ResponseBuilder {
+	return &ReplaceBeer501ResponseBuilder{
+		writer: l.writer,
+	}
+}
+
+type ReplaceBeer501ResponseBuilder struct {
+	writer http.ResponseWriter
+}
+
+func (b *ReplaceBeer501ResponseBuilder) Build() error {
+	b.writer.WriteHeader(http.StatusNotImplemented)
+	return nil
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -73,44 +163,38 @@ type Unimplemented struct{}
 
 // ListBeers List all beers
 // (GET /beers)
-func (_ Unimplemented) ListBeers(ctx context.Context, w http.ResponseWriter, params ListBeersParams) error {
-	w.WriteHeader(http.StatusNotImplemented)
-	return nil
+func (_ Unimplemented) ListBeers(ctx context.Context, response ListBeersResponseBuilder, params ListBeersParams) error {
+	return response.NotImplemented().Build()
 }
 
 // CreateBeer Create a new beer
 // (POST /beers)
-func (_ Unimplemented) CreateBeer(ctx context.Context, w http.ResponseWriter, body CreateBeerJSONRequestBody) error {
-	w.WriteHeader(http.StatusNotImplemented)
-	return nil
+func (_ Unimplemented) CreateBeer(ctx context.Context, response CreateBeerResponseBuilder, body CreateBeerJSONRequestBody) error {
+	return response.NotImplemented().Build()
 }
 
 // DeleteBeer Delete a beer
 // (DELETE /beers/{beerId})
-func (_ Unimplemented) DeleteBeer(ctx context.Context, w http.ResponseWriter, beerID int) error {
-	w.WriteHeader(http.StatusNotImplemented)
-	return nil
+func (_ Unimplemented) DeleteBeer(ctx context.Context, response DeleteBeerResponseBuilder, beerID int) error {
+	return response.NotImplemented().Build()
 }
 
 // GetBeer Get a beer by ID
 // (GET /beers/{beerId})
-func (_ Unimplemented) GetBeer(ctx context.Context, w http.ResponseWriter, beerID int) error {
-	w.WriteHeader(http.StatusNotImplemented)
-	return nil
+func (_ Unimplemented) GetBeer(ctx context.Context, response GetBeerResponseBuilder, beerID int) error {
+	return response.NotImplemented().Build()
 }
 
 // UpdateBeer Partially update a beer
 // (PATCH /beers/{beerId})
-func (_ Unimplemented) UpdateBeer(ctx context.Context, w http.ResponseWriter, beerID int, body UpdateBeerJSONRequestBody) error {
-	w.WriteHeader(http.StatusNotImplemented)
-	return nil
+func (_ Unimplemented) UpdateBeer(ctx context.Context, response UpdateBeerResponseBuilder, beerID int, body UpdateBeerJSONRequestBody) error {
+	return response.NotImplemented().Build()
 }
 
 // ReplaceBeer Replace a beer
 // (PUT /beers/{beerId})
-func (_ Unimplemented) ReplaceBeer(ctx context.Context, w http.ResponseWriter, beerID int, body ReplaceBeerJSONRequestBody) error {
-	w.WriteHeader(http.StatusNotImplemented)
-	return nil
+func (_ Unimplemented) ReplaceBeer(ctx context.Context, response ReplaceBeerResponseBuilder, beerID int, body ReplaceBeerJSONRequestBody) error {
+	return response.NotImplemented().Build()
 }
 
 // CreateBeerJSONRequestBodySchema defines the JSON schema used to validate CreateBeerJSONRequestBody request bodies.
@@ -389,7 +473,7 @@ func (siw *ServerInterfaceWrapper) ListBeers(w http.ResponseWriter, r *http.Requ
 			return
 		}
 
-		if err := siw.Handler.ListBeers(r.Context(), w, params); err != nil {
+		if err := siw.Handler.ListBeers(r.Context(), ListBeersResponseBuilder{w}, params); err != nil {
 			siw.ErrorHandlerFunc(w, r, err)
 		}
 	}))
@@ -432,7 +516,7 @@ func (siw *ServerInterfaceWrapper) CreateBeer(w http.ResponseWriter, r *http.Req
 			return
 		}
 
-		if err := siw.Handler.CreateBeer(r.Context(), w, body); err != nil {
+		if err := siw.Handler.CreateBeer(r.Context(), CreateBeerResponseBuilder{w}, body); err != nil {
 			siw.ErrorHandlerFunc(w, r, err)
 		}
 	}))
@@ -460,7 +544,7 @@ func (siw *ServerInterfaceWrapper) DeleteBeer(w http.ResponseWriter, r *http.Req
 			return
 		}
 
-		if err := siw.Handler.DeleteBeer(r.Context(), w, beerID); err != nil {
+		if err := siw.Handler.DeleteBeer(r.Context(), DeleteBeerResponseBuilder{w}, beerID); err != nil {
 			siw.ErrorHandlerFunc(w, r, err)
 		}
 	}))
@@ -488,7 +572,7 @@ func (siw *ServerInterfaceWrapper) GetBeer(w http.ResponseWriter, r *http.Reques
 			return
 		}
 
-		if err := siw.Handler.GetBeer(r.Context(), w, beerID); err != nil {
+		if err := siw.Handler.GetBeer(r.Context(), GetBeerResponseBuilder{w}, beerID); err != nil {
 			siw.ErrorHandlerFunc(w, r, err)
 		}
 	}))
@@ -543,7 +627,7 @@ func (siw *ServerInterfaceWrapper) UpdateBeer(w http.ResponseWriter, r *http.Req
 			return
 		}
 
-		if err := siw.Handler.UpdateBeer(r.Context(), w, beerID, body); err != nil {
+		if err := siw.Handler.UpdateBeer(r.Context(), UpdateBeerResponseBuilder{w}, beerID, body); err != nil {
 			siw.ErrorHandlerFunc(w, r, err)
 		}
 	}))
@@ -598,7 +682,7 @@ func (siw *ServerInterfaceWrapper) ReplaceBeer(w http.ResponseWriter, r *http.Re
 			return
 		}
 
-		if err := siw.Handler.ReplaceBeer(r.Context(), w, beerID, body); err != nil {
+		if err := siw.Handler.ReplaceBeer(r.Context(), ReplaceBeerResponseBuilder{w}, beerID, body); err != nil {
 			siw.ErrorHandlerFunc(w, r, err)
 		}
 	}))

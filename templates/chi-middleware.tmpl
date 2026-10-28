@@ -415,7 +415,7 @@ func (siw *ServerInterfaceWrapper) {{$opid}}(w http.ResponseWriter, r *http.Requ
   {{- end }}
   {{- end }}
 
-    if err := siw.Handler.{{.OperationId}}(r.Context(), w{{genParamNames .PathParams}}{{if .RequiresParamObject}}, params{{end}}{{if .Bodies}}, body{{end}}); err != nil {
+    if err := siw.Handler.{{.OperationId}}(r.Context(), {{.OperationId}}ResponseBuilder{w}{{genParamNames .PathParams}}{{if .RequiresParamObject}}, params{{end}}{{if .Bodies}}, body{{end}}); err != nil {
       siw.ErrorHandlerFunc(w, r, err)
     }
   }))
