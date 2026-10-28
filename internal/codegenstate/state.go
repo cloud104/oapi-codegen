@@ -13,7 +13,7 @@ type globalStateLayout struct {
 	options        codegen.Configuration
 	spec           *openapi3.T
 	is31           bool
-	importMapping  map[string]struct{ Name, Path string }
+	importMapping  map[string]struct{ Name, Path string } //nolint:unused // Required to preserve the memory layout of codegen.globalState.
 	initialismsMap map[string]string
 }
 
