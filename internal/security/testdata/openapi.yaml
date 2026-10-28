@@ -1,0 +1,66 @@
+openapi: 3.0.3
+info:
+  title: Security Test
+  version: 1.0.0
+
+paths:
+  /users:
+    get:
+      operationId: listUsers
+      security:
+        - ApiKeyAuth: [ ]
+        - BasicAuth: [ ]
+        - BearerAuth: [ ]
+        - JWTAuth: [ ]
+      responses:
+        "200":
+          description: OK
+
+  /users/{id}:
+    get:
+      operationId: getUser
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      security:
+        - ApiKeyAuth: [ ]
+        - BearerAuth: [ ]
+      responses:
+        "200":
+          description: OK
+
+  /public:
+    get:
+      operationId: publicEndpoint
+      security: [ ]
+      responses:
+        "200":
+          description: OK
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      description: API key authentication
+      name: X-API-Key
+      in: header
+
+    BasicAuth:
+      type: http
+      description: Basic authentication
+      scheme: basic
+
+    BearerAuth:
+      type: http
+      description: Bearer authentication
+      scheme: bearer
+      bearerFormat: opaque
+
+    JWTAuth:
+      type: http
+      description: JWT authentication
+      scheme: bearer
+      bearerFormat: JWT
