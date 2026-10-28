@@ -1,6 +1,6 @@
-{{- $globalBasicAuthSchemes := basicAuthForOperations . -}}
-{{- $globalBearerAuthSchemes := bearerAuthForOperations . -}}
-{{- $globalApiKeyAuthSchemes := apiKeyAuthForOperations . -}}
+{{- $globalBasicAuthSchemes := basicAuthFromList . -}}
+{{- $globalBearerAuthSchemes := bearerAuthFromList . -}}
+{{- $globalApiKeyAuthSchemes := apiKeyAuthFromList . -}}
 
 // RequestEditorFn is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
@@ -191,9 +191,9 @@ type rawClientInterface interface {
 {{$opid := .OperationId -}}
 {{$unexportedOpid := camelCaseWithInitialisms .OperationId -}}
 {{$parent := . }}
-{{- $basicAuthSchemes := basicAuthForOperation . -}}
-{{- $bearerAuthSchemes := bearerAuthForOperation . -}}
-{{- $apiKeyAuthSchemes := apiKeyAuthForOperation . -}}
+{{- $basicAuthSchemes := basicAuth . -}}
+{{- $bearerAuthSchemes := bearerAuth . -}}
+{{- $apiKeyAuthSchemes := apiKeyAuth . -}}
 
 {{ if not .HasBody }}
     {{ .GenerateFunctionComment $unexportedOpid "" false }}

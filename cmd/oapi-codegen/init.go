@@ -47,12 +47,12 @@ func init() {
 	codegen.TemplateFunctions["bodyLimit"] = bodyLimit
 
 	// Security / authentication
-	codegen.TemplateFunctions["basicAuthForOperation"] = security.BasicForOperation
-	codegen.TemplateFunctions["basicAuthForOperations"] = security.BasicForOperations
-	codegen.TemplateFunctions["bearerAuthForOperation"] = security.BearerForOperation
-	codegen.TemplateFunctions["bearerAuthForOperations"] = security.BearerForOperations
-	codegen.TemplateFunctions["apiKeyAuthForOperation"] = security.APIKeyForOperation
-	codegen.TemplateFunctions["apiKeyAuthForOperations"] = security.APIKeyForOperations
+	codegen.TemplateFunctions["basicAuth"] = security.BasicForOperation
+	codegen.TemplateFunctions["basicAuthFromList"] = security.BasicForOperations
+	codegen.TemplateFunctions["bearerAuth"] = security.BearerForOperation
+	codegen.TemplateFunctions["bearerAuthFromList"] = security.BearerForOperations
+	codegen.TemplateFunctions["apiKeyAuth"] = security.APIKeyForOperation
+	codegen.TemplateFunctions["apiKeyAuthFromList"] = security.APIKeyForOperations
 }
 
 func camelCaseWithInitialisms(s string) string {
