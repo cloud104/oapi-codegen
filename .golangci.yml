@@ -19,6 +19,8 @@ formatters:
 
   exclusions:
     warn-unused: true
+    paths:
+      - ^cmd/oapi-codegen/main\.go$
 
 linters:
   enable:
@@ -27,6 +29,10 @@ linters:
     - prealloc
     - unconvert
     - wrapcheck
+
+  exclusions:
+    paths:
+      - ^cmd/oapi-codegen/main\.go$
 
 issues:
   max-issues-per-linter: 0
