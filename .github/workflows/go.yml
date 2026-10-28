@@ -55,6 +55,7 @@ jobs:
           fi
           echo "oapi-codegen entrypoint is up to date."
 
+
   test:
     runs-on: tks-gha-runner
     needs: build
@@ -72,3 +73,16 @@ jobs:
 
       - name: Test
         run: go test ./...
+
+  lint:
+    runs-on: tks-gha-runner
+    needs: build
+    steps:
+      - name: Run linter
+        uses: reviewdog/action-golangci-lint@284129a3ac23bc5d8ac1522e0b6511df74a8836d # v2.10.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          golangci_lint_version: v2.15.0
+          golangci_lint_flags: --new-from-rev=${{ github.event.pull_request.base.sha }}
+          reporter: github-pr-review
+          fail_level: error
