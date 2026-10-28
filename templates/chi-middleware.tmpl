@@ -176,6 +176,7 @@ type MiddlewareFunc func(http.Handler) http.Handler
 {{if not .IsAlias}}
 // {{$opid}} operation middleware
 func (siw *ServerInterfaceWrapper) {{$opid}}(w http.ResponseWriter, r *http.Request) {
+  handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
   {{if or .RequiresParamObject (gt (len .PathParams) 0) }}
   var err error
   _ = err
@@ -414,7 +415,6 @@ func (siw *ServerInterfaceWrapper) {{$opid}}(w http.ResponseWriter, r *http.Requ
   {{- end }}
   {{- end }}
 
-  handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
     siw.Handler.{{.OperationId}}(r.Context(), w{{genParamNames .PathParams}}{{if .RequiresParamObject}}, params{{end}}{{if .Bodies}}, body{{end}})
   }))
 

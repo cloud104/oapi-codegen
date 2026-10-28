@@ -325,40 +325,40 @@ type MiddlewareFunc func(http.Handler) http.Handler
 
 // ListBeers operation middleware
 func (siw *ServerInterfaceWrapper) ListBeers(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-	_ = err
-
-	// Parameter object where we will unmarshal all parameters from the context
-	var params ListBeersParams
-
-	// ------------- Optional query parameter "page" -------------
-
-	err = runtime.BindQueryParameterWithOptions("form", true, false, "page", r.URL.Query(), &params.Page, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
-	if err != nil {
-		var requiredError *runtime.RequiredParameterError
-		if errors.As(err, &requiredError) {
-			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "page"})
-		} else {
-			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page", Err: err})
-		}
-		return
-	}
-
-	// ------------- Optional query parameter "pageSize" -------------
-
-	err = runtime.BindQueryParameterWithOptions("form", true, false, "pageSize", r.URL.Query(), &params.PageSize, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
-	if err != nil {
-		var requiredError *runtime.RequiredParameterError
-		if errors.As(err, &requiredError) {
-			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "pageSize"})
-		} else {
-			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "pageSize", Err: err})
-		}
-		return
-	}
-
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		var err error
+		_ = err
+
+		// Parameter object where we will unmarshal all parameters from the context
+		var params ListBeersParams
+
+		// ------------- Optional query parameter "page" -------------
+
+		err = runtime.BindQueryParameterWithOptions("form", true, false, "page", r.URL.Query(), &params.Page, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+		if err != nil {
+			var requiredError *runtime.RequiredParameterError
+			if errors.As(err, &requiredError) {
+				siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "page"})
+			} else {
+				siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page", Err: err})
+			}
+			return
+		}
+
+		// ------------- Optional query parameter "pageSize" -------------
+
+		err = runtime.BindQueryParameterWithOptions("form", true, false, "pageSize", r.URL.Query(), &params.PageSize, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+		if err != nil {
+			var requiredError *runtime.RequiredParameterError
+			if errors.As(err, &requiredError) {
+				siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "pageSize"})
+			} else {
+				siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "pageSize", Err: err})
+			}
+			return
+		}
+
 		siw.Handler.ListBeers(r.Context(), w, params)
 	}))
 
@@ -371,35 +371,35 @@ func (siw *ServerInterfaceWrapper) ListBeers(w http.ResponseWriter, r *http.Requ
 
 // CreateBeer operation middleware
 func (siw *ServerInterfaceWrapper) CreateBeer(w http.ResponseWriter, r *http.Request) {
-
-	// ------------- Request body "application/json" -------------
-	bodyBytes, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 1048576)) // max 1.0 MiB
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
-		return
-	}
-
-	r.Body = io.NopCloser(bytes.NewReader(bodyBytes))
-	r.ContentLength = int64(len(bodyBytes))
-
-	validator, err := siw.SchemaRegistry.Validator("CreateBeer")
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, err)
-		return
-	}
-
-	if err := validator.Validate(bytes.NewReader(bodyBytes)); err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
-		return
-	}
-
-	var body CreateBeerJSONRequestBody
-	if err := json.Unmarshal(bodyBytes, &body); err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
-		return
-	}
-
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		// ------------- Request body "application/json" -------------
+		bodyBytes, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 1048576)) // max 1.0 MiB
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
+			return
+		}
+
+		r.Body = io.NopCloser(bytes.NewReader(bodyBytes))
+		r.ContentLength = int64(len(bodyBytes))
+
+		validator, err := siw.SchemaRegistry.Validator("CreateBeer")
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, err)
+			return
+		}
+
+		if err := validator.Validate(bytes.NewReader(bodyBytes)); err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
+			return
+		}
+
+		var body CreateBeerJSONRequestBody
+		if err := json.Unmarshal(bodyBytes, &body); err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
+			return
+		}
+
 		siw.Handler.CreateBeer(r.Context(), w, body)
 	}))
 
@@ -412,20 +412,20 @@ func (siw *ServerInterfaceWrapper) CreateBeer(w http.ResponseWriter, r *http.Req
 
 // DeleteBeer operation middleware
 func (siw *ServerInterfaceWrapper) DeleteBeer(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-	_ = err
-
-	// ------------- Path parameter "beerId" -------------
-	var beerID int
-
-	err = runtime.BindStyledParameterWithOptions("simple", "beerId", chi.URLParam(r, "beerId"), &beerID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "beerId", Err: err})
-		return
-	}
-
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		var err error
+		_ = err
+
+		// ------------- Path parameter "beerId" -------------
+		var beerID int
+
+		err = runtime.BindStyledParameterWithOptions("simple", "beerId", chi.URLParam(r, "beerId"), &beerID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "beerId", Err: err})
+			return
+		}
+
 		siw.Handler.DeleteBeer(r.Context(), w, beerID)
 	}))
 
@@ -438,20 +438,20 @@ func (siw *ServerInterfaceWrapper) DeleteBeer(w http.ResponseWriter, r *http.Req
 
 // GetBeer operation middleware
 func (siw *ServerInterfaceWrapper) GetBeer(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-	_ = err
-
-	// ------------- Path parameter "beerId" -------------
-	var beerID int
-
-	err = runtime.BindStyledParameterWithOptions("simple", "beerId", chi.URLParam(r, "beerId"), &beerID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "beerId", Err: err})
-		return
-	}
-
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		var err error
+		_ = err
+
+		// ------------- Path parameter "beerId" -------------
+		var beerID int
+
+		err = runtime.BindStyledParameterWithOptions("simple", "beerId", chi.URLParam(r, "beerId"), &beerID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "beerId", Err: err})
+			return
+		}
+
 		siw.Handler.GetBeer(r.Context(), w, beerID)
 	}))
 
@@ -464,47 +464,47 @@ func (siw *ServerInterfaceWrapper) GetBeer(w http.ResponseWriter, r *http.Reques
 
 // UpdateBeer operation middleware
 func (siw *ServerInterfaceWrapper) UpdateBeer(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-	_ = err
-
-	// ------------- Path parameter "beerId" -------------
-	var beerID int
-
-	err = runtime.BindStyledParameterWithOptions("simple", "beerId", chi.URLParam(r, "beerId"), &beerID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "beerId", Err: err})
-		return
-	}
-
-	// ------------- Request body "application/json" -------------
-	bodyBytes, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 1048576)) // max 1.0 MiB
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
-		return
-	}
-
-	r.Body = io.NopCloser(bytes.NewReader(bodyBytes))
-	r.ContentLength = int64(len(bodyBytes))
-
-	validator, err := siw.SchemaRegistry.Validator("UpdateBeer")
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, err)
-		return
-	}
-
-	if err := validator.Validate(bytes.NewReader(bodyBytes)); err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
-		return
-	}
-
-	var body UpdateBeerJSONRequestBody
-	if err := json.Unmarshal(bodyBytes, &body); err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
-		return
-	}
-
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		var err error
+		_ = err
+
+		// ------------- Path parameter "beerId" -------------
+		var beerID int
+
+		err = runtime.BindStyledParameterWithOptions("simple", "beerId", chi.URLParam(r, "beerId"), &beerID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "beerId", Err: err})
+			return
+		}
+
+		// ------------- Request body "application/json" -------------
+		bodyBytes, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 1048576)) // max 1.0 MiB
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
+			return
+		}
+
+		r.Body = io.NopCloser(bytes.NewReader(bodyBytes))
+		r.ContentLength = int64(len(bodyBytes))
+
+		validator, err := siw.SchemaRegistry.Validator("UpdateBeer")
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, err)
+			return
+		}
+
+		if err := validator.Validate(bytes.NewReader(bodyBytes)); err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
+			return
+		}
+
+		var body UpdateBeerJSONRequestBody
+		if err := json.Unmarshal(bodyBytes, &body); err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
+			return
+		}
+
 		siw.Handler.UpdateBeer(r.Context(), w, beerID, body)
 	}))
 
@@ -517,47 +517,47 @@ func (siw *ServerInterfaceWrapper) UpdateBeer(w http.ResponseWriter, r *http.Req
 
 // ReplaceBeer operation middleware
 func (siw *ServerInterfaceWrapper) ReplaceBeer(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-	_ = err
-
-	// ------------- Path parameter "beerId" -------------
-	var beerID int
-
-	err = runtime.BindStyledParameterWithOptions("simple", "beerId", chi.URLParam(r, "beerId"), &beerID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "beerId", Err: err})
-		return
-	}
-
-	// ------------- Request body "application/json" -------------
-	bodyBytes, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 1048576)) // max 1.0 MiB
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
-		return
-	}
-
-	r.Body = io.NopCloser(bytes.NewReader(bodyBytes))
-	r.ContentLength = int64(len(bodyBytes))
-
-	validator, err := siw.SchemaRegistry.Validator("ReplaceBeer")
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, err)
-		return
-	}
-
-	if err := validator.Validate(bytes.NewReader(bodyBytes)); err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
-		return
-	}
-
-	var body ReplaceBeerJSONRequestBody
-	if err := json.Unmarshal(bodyBytes, &body); err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
-		return
-	}
-
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		var err error
+		_ = err
+
+		// ------------- Path parameter "beerId" -------------
+		var beerID int
+
+		err = runtime.BindStyledParameterWithOptions("simple", "beerId", chi.URLParam(r, "beerId"), &beerID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "beerId", Err: err})
+			return
+		}
+
+		// ------------- Request body "application/json" -------------
+		bodyBytes, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 1048576)) // max 1.0 MiB
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
+			return
+		}
+
+		r.Body = io.NopCloser(bytes.NewReader(bodyBytes))
+		r.ContentLength = int64(len(bodyBytes))
+
+		validator, err := siw.SchemaRegistry.Validator("ReplaceBeer")
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, err)
+			return
+		}
+
+		if err := validator.Validate(bytes.NewReader(bodyBytes)); err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
+			return
+		}
+
+		var body ReplaceBeerJSONRequestBody
+		if err := json.Unmarshal(bodyBytes, &body); err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
+			return
+		}
+
 		siw.Handler.ReplaceBeer(r.Context(), w, beerID, body)
 	}))
 
