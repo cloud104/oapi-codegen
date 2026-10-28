@@ -43,6 +43,30 @@ type ServerInterface interface {
 	ReplaceBeer(ctx context.Context, w http.ResponseWriter, beerID int, body ReplaceBeerJSONRequestBody) error
 }
 
+type ListBeersResponseBuilder struct {
+	writer http.ResponseWriter
+}
+
+type CreateBeerResponseBuilder struct {
+	writer http.ResponseWriter
+}
+
+type DeleteBeerResponseBuilder struct {
+	writer http.ResponseWriter
+}
+
+type GetBeerResponseBuilder struct {
+	writer http.ResponseWriter
+}
+
+type UpdateBeerResponseBuilder struct {
+	writer http.ResponseWriter
+}
+
+type ReplaceBeerResponseBuilder struct {
+	writer http.ResponseWriter
+}
+
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
 
 type Unimplemented struct{}

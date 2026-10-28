@@ -8,6 +8,12 @@ type ServerInterface interface {
 {{end}}{{end}}
 }
 
+{{range .}}{{if not .IsAlias}}
+type {{.OperationId}}ResponseBuilder struct {
+    writer http.ResponseWriter
+}
+{{end}}{{end}}
+
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
 
 type Unimplemented struct {}
