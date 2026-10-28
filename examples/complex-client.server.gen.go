@@ -25,22 +25,22 @@ import (
 type ServerInterface interface {
 	// ListBeers List all beers
 	// (GET /beers)
-	ListBeers(ctx context.Context, w http.ResponseWriter, params ListBeersParams)
+	ListBeers(ctx context.Context, w http.ResponseWriter, params ListBeersParams) error
 	// CreateBeer Create a new beer
 	// (POST /beers)
-	CreateBeer(ctx context.Context, w http.ResponseWriter, body CreateBeerJSONRequestBody)
+	CreateBeer(ctx context.Context, w http.ResponseWriter, body CreateBeerJSONRequestBody) error
 	// DeleteBeer Delete a beer
 	// (DELETE /beers/{beerId})
-	DeleteBeer(ctx context.Context, w http.ResponseWriter, beerID int)
+	DeleteBeer(ctx context.Context, w http.ResponseWriter, beerID int) error
 	// GetBeer Get a beer by ID
 	// (GET /beers/{beerId})
-	GetBeer(ctx context.Context, w http.ResponseWriter, beerID int)
+	GetBeer(ctx context.Context, w http.ResponseWriter, beerID int) error
 	// UpdateBeer Partially update a beer
 	// (PATCH /beers/{beerId})
-	UpdateBeer(ctx context.Context, w http.ResponseWriter, beerID int, body UpdateBeerJSONRequestBody)
+	UpdateBeer(ctx context.Context, w http.ResponseWriter, beerID int, body UpdateBeerJSONRequestBody) error
 	// ReplaceBeer Replace a beer
 	// (PUT /beers/{beerId})
-	ReplaceBeer(ctx context.Context, w http.ResponseWriter, beerID int, body ReplaceBeerJSONRequestBody)
+	ReplaceBeer(ctx context.Context, w http.ResponseWriter, beerID int, body ReplaceBeerJSONRequestBody) error
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -49,38 +49,44 @@ type Unimplemented struct{}
 
 // ListBeers List all beers
 // (GET /beers)
-func (_ Unimplemented) ListBeers(ctx context.Context, w http.ResponseWriter, params ListBeersParams) {
+func (_ Unimplemented) ListBeers(ctx context.Context, w http.ResponseWriter, params ListBeersParams) error {
 	w.WriteHeader(http.StatusNotImplemented)
+	return nil
 }
 
 // CreateBeer Create a new beer
 // (POST /beers)
-func (_ Unimplemented) CreateBeer(ctx context.Context, w http.ResponseWriter, body CreateBeerJSONRequestBody) {
+func (_ Unimplemented) CreateBeer(ctx context.Context, w http.ResponseWriter, body CreateBeerJSONRequestBody) error {
 	w.WriteHeader(http.StatusNotImplemented)
+	return nil
 }
 
 // DeleteBeer Delete a beer
 // (DELETE /beers/{beerId})
-func (_ Unimplemented) DeleteBeer(ctx context.Context, w http.ResponseWriter, beerID int) {
+func (_ Unimplemented) DeleteBeer(ctx context.Context, w http.ResponseWriter, beerID int) error {
 	w.WriteHeader(http.StatusNotImplemented)
+	return nil
 }
 
 // GetBeer Get a beer by ID
 // (GET /beers/{beerId})
-func (_ Unimplemented) GetBeer(ctx context.Context, w http.ResponseWriter, beerID int) {
+func (_ Unimplemented) GetBeer(ctx context.Context, w http.ResponseWriter, beerID int) error {
 	w.WriteHeader(http.StatusNotImplemented)
+	return nil
 }
 
 // UpdateBeer Partially update a beer
 // (PATCH /beers/{beerId})
-func (_ Unimplemented) UpdateBeer(ctx context.Context, w http.ResponseWriter, beerID int, body UpdateBeerJSONRequestBody) {
+func (_ Unimplemented) UpdateBeer(ctx context.Context, w http.ResponseWriter, beerID int, body UpdateBeerJSONRequestBody) error {
 	w.WriteHeader(http.StatusNotImplemented)
+	return nil
 }
 
 // ReplaceBeer Replace a beer
 // (PUT /beers/{beerId})
-func (_ Unimplemented) ReplaceBeer(ctx context.Context, w http.ResponseWriter, beerID int, body ReplaceBeerJSONRequestBody) {
+func (_ Unimplemented) ReplaceBeer(ctx context.Context, w http.ResponseWriter, beerID int, body ReplaceBeerJSONRequestBody) error {
 	w.WriteHeader(http.StatusNotImplemented)
+	return nil
 }
 
 // CreateBeerJSONRequestBodySchema defines the JSON schema used to validate CreateBeerJSONRequestBody request bodies.
