@@ -6,6 +6,7 @@ package examples
 import (
 	"context"
 	"encoding/json"
+	"encoding/xml"
 	"errors"
 	"fmt"
 	"io"
@@ -79,6 +80,25 @@ func (b *ListBeers200ResponseBuilder) Build() error {
 	switch contentType {
 	case "application/json":
 		data, err = json.Marshal(b.body)
+	case "application/xml", "text/xml":
+		data, err = xml.Marshal(b.body)
+	case "text/plain":
+		switch body := b.body.(type) {
+		case string:
+			data = []byte(body)
+		case []byte:
+			data = body
+		case fmt.Stringer:
+			data = []byte(body.String())
+		default:
+			return fmt.Errorf("unsupported text/plain body type: %T", b.body)
+		}
+	case "application/octet-stream":
+		body, ok := b.body.([]byte)
+		if !ok {
+			return fmt.Errorf("unsupported binary body type: %T", b.body)
+		}
+		data = body
 	default:
 		return fmt.Errorf("unsupported content type: %s", contentType)
 	}
@@ -139,6 +159,25 @@ func (b *ListBeers202ResponseBuilder) Build() error {
 	switch contentType {
 	case "application/json":
 		data, err = json.Marshal(b.body)
+	case "application/xml", "text/xml":
+		data, err = xml.Marshal(b.body)
+	case "text/plain":
+		switch body := b.body.(type) {
+		case string:
+			data = []byte(body)
+		case []byte:
+			data = body
+		case fmt.Stringer:
+			data = []byte(body.String())
+		default:
+			return fmt.Errorf("unsupported text/plain body type: %T", b.body)
+		}
+	case "application/octet-stream":
+		body, ok := b.body.([]byte)
+		if !ok {
+			return fmt.Errorf("unsupported binary body type: %T", b.body)
+		}
+		data = body
 	default:
 		return fmt.Errorf("unsupported content type: %s", contentType)
 	}
@@ -188,6 +227,25 @@ func (b *ListBeers501ResponseBuilder) Build() error {
 	switch contentType {
 	case "application/json":
 		data, err = json.Marshal(b.body)
+	case "application/xml", "text/xml":
+		data, err = xml.Marshal(b.body)
+	case "text/plain":
+		switch body := b.body.(type) {
+		case string:
+			data = []byte(body)
+		case []byte:
+			data = body
+		case fmt.Stringer:
+			data = []byte(body.String())
+		default:
+			return fmt.Errorf("unsupported text/plain body type: %T", b.body)
+		}
+	case "application/octet-stream":
+		body, ok := b.body.([]byte)
+		if !ok {
+			return fmt.Errorf("unsupported binary body type: %T", b.body)
+		}
+		data = body
 	default:
 		return fmt.Errorf("unsupported content type: %s", contentType)
 	}
