@@ -40,6 +40,15 @@ func (b *{{$name}}ResponseBuilder) {{ .GoName }}({{.GoName | goCamelCase }} {{.T
 }
 {{end}}
 
+{{- if $resp.Bodies }}
+    {{- $hasContentTypes := false }}
+    {{- range $resp.Bodies }}
+        {{- if .ContentTypes }}
+            {{- $hasContentTypes = true }}
+        {{- end }}
+    {{- end }}
+
+    {{- if $hasContentTypes }}
 func (b *{{$name}}ResponseBuilder) Build() error {
     contentType := negotiate.ContentType(b.request, []string{
         {{- range $resp.Bodies }}
@@ -104,6 +113,19 @@ func (b *{{$name}}ResponseBuilder) Build() error {
     _, err = b.writer.Write(body)
     return err
 }
+    {{- else }}
+func (b *{{$name}}ResponseBuilder) Build() error {
+    b.writer.WriteHeader({{$resp.GoName}})
+    return nil
+}
+    {{- end }}
+{{- else }}
+func (b *{{$name}}ResponseBuilder) Build() error {
+    b.writer.WriteHeader({{$resp.GoName}})
+    return nil
+}
+{{- end }}
+
 {{ end }}
 {{end}}{{end}}
 

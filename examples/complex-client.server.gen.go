@@ -165,33 +165,8 @@ type ListBeers501ResponseBuilder struct {
 }
 
 func (b *ListBeers501ResponseBuilder) Build() error {
-	contentType := negotiate.ContentType(b.request, []string{}, "")
-
-	if contentType == "" {
-		http.Error(b.writer, http.StatusText(http.StatusNotAcceptable), http.StatusNotAcceptable)
-		return nil
-	}
-
-	var (
-		body []byte
-		err  error
-	)
-
-	switch {
-	default:
-		return fmt.Errorf("no response body provided for content type %s", contentType)
-	}
-
-	if err != nil {
-		return fmt.Errorf("marshal response: %w", err)
-	}
-
-	b.writer.Header().Set("Content-Type", contentType)
-	b.writer.Header().Add("Vary", "Accept")
 	b.writer.WriteHeader(http.StatusNotImplemented)
-
-	_, err = b.writer.Write(body)
-	return err
+	return nil
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
