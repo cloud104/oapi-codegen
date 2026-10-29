@@ -41,78 +41,64 @@ func (b *{{$name}}ResponseBuilder) {{ .GoName }}({{.GoName | goCamelCase }} {{.T
 {{end}}
 
 func (b *{{$name}}ResponseBuilder) Build() error {
-    contentTypes := []string{
+    contentType := negotiate.ContentType(b.request, []string{
         {{- range $resp.Bodies }}
             {{- range .ContentTypes }}
-                {{ . | quote }},
+        {{ . | quote }},
             {{- end }}
         {{- end }}
+    }, "")
+
+    if contentType == "" {
+        http.Error(b.writer, http.StatusText(http.StatusNotAcceptable), http.StatusNotAcceptable)
+        return nil
     }
 
-	contentType := negotiate.ContentType(
-		b.request,
-		contentTypes,
-		"",
-	)
+    var (
+        body []byte
+        err  error
+    )
 
-	if contentType == "" {
-		http.Error(b.writer, http.StatusText(http.StatusNotAcceptable), http.StatusNotAcceptable)
-		return nil
-	}
-
-	var (
-		body []byte
-		err  error
-        selected bool
-	)
-
-	{{range $resp.Bodies}}
-	{{- $field := .GoName | goCamelCase}}
-	if b.{{$field}} != nil {
-		switch contentType {
-		{{- range .ContentTypes}}
-		case {{. | quote}}:
-			{{- if or
-				(eq . "application/json")
-				(eq . "text/x-json")
-				(eq . "application/problem+json")
-				(eq . "application/hal+json")
-			}}
-			body, err = json.Marshal(b.{{$field}})
-            selected = true
-			{{- else if or
-				(eq . "application/yaml")
-				(eq . "application/x-yaml")
-				(eq . "text/yaml")
-				(eq . "text/x-yaml")
-			}}
-			body, err = yaml.Marshal(b.{{$field}})
-            selected = true
-			{{- else if or
-				(eq . "application/xml")
-				(eq . "text/xml")
-				(eq . "application/problem+xml")
-			}}
-			body, err = xml.Marshal(b.{{$field}})
-            selected = true
-			{{- else}}
-			return fmt.Errorf("unsupported response content type: %s", contentType)
-			{{- end}}
-		{{- end}}
-		}
-	}
-	{{end}}
-
-    if !selected {
-       return fmt.Errorf("no response body provided for content type %s", contentType)
+    switch {
+    {{- range $resp.Bodies }}
+        {{- $field := .GoName | goCamelCase }}
+        {{- range .ContentTypes }}
+    case contentType == {{ . | quote }} && b.{{$field}} != nil:
+            {{- if or
+                (eq . "application/json")
+                (eq . "text/x-json")
+                (eq . "application/problem+json")
+                (eq . "application/hal+json")
+            }}
+        body, err = json.Marshal(b.{{$field}})
+            {{- else if or
+                (eq . "application/yaml")
+                (eq . "application/x-yaml")
+                (eq . "text/yaml")
+                (eq . "text/x-yaml")
+            }}
+        body, err = yaml.Marshal(b.{{$field}})
+            {{- else if or
+                (eq . "application/xml")
+                (eq . "text/xml")
+                (eq . "application/problem+xml")
+            }}
+        body, err = xml.Marshal(b.{{$field}})
+            {{- else }}
+        return fmt.Errorf("unsupported response content type: %s", contentType)
+            {{- end }}
+        {{- end }}
+    {{- end }}
+    default:
+        return fmt.Errorf("no response body provided for content type %s", contentType)
     }
 
     if err != nil {
-       return fmt.Errorf("marshal response: %w", err)
+        return fmt.Errorf("marshal response: %w", err)
     }
 
-	b.writer.Header().Set("Content-Type", contentType)
-	b.writer.Header().Add("Vary", "Accept")
+    b.writer.Header().Set("Content-Type", contentType)
+    b.writer.Header().Add("Vary", "Accept")
     b.writer.WriteHeader({{$resp.GoName}})
 
     _, err = b.writer.Write(body)

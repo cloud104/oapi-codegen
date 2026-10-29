@@ -61,17 +61,11 @@ func (b *ListBeers200ResponseBuilder) Beers(beers []Beer) error {
 }
 
 func (b *ListBeers200ResponseBuilder) Build() error {
-	contentTypes := []string{
+	contentType := negotiate.ContentType(b.request, []string{
 		"application/json",
 		"application/xml",
 		"application/yaml",
-	}
-
-	contentType := negotiate.ContentType(
-		b.request,
-		contentTypes,
-		"",
-	)
+	}, "")
 
 	if contentType == "" {
 		http.Error(b.writer, http.StatusText(http.StatusNotAcceptable), http.StatusNotAcceptable)
@@ -79,31 +73,18 @@ func (b *ListBeers200ResponseBuilder) Build() error {
 	}
 
 	var (
-		body     []byte
-		err      error
-		selected bool
+		body []byte
+		err  error
 	)
 
-	if b.beerPage != nil {
-		switch contentType {
-		case "application/json":
-			body, err = json.Marshal(b.beerPage)
-			selected = true
-		}
-	}
-
-	if b.beers != nil {
-		switch contentType {
-		case "application/xml":
-			body, err = xml.Marshal(b.beers)
-			selected = true
-		case "application/yaml":
-			body, err = yaml.Marshal(b.beers)
-			selected = true
-		}
-	}
-
-	if !selected {
+	switch {
+	case contentType == "application/json" && b.beerPage != nil:
+		body, err = json.Marshal(b.beerPage)
+	case contentType == "application/xml" && b.beers != nil:
+		body, err = xml.Marshal(b.beers)
+	case contentType == "application/yaml" && b.beers != nil:
+		body, err = yaml.Marshal(b.beers)
+	default:
 		return fmt.Errorf("no response body provided for content type %s", contentType)
 	}
 
@@ -138,15 +119,9 @@ func (b *ListBeers202ResponseBuilder) BeerPage(beerPage BeerPage) error {
 }
 
 func (b *ListBeers202ResponseBuilder) Build() error {
-	contentTypes := []string{
+	contentType := negotiate.ContentType(b.request, []string{
 		"application/xml",
-	}
-
-	contentType := negotiate.ContentType(
-		b.request,
-		contentTypes,
-		"",
-	)
+	}, "")
 
 	if contentType == "" {
 		http.Error(b.writer, http.StatusText(http.StatusNotAcceptable), http.StatusNotAcceptable)
@@ -154,20 +129,14 @@ func (b *ListBeers202ResponseBuilder) Build() error {
 	}
 
 	var (
-		body     []byte
-		err      error
-		selected bool
+		body []byte
+		err  error
 	)
 
-	if b.beerPage != nil {
-		switch contentType {
-		case "application/xml":
-			body, err = xml.Marshal(b.beerPage)
-			selected = true
-		}
-	}
-
-	if !selected {
+	switch {
+	case contentType == "application/xml" && b.beerPage != nil:
+		body, err = xml.Marshal(b.beerPage)
+	default:
 		return fmt.Errorf("no response body provided for content type %s", contentType)
 	}
 
@@ -196,13 +165,7 @@ type ListBeers501ResponseBuilder struct {
 }
 
 func (b *ListBeers501ResponseBuilder) Build() error {
-	contentTypes := []string{}
-
-	contentType := negotiate.ContentType(
-		b.request,
-		contentTypes,
-		"",
-	)
+	contentType := negotiate.ContentType(b.request, []string{}, "")
 
 	if contentType == "" {
 		http.Error(b.writer, http.StatusText(http.StatusNotAcceptable), http.StatusNotAcceptable)
@@ -210,12 +173,12 @@ func (b *ListBeers501ResponseBuilder) Build() error {
 	}
 
 	var (
-		body     []byte
-		err      error
-		selected bool
+		body []byte
+		err  error
 	)
 
-	if !selected {
+	switch {
+	default:
 		return fmt.Errorf("no response body provided for content type %s", contentType)
 	}
 
