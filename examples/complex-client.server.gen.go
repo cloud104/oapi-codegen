@@ -5,8 +5,6 @@ package examples
 
 import (
 	"context"
-	"encoding/json"
-	"encoding/xml"
 	"errors"
 	"fmt"
 	"io"
@@ -42,78 +40,46 @@ func (l *ListBeersResponseBuilder) OK() *ListBeers200ResponseBuilder {
 }
 
 type ListBeers200ResponseBuilder struct {
-	writer  http.ResponseWriter
-	request *http.Request
-	body    any
+	writer   http.ResponseWriter
+	request  *http.Request
+	beerPage BeerPage
+	beers    []Beer
 }
 
 func (b *ListBeers200ResponseBuilder) BeerPage(beerPage BeerPage) error {
-	b.body = beerPage
+	b.beerPage = beerPage
 	return nil
 }
 
 func (b *ListBeers200ResponseBuilder) Beers(beers []Beer) error {
-	b.body = beers
+	b.beers = beers
 	return nil
 }
 
 func (b *ListBeers200ResponseBuilder) Build() error {
-	var contentTypes []string
-
-	switch b.body.(type) {
-	case BeerPage:
-		contentTypes = []string{"application/json"}
-	case []Beer:
-		contentTypes = []string{"application/xml"}
-	default:
-		return fmt.Errorf("unsupported response body type: %T", b.body)
-	}
-
-	contentType := negotiate.ContentType(
-		b.request,
-		contentTypes,
+	contentTypes := []string{
 		"application/json",
-	)
-
-	var data []byte
-	var err error
-
-	switch contentType {
-	case "application/json":
-		data, err = json.Marshal(b.body)
-	case "application/xml", "text/xml":
-		data, err = xml.Marshal(b.body)
-	case "text/plain":
-		switch body := b.body.(type) {
-		case string:
-			data = []byte(body)
-		case []byte:
-			data = body
-		case fmt.Stringer:
-			data = []byte(body.String())
-		default:
-			return fmt.Errorf("unsupported text/plain body type: %T", b.body)
-		}
-	case "application/octet-stream":
-		body, ok := b.body.([]byte)
-		if !ok {
-			return fmt.Errorf("unsupported binary body type: %T", b.body)
-		}
-		data = body
-	default:
-		return fmt.Errorf("unsupported content type: %s", contentType)
+		"application/xml",
 	}
 
-	if err != nil {
-		return fmt.Errorf("failed to serialize response: %w", err)
+	if len(contentTypes) > 0 {
+		contentType := negotiate.ContentType(
+			b.request,
+			contentTypes,
+			"",
+		)
+
+		if contentType == "" {
+			http.Error(b.writer, http.StatusText(http.StatusNotAcceptable), http.StatusNotAcceptable)
+			return nil
+		}
+
+		b.writer.Header().Set("Content-Type", contentType)
+		b.writer.Header().Add("Vary", "Accept")
 	}
 
-	b.writer.Header().Set("Content-Type", contentType)
-	b.writer.Header().Add("Vary", "Accept")
 	b.writer.WriteHeader(http.StatusOK)
-
-	_, err = b.writer.Write(data)
-	return err
+	return nil
 }
 
 func (l *ListBeersResponseBuilder) Accepted() *ListBeers202ResponseBuilder {
@@ -124,71 +90,39 @@ func (l *ListBeersResponseBuilder) Accepted() *ListBeers202ResponseBuilder {
 }
 
 type ListBeers202ResponseBuilder struct {
-	writer  http.ResponseWriter
-	request *http.Request
-	body    any
+	writer   http.ResponseWriter
+	request  *http.Request
+	beerPage BeerPage
 }
 
 func (b *ListBeers202ResponseBuilder) BeerPage(beerPage BeerPage) error {
-	b.body = beerPage
+	b.beerPage = beerPage
 	return nil
 }
 
 func (b *ListBeers202ResponseBuilder) Build() error {
-	var contentTypes []string
-
-	switch b.body.(type) {
-	case BeerPage:
-		contentTypes = []string{"application/xml"}
-	default:
-		return fmt.Errorf("unsupported response body type: %T", b.body)
+	contentTypes := []string{
+		"application/xml",
 	}
 
-	contentType := negotiate.ContentType(
-		b.request,
-		contentTypes,
-		"application/json",
-	)
+	if len(contentTypes) > 0 {
+		contentType := negotiate.ContentType(
+			b.request,
+			contentTypes,
+			"",
+		)
 
-	var data []byte
-	var err error
-
-	switch contentType {
-	case "application/json":
-		data, err = json.Marshal(b.body)
-	case "application/xml", "text/xml":
-		data, err = xml.Marshal(b.body)
-	case "text/plain":
-		switch body := b.body.(type) {
-		case string:
-			data = []byte(body)
-		case []byte:
-			data = body
-		case fmt.Stringer:
-			data = []byte(body.String())
-		default:
-			return fmt.Errorf("unsupported text/plain body type: %T", b.body)
+		if contentType == "" {
+			http.Error(b.writer, http.StatusText(http.StatusNotAcceptable), http.StatusNotAcceptable)
+			return nil
 		}
-	case "application/octet-stream":
-		body, ok := b.body.([]byte)
-		if !ok {
-			return fmt.Errorf("unsupported binary body type: %T", b.body)
-		}
-		data = body
-	default:
-		return fmt.Errorf("unsupported content type: %s", contentType)
+
+		b.writer.Header().Set("Content-Type", contentType)
+		b.writer.Header().Add("Vary", "Accept")
 	}
 
-	if err != nil {
-		return fmt.Errorf("failed to serialize response: %w", err)
-	}
-
-	b.writer.Header().Set("Content-Type", contentType)
-	b.writer.Header().Add("Vary", "Accept")
 	b.writer.WriteHeader(http.StatusAccepted)
-
-	_, err = b.writer.Write(data)
-	return err
+	return nil
 }
 
 func (l *ListBeersResponseBuilder) NotImplemented() *ListBeers501ResponseBuilder {
@@ -201,62 +135,29 @@ func (l *ListBeersResponseBuilder) NotImplemented() *ListBeers501ResponseBuilder
 type ListBeers501ResponseBuilder struct {
 	writer  http.ResponseWriter
 	request *http.Request
-	body    any
 }
 
 func (b *ListBeers501ResponseBuilder) Build() error {
-	var contentTypes []string
+	contentTypes := []string{}
 
-	switch b.body.(type) {
-	default:
-		return fmt.Errorf("unsupported response body type: %T", b.body)
-	}
+	if len(contentTypes) > 0 {
+		contentType := negotiate.ContentType(
+			b.request,
+			contentTypes,
+			"",
+		)
 
-	contentType := negotiate.ContentType(
-		b.request,
-		contentTypes,
-		"application/json",
-	)
-
-	var data []byte
-	var err error
-
-	switch contentType {
-	case "application/json":
-		data, err = json.Marshal(b.body)
-	case "application/xml", "text/xml":
-		data, err = xml.Marshal(b.body)
-	case "text/plain":
-		switch body := b.body.(type) {
-		case string:
-			data = []byte(body)
-		case []byte:
-			data = body
-		case fmt.Stringer:
-			data = []byte(body.String())
-		default:
-			return fmt.Errorf("unsupported text/plain body type: %T", b.body)
+		if contentType == "" {
+			http.Error(b.writer, http.StatusText(http.StatusNotAcceptable), http.StatusNotAcceptable)
+			return nil
 		}
-	case "application/octet-stream":
-		body, ok := b.body.([]byte)
-		if !ok {
-			return fmt.Errorf("unsupported binary body type: %T", b.body)
-		}
-		data = body
-	default:
-		return fmt.Errorf("unsupported content type: %s", contentType)
+
+		b.writer.Header().Set("Content-Type", contentType)
+		b.writer.Header().Add("Vary", "Accept")
 	}
 
-	if err != nil {
-		return fmt.Errorf("failed to serialize response: %w", err)
-	}
-
-	b.writer.Header().Set("Content-Type", contentType)
-	b.writer.Header().Add("Vary", "Accept")
 	b.writer.WriteHeader(http.StatusNotImplemented)
-
-	_, err = b.writer.Write(data)
-	return err
+	return nil
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.

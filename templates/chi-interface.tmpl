@@ -28,73 +28,45 @@ func (l *{{$opid}}ResponseBuilder) {{.Name}}() *{{$name}}ResponseBuilder {
 type {{$name}}ResponseBuilder struct {
     writer http.ResponseWriter
     request *http.Request
-    body    any
+    {{ range $resp.Bodies -}}
+    {{.GoName | goCamelCase }} {{ .Type }}
+    {{ end -}}
 }
 
 {{range $resp.Bodies}}
 func (b *{{$name}}ResponseBuilder) {{ .GoName }}({{.GoName | goCamelCase }} {{.Type}}) error {
-	b.body = {{.GoName | goCamelCase }}
+	b.{{.GoName | goCamelCase }} = {{.GoName | goCamelCase }}
 	return nil
 }
 {{end}}
 
 func (b *{{$name}}ResponseBuilder) Build() error {
-    var contentTypes []string
+    contentTypes := []string{
+        {{- range $resp.Bodies }}
+            {{- range .ContentTypes }}
+                {{ . | quote }},
+            {{- end }}
+        {{- end }}
+    }
 
-    switch b.body.(type) {
-	{{ range $resp.Bodies -}}
-	case {{ .Type }}:
-        contentTypes = []string{ {{range .ContentTypes}}{{ . | quote }}, {{end}} }
-    {{ end -}}
-	default:
-		return fmt.Errorf("unsupported response body type: %T", b.body)
-	}
+	if len(contentTypes) > 0 {
+		contentType := negotiate.ContentType(
+			b.request,
+			contentTypes,
+			"",
+		)
 
-	contentType := negotiate.ContentType(
-		b.request,
-		contentTypes,
-		"application/json",
-	)
-
-	var data []byte
-	var err error
-
-	switch contentType {
-	case "application/json":
-		data, err = json.Marshal(b.body)
-	case "application/xml", "text/xml":
-		data, err = xml.Marshal(b.body)
-	case "text/plain":
-		switch body := b.body.(type) {
-		case string:
-			data = []byte(body)
-		case []byte:
-			data = body
-		case fmt.Stringer:
-			data = []byte(body.String())
-		default:
-			return fmt.Errorf("unsupported text/plain body type: %T", b.body)
+		if contentType == "" {
+			http.Error(b.writer, http.StatusText(http.StatusNotAcceptable), http.StatusNotAcceptable)
+			return nil
 		}
-	case "application/octet-stream":
-		body, ok := b.body.([]byte)
-		if !ok {
-			return fmt.Errorf("unsupported binary body type: %T", b.body)
-		}
-		data = body
-	default:
-		return fmt.Errorf("unsupported content type: %s", contentType)
+
+		b.writer.Header().Set("Content-Type", contentType)
+		b.writer.Header().Add("Vary", "Accept")
 	}
 
-	if err != nil {
-		return fmt.Errorf("failed to serialize response: %w", err)
-	}
-
-	b.writer.Header().Set("Content-Type", contentType)
-	b.writer.Header().Add("Vary", "Accept")
     b.writer.WriteHeader({{$resp.GoName}})
-
-	_, err = b.writer.Write(data)
-	return err
+	return nil
 }
 {{ end }}
 {{end}}{{end}}
