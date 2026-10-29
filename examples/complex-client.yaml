@@ -58,8 +58,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/BeerPage'
             application/xml:
-              schema:
-                $ref: '#/components/schemas/BeerPage'
+              type: array
+              items:
+                $ref: '#/components/schemas/Beer'
 
         '202':
           description: Paginated list of beers

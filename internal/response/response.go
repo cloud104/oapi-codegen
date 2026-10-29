@@ -24,10 +24,11 @@ func (codes statusCodes) String() string {
 }
 
 type ResponseGroup struct {
-	Type        string
-	Method      string
-	Fields      []string
-	StatusCodes statusCodes
+	Type         string
+	Method       string
+	Fields       []string
+	StatusCodes  statusCodes
+	ContentTypes []string
 }
 
 var (
@@ -62,12 +63,17 @@ func GroupResponses(defs []codegen.ResponseTypeDefinition) []*ResponseGroup {
 		if !slices.Contains(group.StatusCodes, def.ResponseName) {
 			group.StatusCodes = append(group.StatusCodes, def.ResponseName)
 		}
+
+		if def.ContentTypeName != "" && !slices.Contains(group.ContentTypes, def.ContentTypeName) {
+			group.ContentTypes = append(group.ContentTypes, def.ContentTypeName)
+		}
 	}
 
 	groups := make([]*ResponseGroup, 0, len(byType))
 	for _, group := range byType {
 		slices.Sort(group.Fields)
 		slices.Sort(group.StatusCodes)
+		slices.Sort(group.ContentTypes)
 		groups = append(groups, group)
 	}
 

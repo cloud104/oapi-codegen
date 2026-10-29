@@ -72,6 +72,13 @@ func TestGenerate(t *testing.T) {
 						ChiServer: true,
 					},
 				},
+				{
+					name:     "client",
+					filename: basePath + ".client.gen.go",
+					options: codegen.GenerateOptions{
+						Client: true,
+					},
+				},
 			}
 
 			for _, output := range outputs {
@@ -82,9 +89,11 @@ func TestGenerate(t *testing.T) {
 						Generate:    output.options,
 						OutputOptions: codegen.OutputOptions{
 							UserTemplates: map[string]string{
-								"chi/chi-handler.tmpl":    "../../templates/chi-handler.tmpl",
-								"chi/chi-interface.tmpl":  "../../templates/chi-interface.tmpl",
-								"chi/chi-middleware.tmpl": "../../templates/chi-middleware.tmpl",
+								"chi/chi-handler.tmpl":       "../../templates/chi-handler.tmpl",
+								"chi/chi-interface.tmpl":     "../../templates/chi-interface.tmpl",
+								"chi/chi-middleware.tmpl":    "../../templates/chi-middleware.tmpl",
+								"client.tmpl":                "../../templates/client.tmpl",
+								"client-with-responses.tmpl": "../../templates/client-with-responses.tmpl",
 							},
 							NameNormalizer:        "ToCamelCaseWithInitialisms",
 							AdditionalInitialisms: []string{"ID", "IBU"},

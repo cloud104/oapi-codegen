@@ -84,15 +84,10 @@ func getResponses(op codegen.OperationDefinition) []*Response {
 			continue
 		}
 
-		responseMap[name] = status
+		responses := response.GroupResponses(typeDefs)
+		_ = responses
 
-		for _, def := range typeDefs {
-			typ := def.Schema.TypeDecl()
-			if structRE.MatchString(typ) || mapRE.MatchString(typ) {
-				continue
-			}
-			//method := strings.TrimSuffix(def.TypeName, name)
-		}
+		responseMap[name] = status
 	}
 
 	responses := lo.Values(responseMap)
