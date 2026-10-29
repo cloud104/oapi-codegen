@@ -15,17 +15,23 @@ type {{.OperationId}}ResponseBuilder struct {
 }
 
 {{$opid := .OperationId -}}
-{{ range getResponses . }}{{$code := .Code -}}
-func (l *{{$opid}}ResponseBuilder) {{ .Name }}() *{{ printf "%s%d" $opid $code }}ResponseBuilder {
-    return &{{ printf "%s%d" $opid $code }}ResponseBuilder{writer: l.writer, request: l.request}
+{{ range getResponses . }}{{$resp := . -}}
+func (l *{{$opid}}ResponseBuilder) {{ .Name }}() *{{ printf "%s%d" $opid $resp.Code }}ResponseBuilder {
+    return &{{ printf "%s%d" $opid $resp.Code }}ResponseBuilder{writer: l.writer, request: l.request}
 }
 
-type {{ printf "%s%d" $opid $code }}ResponseBuilder struct {
+type {{ printf "%s%d" $opid $resp.Code }}ResponseBuilder struct {
     writer http.ResponseWriter
     request *http.Request
 }
 
-func (b *{{ printf "%s%d" $opid $code }}ResponseBuilder) Build() error {
+{{ range $resp.Bodies }}
+func (b *{{ printf "%s%d" $opid $resp.Code }}ResponseBuilder) Body(body {{ .Type }}) error {
+    return nil
+}
+{{ end }}
+
+func (b *{{ printf "%s%d" $opid $resp.Code }}ResponseBuilder) Build() error {
     b.writer.WriteHeader({{ .GoName }})
     return nil
 }
