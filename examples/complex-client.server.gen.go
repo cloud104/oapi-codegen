@@ -62,6 +62,7 @@ func (b *ListBeers200ResponseBuilder) Build() error {
 	contentTypes := []string{
 		"application/json",
 		"application/xml",
+		"text/yaml",
 	}
 
 	contentType := negotiate.ContentType(
@@ -91,6 +92,7 @@ func (b *ListBeers200ResponseBuilder) Build() error {
 		switch contentType {
 		case "application/xml":
 			body, err = xml.Marshal(b.beers)
+		case "text/yaml":
 		}
 	}
 

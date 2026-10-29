@@ -57,6 +57,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BeerPage'
+            text/yaml:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Beer'
             application/xml:
               schema:
                 type: array

@@ -258,6 +258,8 @@ type ListBeersResponse struct {
 	XML200 *[]Beer
 	// YAML200 the response for an HTTP 200 `application/yaml` response
 	YAML200 *[]interface{}
+	// YAML200 the response for an HTTP 200 `text/yaml` response
+	YAML200 *[]Beer
 	// XML202 the response for an HTTP 202 `application/xml` response
 	XML202 *BeerPage
 	// Headers200 the parsed response headers for an HTTP 200 response
@@ -270,6 +272,9 @@ type ListBeersResponse struct {
 func (r ListBeersResponse) GetBeers() (*[]Beer, error) {
 	if r.XML200 != nil {
 		return r.XML200, nil
+	}
+	if r.YAML200 != nil {
+		return r.YAML200, nil
 	}
 	if r.HTTPResponse == nil {
 		return nil, fmt.Errorf("missing HTTP response")
@@ -383,7 +388,7 @@ func parseListBeersResponse(rsp *http.Response) (*ListBeersResponse, error) {
 		response.XML200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "yaml") && rsp.StatusCode == 200:
-		var dest []interface{}
+		var dest []Beer
 		if err := yaml.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
