@@ -5,6 +5,7 @@ package examples
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -12,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-openapi/runtime/server-middleware/negotiate"
 	"github.com/oapi-codegen/runtime"
 	"github.com/santhosh-tekuri/jsonschema/v6"
 	"github.com/santhosh-tekuri/jsonschema/v6/kind"
@@ -54,8 +56,43 @@ func (b *ListBeers200ResponseBuilder) Body[T ListBeers200ResponseBody](body T) e
 }
 
 func (b *ListBeers200ResponseBuilder) Build() error {
+	var contentTypes []string
+
+	switch b.body.(type) {
+	case BeerPage:
+		contentTypes = []string{"application/json"}
+	case []Beer:
+		contentTypes = []string{"application/xml"}
+	default:
+		return fmt.Errorf("unsupported response body type: %T", b.body)
+	}
+
+	contentType := negotiate.ContentType(
+		b.request,
+		contentTypes,
+		"application/json",
+	)
+
+	var data []byte
+	var err error
+
+	switch contentType {
+	case "application/json":
+		data, err = json.Marshal(b.body)
+	default:
+		return fmt.Errorf("unsupported content type: %s", contentType)
+	}
+
+	if err != nil {
+		return fmt.Errorf("failed to serialize response: %w", err)
+	}
+
+	b.writer.Header().Set("Content-Type", contentType)
+	b.writer.Header().Add("Vary", "Accept")
 	b.writer.WriteHeader(http.StatusOK)
-	return nil
+
+	_, err = b.writer.Write(data)
+	return err
 }
 
 func (l *ListBeersResponseBuilder) Accepted() *ListBeers202ResponseBuilder {
@@ -81,8 +118,41 @@ func (b *ListBeers202ResponseBuilder) Body[T ListBeers202ResponseBody](body T) e
 }
 
 func (b *ListBeers202ResponseBuilder) Build() error {
+	var contentTypes []string
+
+	switch b.body.(type) {
+	case BeerPage:
+		contentTypes = []string{"application/xml"}
+	default:
+		return fmt.Errorf("unsupported response body type: %T", b.body)
+	}
+
+	contentType := negotiate.ContentType(
+		b.request,
+		contentTypes,
+		"application/json",
+	)
+
+	var data []byte
+	var err error
+
+	switch contentType {
+	case "application/json":
+		data, err = json.Marshal(b.body)
+	default:
+		return fmt.Errorf("unsupported content type: %s", contentType)
+	}
+
+	if err != nil {
+		return fmt.Errorf("failed to serialize response: %w", err)
+	}
+
+	b.writer.Header().Set("Content-Type", contentType)
+	b.writer.Header().Add("Vary", "Accept")
 	b.writer.WriteHeader(http.StatusAccepted)
-	return nil
+
+	_, err = b.writer.Write(data)
+	return err
 }
 
 func (l *ListBeersResponseBuilder) NotImplemented() *ListBeers501ResponseBuilder {
@@ -99,8 +169,39 @@ type ListBeers501ResponseBuilder struct {
 }
 
 func (b *ListBeers501ResponseBuilder) Build() error {
+	var contentTypes []string
+
+	switch b.body.(type) {
+	default:
+		return fmt.Errorf("unsupported response body type: %T", b.body)
+	}
+
+	contentType := negotiate.ContentType(
+		b.request,
+		contentTypes,
+		"application/json",
+	)
+
+	var data []byte
+	var err error
+
+	switch contentType {
+	case "application/json":
+		data, err = json.Marshal(b.body)
+	default:
+		return fmt.Errorf("unsupported content type: %s", contentType)
+	}
+
+	if err != nil {
+		return fmt.Errorf("failed to serialize response: %w", err)
+	}
+
+	b.writer.Header().Set("Content-Type", contentType)
+	b.writer.Header().Add("Vary", "Accept")
 	b.writer.WriteHeader(http.StatusNotImplemented)
-	return nil
+
+	_, err = b.writer.Write(data)
+	return err
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.

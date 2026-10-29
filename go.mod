@@ -8,6 +8,7 @@ require (
 	github.com/ettle/strcase v0.2.0
 	github.com/getkin/kin-openapi v0.152.0
 	github.com/go-chi/chi/v5 v5.5.0
+	github.com/go-openapi/runtime/server-middleware v0.33.4
 	github.com/jinzhu/inflection v1.0.0
 	github.com/oapi-codegen/oapi-codegen/v2 v2.8.1
 	github.com/oapi-codegen/runtime v1.8.0

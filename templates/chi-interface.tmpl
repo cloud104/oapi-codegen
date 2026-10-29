@@ -43,8 +43,43 @@ func (b *{{$name}}ResponseBuilder) Body[T {{$name}}ResponseBody](body T) error {
 {{ end }}
 
 func (b *{{$name}}ResponseBuilder) Build() error {
+    var contentTypes []string
+
+    switch b.body.(type) {
+	{{ range $resp.Bodies -}}
+	case {{ .Type }}:
+        contentTypes = []string{ {{range .ContentTypes}}{{ . | quote }}, {{end}} }
+    {{ end -}}
+	default:
+		return fmt.Errorf("unsupported response body type: %T", b.body)
+	}
+
+	contentType := negotiate.ContentType(
+		b.request,
+		contentTypes,
+		"application/json",
+	)
+
+	var data []byte
+	var err error
+
+	switch contentType {
+	case "application/json":
+		data, err = json.Marshal(b.body)
+	default:
+		return fmt.Errorf("unsupported content type: %s", contentType)
+	}
+
+	if err != nil {
+		return fmt.Errorf("failed to serialize response: %w", err)
+	}
+
+	b.writer.Header().Set("Content-Type", contentType)
+	b.writer.Header().Add("Vary", "Accept")
     b.writer.WriteHeader({{$resp.GoName}})
-    return nil
+
+	_, err = b.writer.Write(data)
+	return err
 }
 {{ end }}
 {{end}}{{end}}
