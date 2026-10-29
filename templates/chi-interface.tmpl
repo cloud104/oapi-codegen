@@ -16,7 +16,7 @@ type {{.OperationId}}ResponseBuilder struct {
 
 {{$opid := .OperationId -}}
 {{ range getResponses . }}{{$resp := . -}}
-{{$name := printf "%s%d" $opid $resp.Code -}}
+{{$name := printf "%s%d" $opid $resp.Code }}
 
 func (l *{{$opid}}ResponseBuilder) {{.Name}}() *{{$name}}ResponseBuilder {
     return &{{$name}}ResponseBuilder{

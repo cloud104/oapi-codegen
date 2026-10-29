@@ -57,6 +57,7 @@ func (b *ListBeers200ResponseBuilder) Build() error {
 	b.writer.WriteHeader(http.StatusOK)
 	return nil
 }
+
 func (l *ListBeersResponseBuilder) Accepted() *ListBeers202ResponseBuilder {
 	return &ListBeers202ResponseBuilder{
 		writer:  l.writer,
@@ -83,6 +84,7 @@ func (b *ListBeers202ResponseBuilder) Build() error {
 	b.writer.WriteHeader(http.StatusAccepted)
 	return nil
 }
+
 func (l *ListBeersResponseBuilder) NotImplemented() *ListBeers501ResponseBuilder {
 	return &ListBeers501ResponseBuilder{
 		writer:  l.writer,
