@@ -42,17 +42,17 @@ func (l *ListBeersResponseBuilder) OK() *ListBeers200ResponseBuilder {
 type ListBeers200ResponseBuilder struct {
 	writer   http.ResponseWriter
 	request  *http.Request
-	beerPage BeerPage
-	beers    []Beer
+	beerPage *BeerPage
+	beers    *[]Beer
 }
 
 func (b *ListBeers200ResponseBuilder) BeerPage(beerPage BeerPage) error {
-	b.beerPage = beerPage
+	b.beerPage = &beerPage
 	return nil
 }
 
 func (b *ListBeers200ResponseBuilder) Beers(beers []Beer) error {
-	b.beers = beers
+	b.beers = &beers
 	return nil
 }
 
@@ -92,11 +92,11 @@ func (l *ListBeersResponseBuilder) Accepted() *ListBeers202ResponseBuilder {
 type ListBeers202ResponseBuilder struct {
 	writer   http.ResponseWriter
 	request  *http.Request
-	beerPage BeerPage
+	beerPage *BeerPage
 }
 
 func (b *ListBeers202ResponseBuilder) BeerPage(beerPage BeerPage) error {
-	b.beerPage = beerPage
+	b.beerPage = &beerPage
 	return nil
 }
 

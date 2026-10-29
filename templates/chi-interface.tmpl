@@ -29,13 +29,13 @@ type {{$name}}ResponseBuilder struct {
     writer http.ResponseWriter
     request *http.Request
     {{ range $resp.Bodies -}}
-    {{.GoName | goCamelCase }} {{ .Type }}
+    {{.GoName | goCamelCase }} *{{ .Type }}
     {{ end -}}
 }
 
 {{range $resp.Bodies}}
 func (b *{{$name}}ResponseBuilder) {{ .GoName }}({{.GoName | goCamelCase }} {{.Type}}) error {
-	b.{{.GoName | goCamelCase }} = {{.GoName | goCamelCase }}
+	b.{{.GoName | goCamelCase }} = &{{.GoName | goCamelCase }}
 	return nil
 }
 {{end}}
