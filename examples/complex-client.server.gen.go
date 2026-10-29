@@ -32,13 +32,16 @@ type ListBeersResponseBuilder struct {
 }
 
 func (l *ListBeersResponseBuilder) OK() *ListBeers200ResponseBuilder {
-	return &ListBeers200ResponseBuilder{writer: l.writer, request: l.request}
+	return &ListBeers200ResponseBuilder{
+		writer:  l.writer,
+		request: l.request,
+	}
 }
 
 type ListBeers200ResponseBuilder struct {
 	writer  http.ResponseWriter
 	request *http.Request
-	body any
+	body    any
 }
 
 type ListBeers200ResponseBody interface {
@@ -55,15 +58,24 @@ func (b *ListBeers200ResponseBuilder) Build() error {
 	return nil
 }
 func (l *ListBeersResponseBuilder) Accepted() *ListBeers202ResponseBuilder {
-	return &ListBeers202ResponseBuilder{writer: l.writer, request: l.request}
+	return &ListBeers202ResponseBuilder{
+		writer:  l.writer,
+		request: l.request,
+	}
 }
 
 type ListBeers202ResponseBuilder struct {
 	writer  http.ResponseWriter
 	request *http.Request
+	body    any
 }
 
-func (b *ListBeers202ResponseBuilder) Body(body BeerPage) error {
+type ListBeers202ResponseBody interface {
+	BeerPage
+}
+
+func (b *ListBeers202ResponseBuilder) Body[T ListBeers202ResponseBody](body T) error {
+	b.body = body
 	return nil
 }
 
@@ -72,12 +84,16 @@ func (b *ListBeers202ResponseBuilder) Build() error {
 	return nil
 }
 func (l *ListBeersResponseBuilder) NotImplemented() *ListBeers501ResponseBuilder {
-	return &ListBeers501ResponseBuilder{writer: l.writer, request: l.request}
+	return &ListBeers501ResponseBuilder{
+		writer:  l.writer,
+		request: l.request,
+	}
 }
 
 type ListBeers501ResponseBuilder struct {
 	writer  http.ResponseWriter
 	request *http.Request
+	body    any
 }
 
 func (b *ListBeers501ResponseBuilder) Build() error {
