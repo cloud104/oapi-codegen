@@ -65,34 +65,21 @@ func (b *{{$name}}ResponseBuilder) Build() error {
 		err  error
 	)
 
-
-    {{- $bodies := $resp.Bodies }}
-
-    selected := false
-
-    {{ range $bodies }}
+    {{ range $resp.Bodies }}
     {{- $field := .GoName | goCamelCase }}
-    if !selected && b.{{ $field }} != nil &&
-       (false{{ range .ContentTypes }} || contentType == {{ . | quote }}{{ end }}) {
-       selected = true
-
-       switch contentType {
-       case "application/json":
-          body, err = json.Marshal(b.{{ $field }})
-
-       case "application/xml":
-          body, err = xml.Marshal(b.{{ $field }})
-
-       default:
-          return fmt.Errorf("unsupported content type: %s", contentType)
+       if b.{{$field}} != nil {
+          switch contentType {
+          {{- range .ContentTypes }}
+          case {{. | quote}}:
+             {{- if eq . "application/json" }}
+             body, err = json.Marshal(b.{{$field}})
+             {{- else if eq . "application/xml" }}
+             body, err = xml.Marshal(b.{{$field}})
+             {{- end }}
+          {{- end }}
+          }
        }
-    }
     {{ end }}
-
-    if !selected {
-       return fmt.Errorf("no response body provided for content type %s", contentType)
-    }
-
     if err != nil {
        return fmt.Errorf("marshal response: %w", err)
     }

@@ -80,42 +80,18 @@ func (b *ListBeers200ResponseBuilder) Build() error {
 		err  error
 	)
 
-	selected := false
-
-	if !selected && b.beerPage != nil &&
-		(false || contentType == "application/json") {
-		selected = true
-
+	if b.beerPage != nil {
 		switch contentType {
 		case "application/json":
 			body, err = json.Marshal(b.beerPage)
-
-		case "application/xml":
-			body, err = xml.Marshal(b.beerPage)
-
-		default:
-			return fmt.Errorf("unsupported content type: %s", contentType)
 		}
 	}
 
-	if !selected && b.beers != nil &&
-		(false || contentType == "application/xml") {
-		selected = true
-
+	if b.beers != nil {
 		switch contentType {
-		case "application/json":
-			body, err = json.Marshal(b.beers)
-
 		case "application/xml":
 			body, err = xml.Marshal(b.beers)
-
-		default:
-			return fmt.Errorf("unsupported content type: %s", contentType)
 		}
-	}
-
-	if !selected {
-		return fmt.Errorf("no response body provided for content type %s", contentType)
 	}
 
 	if err != nil {
@@ -169,26 +145,11 @@ func (b *ListBeers202ResponseBuilder) Build() error {
 		err  error
 	)
 
-	selected := false
-
-	if !selected && b.beerPage != nil &&
-		(false || contentType == "application/xml") {
-		selected = true
-
+	if b.beerPage != nil {
 		switch contentType {
-		case "application/json":
-			body, err = json.Marshal(b.beerPage)
-
 		case "application/xml":
 			body, err = xml.Marshal(b.beerPage)
-
-		default:
-			return fmt.Errorf("unsupported content type: %s", contentType)
 		}
-	}
-
-	if !selected {
-		return fmt.Errorf("no response body provided for content type %s", contentType)
 	}
 
 	if err != nil {
@@ -233,12 +194,6 @@ func (b *ListBeers501ResponseBuilder) Build() error {
 		body []byte
 		err  error
 	)
-
-	selected := false
-
-	if !selected {
-		return fmt.Errorf("no response body provided for content type %s", contentType)
-	}
 
 	if err != nil {
 		return fmt.Errorf("marshal response: %w", err)
