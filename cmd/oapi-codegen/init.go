@@ -74,19 +74,13 @@ func getResponses(op codegen.OperationDefinition) []*Response {
 
 	responseMap := make(map[string]*Response)
 
-	for name, typeDefs := range definitionMap {
+	for name, defs := range definitionMap {
 		status, ok := httpStatuses[name]
 		if !ok {
 			continue
 		}
 
-		status.Bodies = response.GroupResponses(typeDefs)
-
-		for _, def := range typeDefs {
-			typeName := def.TypeName
-			_ = typeName
-		}
-
+		status.Bodies = response.GroupResponses(defs)
 		responseMap[name] = &status
 	}
 
