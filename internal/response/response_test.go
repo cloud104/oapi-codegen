@@ -81,8 +81,8 @@ func TestGroupResponses(t *testing.T) {
 			t.Errorf("group %d: expected type %q, got %q", i, want.typ, got.Type)
 		}
 
-		if got.Method != want.method {
-			t.Errorf("group %d: expected method %q, got %q", i, want.method, got.Method)
+		if got.GoName != want.method {
+			t.Errorf("group %d: expected method %q, got %q", i, want.method, got.GoName)
 		}
 
 		if !reflect.DeepEqual(got.StatusCodes, want.codes) {

@@ -79,9 +79,9 @@ type {{genResponseTypeName $opid | ucFirst}} struct {
 }
 
 {{ if not opts.OutputOptions.SkipResponseBodyGetters }}
-{{- range groupResponses $responseTypeDefinitions}}
-  // {{.Method}} checks if the HTTP response status code is {{ .StatusCodes.String }}, and if so, returns the {{.Type}}.
-  func (r {{genResponseTypeName $opid | ucFirst}}) {{.Method}}() (*{{.Type}}, error) {
+{{- range groupResponses $responseTypeDefinitions}}{{ $method := .GoName | printf "Get%s"}}
+  // {{ $method }} checks if the HTTP response status code is {{ .StatusCodes.String }}, and if so, returns the {{.Type}}.
+  func (r {{genResponseTypeName $opid | ucFirst}}) {{ $method }}() (*{{.Type}}, error) {
     {{- range .Fields }}
     if r.{{ . }} != nil {
         return r.{{ . }}, nil

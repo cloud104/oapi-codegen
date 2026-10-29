@@ -26,7 +26,7 @@ func (codes statusCodes) String() string {
 
 type ResponseGroup struct {
 	Type         string
-	Method       string
+	GoName       string
 	Fields       []string
 	StatusCodes  statusCodes
 	ContentTypes []string
@@ -74,7 +74,7 @@ func GroupResponses(defs []codegen.ResponseTypeDefinition) []*ResponseGroup {
 
 			group = &ResponseGroup{
 				Type:   typ,
-				Method: "Get" + name,
+				GoName: name,
 			}
 			byType[typ] = group
 		}
