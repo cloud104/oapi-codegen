@@ -109,6 +109,9 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/BeerCreate'
+          text/x-json:
+            schema:
+              $ref: '#/components/schemas/BeerCreate'
           text/plain:
             schema:
               type: string
@@ -125,6 +128,9 @@ paths:
           description: Beer created
           content:
             application/json:
+              schema:
+                $ref: '#/components/schemas/Beer'
+            text/x-json:
               schema:
                 $ref: '#/components/schemas/Beer'
             text/plain:

@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"slices"
 	"strings"
+	"github.com/samber/lo"
 
 	sprig "github.com/Masterminds/sprig/v3"
 	"github.com/oapi-codegen/oapi-codegen/v2/pkg/codegen"
@@ -13,6 +14,7 @@ import (
 	"github.com/cloud104/oapi-codegen/internal/request"
 	"github.com/cloud104/oapi-codegen/internal/response"
 	"github.com/cloud104/oapi-codegen/internal/security"
+	"regexp"
 )
 
 func init() {
@@ -54,6 +56,11 @@ func init() {
 	codegen.TemplateFunctions["apiKeyAuthFromList"] = security.APIKeyForOperations
 }
 
+var (
+	structRE = regexp.MustCompile(`(?s)^\s*struct\s*\{.*\}\s*$`)
+	mapRE    = regexp.MustCompile(`^\s*map\s*\[.*\].*$`)
+)
+
 type Response struct {
 	Code   int
 	Name   string
@@ -61,28 +68,40 @@ type Response struct {
 }
 
 func getResponses(op codegen.OperationDefinition) []*Response {
-	statuses := make([]*Response, 0, len(op.Responses)+1)
-	hasNotImplemented := false
+	definitions, err := op.GetResponseTypeDefinitions()
+	if err != nil {
+		panic(err)
+	}
 
-	for _, resp := range op.Responses {
-		status, ok := httpStatuses[resp.StatusCode]
+	var definitionMap = lo.GroupBy(definitions, func(def codegen.ResponseTypeDefinition) string {
+		return def.ResponseName
+	})
+
+	responseMap := make(map[string]*Response)
+	for name, typeDefs := range definitionMap {
+		status, ok := httpStatuses[name]
 		if !ok {
 			continue
 		}
 
-		statuses = append(statuses, status)
-		hasNotImplemented = hasNotImplemented || resp.StatusCode == "501"
+		responseMap[name] = status
+
+		for _, def := range typeDefs {
+			typ := def.Schema.TypeDecl()
+			if structRE.MatchString(typ) || mapRE.MatchString(typ) {
+				continue
+			}
+			//method := strings.TrimSuffix(def.TypeName, name)
+		}
 	}
 
-	if !hasNotImplemented {
-		statuses = append(statuses, httpStatuses["501"])
-	}
+	responses := lo.Values(responseMap)
 
-	slices.SortFunc(statuses, func(a, b *Response) int {
-		return cmp.Compare(a.GoName, b.GoName)
+	slices.SortFunc(responses, func(a, b *Response) int {
+		return cmp.Compare(a.Code, b.Code)
 	})
 
-	return statuses
+	return responses
 }
 
 // HTTP status codes as registered with IANA.
@@ -159,4 +178,25 @@ var httpStatuses = map[string]*Response{
 	"508": {Code: 508, Name: "LoopDetected", GoName: "http.StatusLoopDetected"},
 	"510": {Code: 510, Name: "NotExtended", GoName: "http.StatusNotExtended"},
 	"511": {Code: 511, Name: "NetworkAuthenticationRequired", GoName: "http.StatusNetworkAuthenticationRequired"},
+}
+
+var contentTypes = map[string]string{
+	// JSON
+	"application/json":         "JSON",
+	"text/x-json":              "JSON",
+	"application/problem+json": "ProblemJSON",
+
+	// HAL JSON
+	"application/hal+json": "HALJSON",
+
+	// YAML
+	"application/yaml":   "YAML",
+	"application/x-yaml": "YAML",
+	"text/yaml":          "YAML",
+	"text/x-yaml":        "YAML",
+
+	// XML
+	"application/xml":         "XML",
+	"text/xml":                "XML",
+	"application/problem+xml": "ProblemXML",
 }

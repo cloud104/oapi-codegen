@@ -11,18 +11,18 @@ type ServerInterface interface {
 {{range .}}{{if not .IsAlias}}
 type {{.OperationId}}ResponseBuilder struct {
     writer http.ResponseWriter
+    request *http.Request
 }
 
 {{$opid := .OperationId -}}
 {{ range getResponses . }}
 func (l *{{$opid}}ResponseBuilder) {{ .Name }}() *{{ printf "%s%d" $opid .Code }}ResponseBuilder {
-    return &{{ printf "%s%d" $opid .Code }}ResponseBuilder{
-        writer:  l.writer,
-    }
+    return &{{ printf "%s%d" $opid .Code }}ResponseBuilder{writer: l.writer, request: l.request}
 }
 
 type {{ printf "%s%d" $opid .Code }}ResponseBuilder struct {
-    writer  http.ResponseWriter
+    writer http.ResponseWriter
+    request *http.Request
 }
 
 func (b *{{ printf "%s%d" $opid .Code }}ResponseBuilder) Build() error {
