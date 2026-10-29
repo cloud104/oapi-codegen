@@ -49,24 +49,28 @@ func (b *{{$name}}ResponseBuilder) Build() error {
         {{- end }}
     }
 
-	if len(contentTypes) > 0 {
-		contentType := negotiate.ContentType(
-			b.request,
-			contentTypes,
-			"",
-		)
+	contentType := negotiate.ContentType(
+		b.request,
+		contentTypes,
+		"",
+	)
 
-		if contentType == "" {
-			http.Error(b.writer, http.StatusText(http.StatusNotAcceptable), http.StatusNotAcceptable)
-			return nil
-		}
-
-		b.writer.Header().Set("Content-Type", contentType)
-		b.writer.Header().Add("Vary", "Accept")
+	if contentType == "" {
+		http.Error(b.writer, http.StatusText(http.StatusNotAcceptable), http.StatusNotAcceptable)
+		return nil
 	}
 
+	var (
+		body []byte
+		err  error
+	)
+
+	b.writer.Header().Set("Content-Type", contentType)
+	b.writer.Header().Add("Vary", "Accept")
     b.writer.WriteHeader({{$resp.GoName}})
-	return nil
+
+    _, err = b.writer.Write(body)
+    return err
 }
 {{ end }}
 {{end}}{{end}}

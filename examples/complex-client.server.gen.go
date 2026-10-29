@@ -62,24 +62,29 @@ func (b *ListBeers200ResponseBuilder) Build() error {
 		"application/xml",
 	}
 
-	if len(contentTypes) > 0 {
-		contentType := negotiate.ContentType(
-			b.request,
-			contentTypes,
-			"",
-		)
+	contentType := negotiate.ContentType(
+		b.request,
+		contentTypes,
+		"",
+	)
 
-		if contentType == "" {
-			http.Error(b.writer, http.StatusText(http.StatusNotAcceptable), http.StatusNotAcceptable)
-			return nil
-		}
-
-		b.writer.Header().Set("Content-Type", contentType)
-		b.writer.Header().Add("Vary", "Accept")
+	if contentType == "" {
+		http.Error(b.writer, http.StatusText(http.StatusNotAcceptable), http.StatusNotAcceptable)
+		return nil
 	}
 
+	var (
+		body []byte
+		err  error
+	)
+
+	b.writer.Header().Set("Content-Type", contentType)
+	b.writer.Header().Add("Vary", "Accept")
+
 	b.writer.WriteHeader(http.StatusOK)
-	return nil
+
+	_, err = b.writer.Write(body)
+	return err
 }
 
 func (l *ListBeersResponseBuilder) Accepted() *ListBeers202ResponseBuilder {
@@ -105,24 +110,29 @@ func (b *ListBeers202ResponseBuilder) Build() error {
 		"application/xml",
 	}
 
-	if len(contentTypes) > 0 {
-		contentType := negotiate.ContentType(
-			b.request,
-			contentTypes,
-			"",
-		)
+	contentType := negotiate.ContentType(
+		b.request,
+		contentTypes,
+		"",
+	)
 
-		if contentType == "" {
-			http.Error(b.writer, http.StatusText(http.StatusNotAcceptable), http.StatusNotAcceptable)
-			return nil
-		}
-
-		b.writer.Header().Set("Content-Type", contentType)
-		b.writer.Header().Add("Vary", "Accept")
+	if contentType == "" {
+		http.Error(b.writer, http.StatusText(http.StatusNotAcceptable), http.StatusNotAcceptable)
+		return nil
 	}
 
+	var (
+		body []byte
+		err  error
+	)
+
+	b.writer.Header().Set("Content-Type", contentType)
+	b.writer.Header().Add("Vary", "Accept")
+
 	b.writer.WriteHeader(http.StatusAccepted)
-	return nil
+
+	_, err = b.writer.Write(body)
+	return err
 }
 
 func (l *ListBeersResponseBuilder) NotImplemented() *ListBeers501ResponseBuilder {
@@ -140,24 +150,29 @@ type ListBeers501ResponseBuilder struct {
 func (b *ListBeers501ResponseBuilder) Build() error {
 	contentTypes := []string{}
 
-	if len(contentTypes) > 0 {
-		contentType := negotiate.ContentType(
-			b.request,
-			contentTypes,
-			"",
-		)
+	contentType := negotiate.ContentType(
+		b.request,
+		contentTypes,
+		"",
+	)
 
-		if contentType == "" {
-			http.Error(b.writer, http.StatusText(http.StatusNotAcceptable), http.StatusNotAcceptable)
-			return nil
-		}
-
-		b.writer.Header().Set("Content-Type", contentType)
-		b.writer.Header().Add("Vary", "Accept")
+	if contentType == "" {
+		http.Error(b.writer, http.StatusText(http.StatusNotAcceptable), http.StatusNotAcceptable)
+		return nil
 	}
 
+	var (
+		body []byte
+		err  error
+	)
+
+	b.writer.Header().Set("Content-Type", contentType)
+	b.writer.Header().Add("Vary", "Accept")
+
 	b.writer.WriteHeader(http.StatusNotImplemented)
-	return nil
+
+	_, err = b.writer.Write(body)
+	return err
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
