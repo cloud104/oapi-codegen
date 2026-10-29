@@ -47,6 +47,21 @@ type ListBeersResponseBuilder struct {
 	writer http.ResponseWriter
 }
 
+func (l *ListBeersResponseBuilder) Accepted() *ListBeers202ResponseBuilder {
+	return &ListBeers202ResponseBuilder{
+		writer: l.writer,
+	}
+}
+
+type ListBeers202ResponseBuilder struct {
+	writer http.ResponseWriter
+}
+
+func (b *ListBeers202ResponseBuilder) Build() error {
+	b.writer.WriteHeader(http.StatusAccepted)
+	return nil
+}
+
 func (l *ListBeersResponseBuilder) NotImplemented() *ListBeers501ResponseBuilder {
 	return &ListBeers501ResponseBuilder{
 		writer: l.writer,
@@ -62,8 +77,68 @@ func (b *ListBeers501ResponseBuilder) Build() error {
 	return nil
 }
 
+func (l *ListBeersResponseBuilder) OK() *ListBeers200ResponseBuilder {
+	return &ListBeers200ResponseBuilder{
+		writer: l.writer,
+	}
+}
+
+type ListBeers200ResponseBuilder struct {
+	writer http.ResponseWriter
+}
+
+func (b *ListBeers200ResponseBuilder) Build() error {
+	b.writer.WriteHeader(http.StatusOK)
+	return nil
+}
+
 type CreateBeerResponseBuilder struct {
 	writer http.ResponseWriter
+}
+
+func (l *CreateBeerResponseBuilder) BadRequest() *CreateBeer400ResponseBuilder {
+	return &CreateBeer400ResponseBuilder{
+		writer: l.writer,
+	}
+}
+
+type CreateBeer400ResponseBuilder struct {
+	writer http.ResponseWriter
+}
+
+func (b *CreateBeer400ResponseBuilder) Build() error {
+	b.writer.WriteHeader(http.StatusBadRequest)
+	return nil
+}
+
+func (l *CreateBeerResponseBuilder) Conflict() *CreateBeer409ResponseBuilder {
+	return &CreateBeer409ResponseBuilder{
+		writer: l.writer,
+	}
+}
+
+type CreateBeer409ResponseBuilder struct {
+	writer http.ResponseWriter
+}
+
+func (b *CreateBeer409ResponseBuilder) Build() error {
+	b.writer.WriteHeader(http.StatusConflict)
+	return nil
+}
+
+func (l *CreateBeerResponseBuilder) Created() *CreateBeer201ResponseBuilder {
+	return &CreateBeer201ResponseBuilder{
+		writer: l.writer,
+	}
+}
+
+type CreateBeer201ResponseBuilder struct {
+	writer http.ResponseWriter
+}
+
+func (b *CreateBeer201ResponseBuilder) Build() error {
+	b.writer.WriteHeader(http.StatusCreated)
+	return nil
 }
 
 func (l *CreateBeerResponseBuilder) NotImplemented() *CreateBeer501ResponseBuilder {
@@ -81,8 +156,68 @@ func (b *CreateBeer501ResponseBuilder) Build() error {
 	return nil
 }
 
+func (l *CreateBeerResponseBuilder) UnsupportedMediaType() *CreateBeer415ResponseBuilder {
+	return &CreateBeer415ResponseBuilder{
+		writer: l.writer,
+	}
+}
+
+type CreateBeer415ResponseBuilder struct {
+	writer http.ResponseWriter
+}
+
+func (b *CreateBeer415ResponseBuilder) Build() error {
+	b.writer.WriteHeader(http.StatusUnsupportedMediaType)
+	return nil
+}
+
 type DeleteBeerResponseBuilder struct {
 	writer http.ResponseWriter
+}
+
+func (l *DeleteBeerResponseBuilder) Conflict() *DeleteBeer409ResponseBuilder {
+	return &DeleteBeer409ResponseBuilder{
+		writer: l.writer,
+	}
+}
+
+type DeleteBeer409ResponseBuilder struct {
+	writer http.ResponseWriter
+}
+
+func (b *DeleteBeer409ResponseBuilder) Build() error {
+	b.writer.WriteHeader(http.StatusConflict)
+	return nil
+}
+
+func (l *DeleteBeerResponseBuilder) NoContent() *DeleteBeer204ResponseBuilder {
+	return &DeleteBeer204ResponseBuilder{
+		writer: l.writer,
+	}
+}
+
+type DeleteBeer204ResponseBuilder struct {
+	writer http.ResponseWriter
+}
+
+func (b *DeleteBeer204ResponseBuilder) Build() error {
+	b.writer.WriteHeader(http.StatusNoContent)
+	return nil
+}
+
+func (l *DeleteBeerResponseBuilder) NotFound() *DeleteBeer404ResponseBuilder {
+	return &DeleteBeer404ResponseBuilder{
+		writer: l.writer,
+	}
+}
+
+type DeleteBeer404ResponseBuilder struct {
+	writer http.ResponseWriter
+}
+
+func (b *DeleteBeer404ResponseBuilder) Build() error {
+	b.writer.WriteHeader(http.StatusNotFound)
+	return nil
 }
 
 func (l *DeleteBeerResponseBuilder) NotImplemented() *DeleteBeer501ResponseBuilder {
@@ -104,6 +239,21 @@ type GetBeerResponseBuilder struct {
 	writer http.ResponseWriter
 }
 
+func (l *GetBeerResponseBuilder) NotFound() *GetBeer404ResponseBuilder {
+	return &GetBeer404ResponseBuilder{
+		writer: l.writer,
+	}
+}
+
+type GetBeer404ResponseBuilder struct {
+	writer http.ResponseWriter
+}
+
+func (b *GetBeer404ResponseBuilder) Build() error {
+	b.writer.WriteHeader(http.StatusNotFound)
+	return nil
+}
+
 func (l *GetBeerResponseBuilder) NotImplemented() *GetBeer501ResponseBuilder {
 	return &GetBeer501ResponseBuilder{
 		writer: l.writer,
@@ -119,8 +269,68 @@ func (b *GetBeer501ResponseBuilder) Build() error {
 	return nil
 }
 
+func (l *GetBeerResponseBuilder) OK() *GetBeer200ResponseBuilder {
+	return &GetBeer200ResponseBuilder{
+		writer: l.writer,
+	}
+}
+
+type GetBeer200ResponseBuilder struct {
+	writer http.ResponseWriter
+}
+
+func (b *GetBeer200ResponseBuilder) Build() error {
+	b.writer.WriteHeader(http.StatusOK)
+	return nil
+}
+
 type UpdateBeerResponseBuilder struct {
 	writer http.ResponseWriter
+}
+
+func (l *UpdateBeerResponseBuilder) BadRequest() *UpdateBeer400ResponseBuilder {
+	return &UpdateBeer400ResponseBuilder{
+		writer: l.writer,
+	}
+}
+
+type UpdateBeer400ResponseBuilder struct {
+	writer http.ResponseWriter
+}
+
+func (b *UpdateBeer400ResponseBuilder) Build() error {
+	b.writer.WriteHeader(http.StatusBadRequest)
+	return nil
+}
+
+func (l *UpdateBeerResponseBuilder) Conflict() *UpdateBeer409ResponseBuilder {
+	return &UpdateBeer409ResponseBuilder{
+		writer: l.writer,
+	}
+}
+
+type UpdateBeer409ResponseBuilder struct {
+	writer http.ResponseWriter
+}
+
+func (b *UpdateBeer409ResponseBuilder) Build() error {
+	b.writer.WriteHeader(http.StatusConflict)
+	return nil
+}
+
+func (l *UpdateBeerResponseBuilder) NotFound() *UpdateBeer404ResponseBuilder {
+	return &UpdateBeer404ResponseBuilder{
+		writer: l.writer,
+	}
+}
+
+type UpdateBeer404ResponseBuilder struct {
+	writer http.ResponseWriter
+}
+
+func (b *UpdateBeer404ResponseBuilder) Build() error {
+	b.writer.WriteHeader(http.StatusNotFound)
+	return nil
 }
 
 func (l *UpdateBeerResponseBuilder) NotImplemented() *UpdateBeer501ResponseBuilder {
@@ -138,8 +348,83 @@ func (b *UpdateBeer501ResponseBuilder) Build() error {
 	return nil
 }
 
+func (l *UpdateBeerResponseBuilder) OK() *UpdateBeer200ResponseBuilder {
+	return &UpdateBeer200ResponseBuilder{
+		writer: l.writer,
+	}
+}
+
+type UpdateBeer200ResponseBuilder struct {
+	writer http.ResponseWriter
+}
+
+func (b *UpdateBeer200ResponseBuilder) Build() error {
+	b.writer.WriteHeader(http.StatusOK)
+	return nil
+}
+
+func (l *UpdateBeerResponseBuilder) UnsupportedMediaType() *UpdateBeer415ResponseBuilder {
+	return &UpdateBeer415ResponseBuilder{
+		writer: l.writer,
+	}
+}
+
+type UpdateBeer415ResponseBuilder struct {
+	writer http.ResponseWriter
+}
+
+func (b *UpdateBeer415ResponseBuilder) Build() error {
+	b.writer.WriteHeader(http.StatusUnsupportedMediaType)
+	return nil
+}
+
 type ReplaceBeerResponseBuilder struct {
 	writer http.ResponseWriter
+}
+
+func (l *ReplaceBeerResponseBuilder) BadRequest() *ReplaceBeer400ResponseBuilder {
+	return &ReplaceBeer400ResponseBuilder{
+		writer: l.writer,
+	}
+}
+
+type ReplaceBeer400ResponseBuilder struct {
+	writer http.ResponseWriter
+}
+
+func (b *ReplaceBeer400ResponseBuilder) Build() error {
+	b.writer.WriteHeader(http.StatusBadRequest)
+	return nil
+}
+
+func (l *ReplaceBeerResponseBuilder) Conflict() *ReplaceBeer409ResponseBuilder {
+	return &ReplaceBeer409ResponseBuilder{
+		writer: l.writer,
+	}
+}
+
+type ReplaceBeer409ResponseBuilder struct {
+	writer http.ResponseWriter
+}
+
+func (b *ReplaceBeer409ResponseBuilder) Build() error {
+	b.writer.WriteHeader(http.StatusConflict)
+	return nil
+}
+
+func (l *ReplaceBeerResponseBuilder) NotFound() *ReplaceBeer404ResponseBuilder {
+	return &ReplaceBeer404ResponseBuilder{
+		writer: l.writer,
+	}
+}
+
+type ReplaceBeer404ResponseBuilder struct {
+	writer http.ResponseWriter
+}
+
+func (b *ReplaceBeer404ResponseBuilder) Build() error {
+	b.writer.WriteHeader(http.StatusNotFound)
+	return nil
 }
 
 func (l *ReplaceBeerResponseBuilder) NotImplemented() *ReplaceBeer501ResponseBuilder {
@@ -154,6 +439,36 @@ type ReplaceBeer501ResponseBuilder struct {
 
 func (b *ReplaceBeer501ResponseBuilder) Build() error {
 	b.writer.WriteHeader(http.StatusNotImplemented)
+	return nil
+}
+
+func (l *ReplaceBeerResponseBuilder) OK() *ReplaceBeer200ResponseBuilder {
+	return &ReplaceBeer200ResponseBuilder{
+		writer: l.writer,
+	}
+}
+
+type ReplaceBeer200ResponseBuilder struct {
+	writer http.ResponseWriter
+}
+
+func (b *ReplaceBeer200ResponseBuilder) Build() error {
+	b.writer.WriteHeader(http.StatusOK)
+	return nil
+}
+
+func (l *ReplaceBeerResponseBuilder) UnsupportedMediaType() *ReplaceBeer415ResponseBuilder {
+	return &ReplaceBeer415ResponseBuilder{
+		writer: l.writer,
+	}
+}
+
+type ReplaceBeer415ResponseBuilder struct {
+	writer http.ResponseWriter
+}
+
+func (b *ReplaceBeer415ResponseBuilder) Build() error {
+	b.writer.WriteHeader(http.StatusUnsupportedMediaType)
 	return nil
 }
 

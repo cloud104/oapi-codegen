@@ -13,20 +13,23 @@ type {{.OperationId}}ResponseBuilder struct {
     writer http.ResponseWriter
 }
 
-func (l *{{.OperationId}}ResponseBuilder) NotImplemented() *{{.OperationId}}501ResponseBuilder {
-    return &{{.OperationId}}501ResponseBuilder{
+{{$opid := .OperationId -}}
+{{ range getResponses . }}
+func (l *{{$opid}}ResponseBuilder) {{ .Name }}() *{{ printf "%s%d" $opid .Code }}ResponseBuilder {
+    return &{{ printf "%s%d" $opid .Code }}ResponseBuilder{
         writer:  l.writer,
     }
 }
 
-type {{.OperationId}}501ResponseBuilder struct {
+type {{ printf "%s%d" $opid .Code }}ResponseBuilder struct {
     writer  http.ResponseWriter
 }
 
-func (b *{{.OperationId}}501ResponseBuilder) Build() error {
-    b.writer.WriteHeader(http.StatusNotImplemented)
+func (b *{{ printf "%s%d" $opid .Code }}ResponseBuilder) Build() error {
+    b.writer.WriteHeader({{ .GoName }})
     return nil
 }
+{{ end }}
 {{end}}{{end}}
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
