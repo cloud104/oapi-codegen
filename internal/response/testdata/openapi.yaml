@@ -1,0 +1,80 @@
+openapi: "3.2.1"
+info:
+  title: Response Test
+  version: 1.0.0
+
+paths:
+  /users:
+    get:
+      operationId: listUsers
+      responses:
+        "200":
+          description: Users retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+
+        "404":
+          description: Users not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+
+  /users/{id}:
+    get:
+      operationId: getUser
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: User retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+        "201":
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+
+    Error:
+      type: object
+      properties:
+        message:
+          type: string

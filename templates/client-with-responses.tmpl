@@ -27,7 +27,7 @@ func WithBaseURL(baseURL string) ClientOption {
 	}
 }
 
-{{ $exportedClientTypeName := pascalCaseWithInitialisms opts.OutputOptions.ClientTypeName -}}
+{{ $exportedClientTypeName := goPascalCase opts.OutputOptions.ClientTypeName -}}
 // {{ $exportedClientTypeName }}Interface is the interface specification for the client with responses above.
 type {{ $exportedClientTypeName }}Interface interface {
 {{range . -}}
@@ -80,7 +80,7 @@ type {{genResponseTypeName $opid | ucFirst}} struct {
 
 {{ if not opts.OutputOptions.SkipResponseBodyGetters }}
 {{- range groupResponses $responseTypeDefinitions}}
-  // {{.Method}} checks if the HTTP response status code is {{ .ResponseCodes.String }}, and if so, returns the {{.Type}}.
+  // {{.Method}} checks if the HTTP response status code is {{ .StatusCodes.String }}, and if so, returns the {{.Type}}.
   func (r {{genResponseTypeName $opid | ucFirst}}) {{.Method}}() (*{{.Type}}, error) {
     {{- range .Fields }}
     if r.{{ . }} != nil {
@@ -91,7 +91,7 @@ type {{genResponseTypeName $opid | ucFirst}} struct {
         return nil, fmt.Errorf("missing HTTP response")
     }
     switch r.HTTPResponse.StatusCode {
-    case {{ .ResponseCodes | join ", " }}:
+    case {{ .StatusCodes | join ", " }}:
         return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
     default:
         return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
@@ -154,7 +154,7 @@ func (r {{genResponseTypeName $opid | ucFirst}}) ContentType() string {
 
 {{range .}}
 {{$opid := .OperationId -}}
-{{$unexportedOpid := camelCaseWithInitialisms .OperationId -}}
+{{$unexportedOpid := goCamelCase .OperationId -}}
 {{$parent := . }}
 {{$deprecationComment := .DeprecationComment -}}
 {{/* Generate client methods (with responses)*/}}
