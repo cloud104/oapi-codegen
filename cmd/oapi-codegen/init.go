@@ -4,10 +4,10 @@ import (
 	"cmp"
 	"slices"
 	"strings"
-	"github.com/samber/lo"
 
 	sprig "github.com/Masterminds/sprig/v3"
 	"github.com/oapi-codegen/oapi-codegen/v2/pkg/codegen"
+	"github.com/samber/lo"
 
 	"github.com/cloud104/oapi-codegen/internal/codegenstate"
 	"github.com/cloud104/oapi-codegen/internal/naming"
@@ -59,6 +59,7 @@ type Response struct {
 	Code   int
 	Name   string
 	GoName string
+	Bodies []*response.ResponseGroup
 }
 
 func getResponses(op codegen.OperationDefinition) []*Response {
@@ -67,31 +68,31 @@ func getResponses(op codegen.OperationDefinition) []*Response {
 		panic(err)
 	}
 
-	var definitionMap = lo.GroupBy(definitions, func(def codegen.ResponseTypeDefinition) string {
+	definitionMap := lo.GroupBy(definitions, func(def codegen.ResponseTypeDefinition) string {
 		return def.ResponseName
 	})
 
 	responseMap := make(map[string]*Response)
+
 	for name, typeDefs := range definitionMap {
 		status, ok := httpStatuses[name]
 		if !ok {
 			continue
 		}
 
-		responses := response.GroupResponses(typeDefs)
-		_ = responses
+		status.Bodies = response.GroupResponses(typeDefs)
 
 		for _, def := range typeDefs {
 			typeName := def.TypeName
 			_ = typeName
 		}
 
-		responseMap[name] = status
+		responseMap[name] = &status
 	}
 
 	// Always include NotImplemented as a fallback response.
 	if _, exists := responseMap["501"]; !exists {
-		responseMap["501"] = httpStatuses["501"]
+		responseMap["501"] = new(httpStatuses["501"])
 	}
 
 	responses := lo.Values(responseMap)
@@ -105,7 +106,7 @@ func getResponses(op codegen.OperationDefinition) []*Response {
 
 // HTTP status codes as registered with IANA.
 // See: https://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml
-var httpStatuses = map[string]*Response{
+var httpStatuses = map[string]Response{
 	// 1xx: Informational
 	"100": {Code: 100, Name: "Continue", GoName: "http.StatusContinue"},
 	"101": {Code: 101, Name: "SwitchingProtocols", GoName: "http.StatusSwitchingProtocols"},
