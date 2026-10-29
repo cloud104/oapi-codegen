@@ -13,13 +13,15 @@ import (
 	"net/http"
 	"strings"
 
+	"go.yaml.in/yaml/v3"
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/go-openapi/runtime/server-middleware/negotiate"
 	"github.com/oapi-codegen/runtime"
 	"github.com/santhosh-tekuri/jsonschema/v6"
 	"github.com/santhosh-tekuri/jsonschema/v6/kind"
-	"golang.org/x/text/language"
-	"golang.org/x/text/message"
 )
 
 // ServerInterface represents all server handlers.
@@ -62,7 +64,7 @@ func (b *ListBeers200ResponseBuilder) Build() error {
 	contentTypes := []string{
 		"application/json",
 		"application/xml",
-		"text/yaml",
+		"application/yaml",
 	}
 
 	contentType := negotiate.ContentType(
@@ -92,7 +94,8 @@ func (b *ListBeers200ResponseBuilder) Build() error {
 		switch contentType {
 		case "application/xml":
 			body, err = xml.Marshal(b.beers)
-		case "text/yaml":
+		case "application/yaml":
+			body, err = yaml.Marshal(b.beers)
 		}
 	}
 

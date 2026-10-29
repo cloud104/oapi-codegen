@@ -57,7 +57,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BeerPage'
-            text/yaml:
+            application/yaml:
               schema:
                 type: array
                 items:
@@ -67,12 +67,6 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Beer'
-            application/yaml:
-              schema:
-                type: array
-                items:
-                  schema:
-                    type: object
 
         '202':
           description: Paginated list of beers

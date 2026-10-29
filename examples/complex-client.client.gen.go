@@ -257,8 +257,6 @@ type ListBeersResponse struct {
 	// XML200 the response for an HTTP 200 `application/xml` response
 	XML200 *[]Beer
 	// YAML200 the response for an HTTP 200 `application/yaml` response
-	YAML200 *[]interface{}
-	// YAML200 the response for an HTTP 200 `text/yaml` response
 	YAML200 *[]Beer
 	// XML202 the response for an HTTP 202 `application/xml` response
 	XML202 *BeerPage
