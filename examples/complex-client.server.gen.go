@@ -79,14 +79,16 @@ func (b *ListBeers200ResponseBuilder) Build() error {
 	}
 
 	var (
-		body []byte
-		err  error
+		body     []byte
+		err      error
+		selected bool
 	)
 
 	if b.beerPage != nil {
 		switch contentType {
 		case "application/json":
 			body, err = json.Marshal(b.beerPage)
+			selected = true
 		}
 	}
 
@@ -94,9 +96,15 @@ func (b *ListBeers200ResponseBuilder) Build() error {
 		switch contentType {
 		case "application/xml":
 			body, err = xml.Marshal(b.beers)
+			selected = true
 		case "application/yaml":
 			body, err = yaml.Marshal(b.beers)
+			selected = true
 		}
+	}
+
+	if !selected {
+		return fmt.Errorf("no response body provided for content type %s", contentType)
 	}
 
 	if err != nil {
@@ -146,15 +154,21 @@ func (b *ListBeers202ResponseBuilder) Build() error {
 	}
 
 	var (
-		body []byte
-		err  error
+		body     []byte
+		err      error
+		selected bool
 	)
 
 	if b.beerPage != nil {
 		switch contentType {
 		case "application/xml":
 			body, err = xml.Marshal(b.beerPage)
+			selected = true
 		}
+	}
+
+	if !selected {
+		return fmt.Errorf("no response body provided for content type %s", contentType)
 	}
 
 	if err != nil {
@@ -196,9 +210,14 @@ func (b *ListBeers501ResponseBuilder) Build() error {
 	}
 
 	var (
-		body []byte
-		err  error
+		body     []byte
+		err      error
+		selected bool
 	)
+
+	if !selected {
+		return fmt.Errorf("no response body provided for content type %s", contentType)
+	}
 
 	if err != nil {
 		return fmt.Errorf("marshal response: %w", err)
