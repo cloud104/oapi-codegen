@@ -31,16 +31,12 @@ type {{$name}}ResponseBuilder struct {
     body    any
 }
 
-{{if $resp.Bodies -}}
-type {{$name}}ResponseBody interface {
-    {{range $i, $body := $resp.Bodies}}{{if $i}} | {{end}}{{$body.Type}}{{end}}
+{{range $resp.Bodies}}
+func (b *{{$name}}ResponseBuilder) {{ .GoName }}({{.GoName | goCamelCase }} {{.Type}}) error {
+	b.body = {{.GoName | goCamelCase }}
+	return nil
 }
-
-func (b *{{$name}}ResponseBuilder) Body[T {{$name}}ResponseBody](body T) error {
-    b.body = body
-    return nil
-}
-{{ end }}
+{{end}}
 
 func (b *{{$name}}ResponseBuilder) Build() error {
     var contentTypes []string

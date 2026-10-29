@@ -47,12 +47,13 @@ type ListBeers200ResponseBuilder struct {
 	body    any
 }
 
-type ListBeers200ResponseBody interface {
-	BeerPage | []Beer
+func (b *ListBeers200ResponseBuilder) BeerPage(beerPage BeerPage) error {
+	b.body = beerPage
+	return nil
 }
 
-func (b *ListBeers200ResponseBuilder) Body[T ListBeers200ResponseBody](body T) error {
-	b.body = body
+func (b *ListBeers200ResponseBuilder) Beers(beers []Beer) error {
+	b.body = beers
 	return nil
 }
 
@@ -128,12 +129,8 @@ type ListBeers202ResponseBuilder struct {
 	body    any
 }
 
-type ListBeers202ResponseBody interface {
-	BeerPage
-}
-
-func (b *ListBeers202ResponseBuilder) Body[T ListBeers202ResponseBody](body T) error {
-	b.body = body
+func (b *ListBeers202ResponseBuilder) BeerPage(beerPage BeerPage) error {
+	b.body = beerPage
 	return nil
 }
 
