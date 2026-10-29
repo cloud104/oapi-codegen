@@ -5,6 +5,8 @@ package examples
 
 import (
 	"context"
+	"encoding/json"
+	"encoding/xml"
 	"errors"
 	"fmt"
 	"io"
@@ -78,9 +80,50 @@ func (b *ListBeers200ResponseBuilder) Build() error {
 		err  error
 	)
 
+	selected := false
+
+	if !selected && b.beerPage != nil &&
+		(false || contentType == "application/json") {
+		selected = true
+
+		switch contentType {
+		case "application/json":
+			body, err = json.Marshal(b.beerPage)
+
+		case "application/xml":
+			body, err = xml.Marshal(b.beerPage)
+
+		default:
+			return fmt.Errorf("unsupported content type: %s", contentType)
+		}
+	}
+
+	if !selected && b.beers != nil &&
+		(false || contentType == "application/xml") {
+		selected = true
+
+		switch contentType {
+		case "application/json":
+			body, err = json.Marshal(b.beers)
+
+		case "application/xml":
+			body, err = xml.Marshal(b.beers)
+
+		default:
+			return fmt.Errorf("unsupported content type: %s", contentType)
+		}
+	}
+
+	if !selected {
+		return fmt.Errorf("no response body provided for content type %s", contentType)
+	}
+
+	if err != nil {
+		return fmt.Errorf("marshal response: %w", err)
+	}
+
 	b.writer.Header().Set("Content-Type", contentType)
 	b.writer.Header().Add("Vary", "Accept")
-
 	b.writer.WriteHeader(http.StatusOK)
 
 	_, err = b.writer.Write(body)
@@ -126,9 +169,34 @@ func (b *ListBeers202ResponseBuilder) Build() error {
 		err  error
 	)
 
+	selected := false
+
+	if !selected && b.beerPage != nil &&
+		(false || contentType == "application/xml") {
+		selected = true
+
+		switch contentType {
+		case "application/json":
+			body, err = json.Marshal(b.beerPage)
+
+		case "application/xml":
+			body, err = xml.Marshal(b.beerPage)
+
+		default:
+			return fmt.Errorf("unsupported content type: %s", contentType)
+		}
+	}
+
+	if !selected {
+		return fmt.Errorf("no response body provided for content type %s", contentType)
+	}
+
+	if err != nil {
+		return fmt.Errorf("marshal response: %w", err)
+	}
+
 	b.writer.Header().Set("Content-Type", contentType)
 	b.writer.Header().Add("Vary", "Accept")
-
 	b.writer.WriteHeader(http.StatusAccepted)
 
 	_, err = b.writer.Write(body)
@@ -166,9 +234,18 @@ func (b *ListBeers501ResponseBuilder) Build() error {
 		err  error
 	)
 
+	selected := false
+
+	if !selected {
+		return fmt.Errorf("no response body provided for content type %s", contentType)
+	}
+
+	if err != nil {
+		return fmt.Errorf("marshal response: %w", err)
+	}
+
 	b.writer.Header().Set("Content-Type", contentType)
 	b.writer.Header().Add("Vary", "Accept")
-
 	b.writer.WriteHeader(http.StatusNotImplemented)
 
 	_, err = b.writer.Write(body)
