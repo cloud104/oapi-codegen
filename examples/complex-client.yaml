@@ -58,9 +58,16 @@ paths:
               schema:
                 $ref: '#/components/schemas/BeerPage'
             application/xml:
-              type: array
-              items:
-                $ref: '#/components/schemas/Beer'
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Beer'
+            application/yaml:
+              schema:
+                type: array
+                items:
+                  schema:
+                    type: object
 
         '202':
           description: Paginated list of beers
@@ -100,176 +107,6 @@ paths:
             application/xml:
               schema:
                 $ref: '#/components/schemas/BeerPage'
-
-    post:
-      summary: Create a new beer
-      operationId: createBeer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/BeerCreate'
-          text/x-json:
-            schema:
-              $ref: '#/components/schemas/BeerCreate'
-          text/plain:
-            schema:
-              type: string
-              example: "Midnight Hops,Imperial IPA,8.5,70,Northern Trail Brewing"
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/BeerCreate'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/BeerCreate'
-
-      responses:
-        '201':
-          description: Beer created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Beer'
-            text/x-json:
-              schema:
-                $ref: '#/components/schemas/Beer'
-            text/plain:
-              schema:
-                type: string
-            application/x-www-form-urlencoded:
-              schema:
-                $ref: '#/components/schemas/BeerCreate'
-            multipart/form-data:
-              schema:
-                $ref: '#/components/schemas/BeerCreate'
-
-        '400':
-          $ref: '#/components/responses/BadRequest'
-
-        '409':
-          $ref: '#/components/responses/Conflict'
-
-        '415':
-          $ref: '#/components/responses/UnsupportedMediaType'
-
-  /beers/{beerId}:
-    parameters:
-      - name: beerId
-        in: path
-        required: true
-        schema:
-          type: integer
-          example: 7
-
-    get:
-      summary: Get a beer by ID
-      operationId: getBeer
-      responses:
-        '200':
-          description: Beer found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  id:
-                    type: integer
-                    example: 7
-                  name:
-                    type: string
-                    example: "IPA"
-                  style:
-                    type: string
-                    example: "India Pale Ale"
-                  abv:
-                    type: number
-                    format: float
-                    example: 6.5
-                required:
-                  - id
-                  - name
-
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-    put:
-      summary: Replace a beer
-      operationId: replaceBeer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/BeerReplace'
-      responses:
-        '200':
-          description: Beer replaced
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Beer'
-
-        '400':
-          $ref: '#/components/responses/BadRequest'
-
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-        '409':
-          $ref: '#/components/responses/Conflict'
-
-        '415':
-          $ref: '#/components/responses/UnsupportedMediaType'
-
-    patch:
-      summary: Partially update a beer
-      operationId: updateBeer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/BeerUpdate'
-      responses:
-        '200':
-          description: Beer updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Beer'
-
-        '400':
-          $ref: '#/components/responses/BadRequest'
-
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-        '409':
-          $ref: '#/components/responses/Conflict'
-
-        '415':
-          $ref: '#/components/responses/UnsupportedMediaType'
-
-    delete:
-      summary: Delete a beer
-      operationId: deleteBeer
-      responses:
-        '204':
-          description: Beer deleted
-
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-        '409':
-          $ref: '#/components/responses/Conflict'
-
-        default:
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                type: object
 
 components:
   responses:

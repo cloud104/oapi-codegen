@@ -88,6 +88,7 @@ func TestGenerate(t *testing.T) {
 						PackageName: "examples",
 						Generate:    output.options,
 						OutputOptions: codegen.OutputOptions{
+							//SkipFmt: true,
 							UserTemplates: map[string]string{
 								"chi/chi-handler.tmpl":       "../../templates/chi-handler.tmpl",
 								"chi/chi-interface.tmpl":     "../../templates/chi-interface.tmpl",
@@ -95,8 +96,8 @@ func TestGenerate(t *testing.T) {
 								"client.tmpl":                "../../templates/client.tmpl",
 								"client-with-responses.tmpl": "../../templates/client-with-responses.tmpl",
 							},
-							NameNormalizer:        "ToCamelCaseWithInitialisms",
 							AdditionalInitialisms: []string{"ID", "IBU"},
+							NameNormalizer:        "ToCamelCaseWithInitialisms",
 						},
 					})
 

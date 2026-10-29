@@ -14,7 +14,6 @@ import (
 	"github.com/cloud104/oapi-codegen/internal/request"
 	"github.com/cloud104/oapi-codegen/internal/response"
 	"github.com/cloud104/oapi-codegen/internal/security"
-	"regexp"
 )
 
 func init() {
@@ -56,11 +55,6 @@ func init() {
 	codegen.TemplateFunctions["apiKeyAuthFromList"] = security.APIKeyForOperations
 }
 
-var (
-	structRE = regexp.MustCompile(`(?s)^\s*struct\s*\{.*\}\s*$`)
-	mapRE    = regexp.MustCompile(`^\s*map\s*\[.*\].*$`)
-)
-
 type Response struct {
 	Code   int
 	Name   string
@@ -87,7 +81,17 @@ func getResponses(op codegen.OperationDefinition) []*Response {
 		responses := response.GroupResponses(typeDefs)
 		_ = responses
 
+		for _, def := range typeDefs {
+			typeName := def.TypeName
+			_ = typeName
+		}
+
 		responseMap[name] = status
+	}
+
+	// Always include NotImplemented as a fallback response.
+	if _, exists := responseMap["501"]; !exists {
+		responseMap["501"] = httpStatuses["501"]
 	}
 
 	responses := lo.Values(responseMap)

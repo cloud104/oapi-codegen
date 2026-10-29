@@ -13,15 +13,6 @@ type Beer struct {
 	Style   string  `json:"style"`
 }
 
-// BeerCreate defines model for BeerCreate.
-type BeerCreate struct {
-	Abv     float32 `json:"abv"`
-	Brewery *string `json:"brewery,omitempty"`
-	IBU     *int    `json:"ibu,omitempty"`
-	Name    string  `json:"name"`
-	Style   string  `json:"style"`
-}
-
 // BeerPage defines model for BeerPage.
 type BeerPage struct {
 	HasNext     *bool  `json:"hasNext,omitempty"`
@@ -33,43 +24,6 @@ type BeerPage struct {
 	TotalPages  int    `json:"totalPages"`
 }
 
-// BeerReplace defines model for BeerReplace.
-type BeerReplace struct {
-	Abv     float32 `json:"abv"`
-	Brewery *string `json:"brewery,omitempty"`
-	IBU     *int    `json:"ibu,omitempty"`
-	Name    string  `json:"name"`
-	Style   string  `json:"style"`
-}
-
-// BeerUpdate defines model for BeerUpdate.
-type BeerUpdate struct {
-	Abv     *float32 `json:"abv,omitempty"`
-	Brewery *string  `json:"brewery,omitempty"`
-	IBU     *int     `json:"ibu,omitempty"`
-	Name    *string  `json:"name,omitempty"`
-	Style   *string  `json:"style,omitempty"`
-}
-
-// Error defines model for Error.
-type Error struct {
-	Error   string `json:"error"`
-	Message string `json:"message"`
-	Status  int    `json:"status"`
-}
-
-// BadRequest defines model for BadRequest.
-type BadRequest = Error
-
-// Conflict defines model for Conflict.
-type Conflict = Error
-
-// NotFound defines model for NotFound.
-type NotFound = Error
-
-// UnsupportedMediaType defines model for UnsupportedMediaType.
-type UnsupportedMediaType = Error
-
 // ListBeersParams defines parameters for ListBeers.
 type ListBeersParams struct {
 	// Page Page number, starting at 1
@@ -78,24 +32,3 @@ type ListBeersParams struct {
 	// PageSize Number of beers per page
 	PageSize *int `form:"pageSize,omitempty" json:"pageSize,omitempty"`
 }
-
-// CreateBeerTextBody defines parameters for CreateBeer.
-type CreateBeerTextBody = string
-
-// CreateBeerJSONRequestBody defines body for CreateBeer for application/json ContentType.
-type CreateBeerJSONRequestBody = BeerCreate
-
-// CreateBeerFormdataRequestBody defines body for CreateBeer for application/x-www-form-urlencoded ContentType.
-type CreateBeerFormdataRequestBody = BeerCreate
-
-// CreateBeerMultipartRequestBody defines body for CreateBeer for multipart/form-data ContentType.
-type CreateBeerMultipartRequestBody = BeerCreate
-
-// CreateBeerTextRequestBody defines body for CreateBeer for text/plain ContentType.
-type CreateBeerTextRequestBody = CreateBeerTextBody
-
-// UpdateBeerJSONRequestBody defines body for UpdateBeer for application/json ContentType.
-type UpdateBeerJSONRequestBody = BeerUpdate
-
-// ReplaceBeerJSONRequestBody defines body for ReplaceBeer for application/json ContentType.
-type ReplaceBeerJSONRequestBody = BeerReplace

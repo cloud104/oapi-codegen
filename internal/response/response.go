@@ -2,12 +2,13 @@ package response
 
 import (
 	"cmp"
-	"regexp"
 	"slices"
 	"strings"
 
 	"github.com/jinzhu/inflection"
 	"github.com/oapi-codegen/oapi-codegen/v2/pkg/codegen"
+	"go/parser"
+	"go/ast"
 )
 
 type statusCodes []string
@@ -31,17 +32,36 @@ type ResponseGroup struct {
 	ContentTypes []string
 }
 
-var (
-	structRE = regexp.MustCompile(`(?s)^\s*struct\s*\{.*\}\s*$`)
-	mapRE    = regexp.MustCompile(`^\s*map\s*\[.*\].*$`)
-)
+func isAnonymousCompositeType(typ string) bool {
+	expr, err := parser.ParseExpr(typ)
+	if err != nil {
+		return false
+	}
 
+	// Unwrap pointers and slices/arrays.
+	for {
+		switch t := expr.(type) {
+		case *ast.StarExpr:
+			expr = t.X
+		case *ast.ArrayType:
+			expr = t.Elt
+		default:
+			switch expr.(type) {
+			case *ast.StructType, *ast.MapType, *ast.InterfaceType:
+				return true
+			default:
+				return false
+			}
+		}
+	}
+}
 func GroupResponses(defs []codegen.ResponseTypeDefinition) []*ResponseGroup {
 	byType := make(map[string]*ResponseGroup)
 
 	for _, def := range defs {
 		typ := def.Schema.TypeDecl()
-		if structRE.MatchString(typ) || mapRE.MatchString(typ) {
+
+		if isAnonymousCompositeType(typ) {
 			continue
 		}
 
