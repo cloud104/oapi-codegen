@@ -53,6 +53,8 @@ func init() {
 	codegen.TemplateFunctions["bearerAuthFromList"] = security.BearerForOperations
 	codegen.TemplateFunctions["apiKeyAuth"] = security.APIKeyForOperation
 	codegen.TemplateFunctions["apiKeyAuthFromList"] = security.APIKeyForOperations
+	codegen.TemplateFunctions["oauth2Auth"] = security.OAuth2ForOperation
+	codegen.TemplateFunctions["oauth2AuthFromList"] = security.OAuth2ForOperations
 }
 
 type Response struct {

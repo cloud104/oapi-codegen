@@ -1,6 +1,7 @@
 {{- $globalBasicAuthSchemes := basicAuthFromList . -}}
 {{- $globalBearerAuthSchemes := bearerAuthFromList . -}}
 {{- $globalApiKeyAuthSchemes := apiKeyAuthFromList . -}}
+{{- $globalOAuth2AuthSchemes := oauth2AuthFromList . -}}
 
 // RequestEditorFn is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
@@ -47,7 +48,7 @@ type rawClient struct {
 	// an Authorization: Bearer <token> header when configured.
 	{{ $name }} struct {
 		// Provider supplies bearer tokens and handles token invalidation.
-		Provider TokenProvider
+		Provider BearerTokenProvider
 	}
     {{ end }}
 
@@ -59,23 +60,31 @@ type rawClient struct {
 		// APIKey is the API key included in authenticated requests.
 		APIKey string
 	}
-	{{ end -}}
+    {{ end }}
+
+    {{ range $oauth := $globalOAuth2AuthSchemes }}
+    {{- $name := goPascalCase $oauth.Name }}
+    // {{ $name }} authenticates requests using OAuth 2.0 Password Grant.
+    {{ $name }} struct {
+        TokenSource  oauth2.TokenSource
+    }
+    {{ end }}
 }
 
 {{- if $globalBearerAuthSchemes }}
-// TokenProvider provides bearer tokens used to authenticate API requests.
+// BearerTokenProvider provides bearer tokens used to authenticate API requests.
 //
 // Implementations may cache tokens and reuse them for their validity period.
-// GetToken should return a valid token, obtaining or refreshing one when
-// necessary. InvalidateToken signals that the currently cached token should
-// no longer be used, allowing a subsequent call to GetToken to obtain a new
+// Token should return a valid token, obtaining or refreshing one when
+// necessary. Invalidate signals that the currently cached token should
+// no longer be used, allowing a subsequent call to Token to obtain a new
 // token.
-type TokenProvider interface {
-	// GetToken returns a valid bearer token for authenticating an API request.
-	GetToken(ctx context.Context) (string, error)
+type BearerTokenProvider interface {
+	// Token returns a valid bearer token for authenticating an API request.
+	Token(ctx context.Context) (string, error)
 
-	// InvalidateToken invalidates the currently cached token, if any.
-	InvalidateToken(ctx context.Context) error
+	// Invalidate invalidates the currently cached token, if any.
+	Invalidate(ctx context.Context) error
 }
 {{- end }}
 
@@ -138,7 +147,7 @@ func With{{ goPascalCase $basic.Name }}(username, password string) ClientOption 
 {{ range $bearer := $globalBearerAuthSchemes }}
 {{- $name := goPascalCase $bearer.Name -}}
 // With{{ $name }} configures bearer-token authentication using the supplied token provider.
-func With{{ $name }}(provider TokenProvider) ClientOption {
+func With{{ $name }}(provider BearerTokenProvider) ClientOption {
 	return func(c *rawClient) error {
 		c.{{ $name }}.Provider = provider
 		return nil
@@ -152,6 +161,27 @@ func With{{ $name }}(provider TokenProvider) ClientOption {
 func With{{ $name }}(apiKey string) ClientOption {
 	return func(c *rawClient) error {
 		c.{{ $name }}.APIKey = apiKey
+		return nil
+	}
+}
+{{ end }}
+
+{{ range $oauth := $globalOAuth2AuthSchemes }}
+{{- $name := goPascalCase $oauth.Name }}
+func With{{ $name }}(clientID, clientSecret, username, password string) ClientOption {
+	return func(c *rawClient) error {
+        config := &oauth2.Config{
+            ClientID:     clientID,
+            ClientSecret: clientSecret,
+            Endpoint: oauth2.Endpoint{
+                TokenURL: {{ $oauth.TokenURL | quote }},
+            },
+        }
+        token, err := config.PasswordCredentialsToken(context.TODO(), username, password)
+        if err != nil {
+            return fmt.Errorf("authenticate: %w", err)
+        }
+		c.{{ $name }}.TokenSource = config.TokenSource(context.TODO(), token)
 		return nil
 	}
 }
@@ -194,6 +224,7 @@ type rawClientInterface interface {
 {{- $basicAuthSchemes := basicAuth . -}}
 {{- $bearerAuthSchemes := bearerAuth . -}}
 {{- $apiKeyAuthSchemes := apiKeyAuth . -}}
+{{- $oauth2AuthSchemes := oauth2Auth . -}}
 
 {{ if not .HasBody }}
     {{ .GenerateFunctionComment $unexportedOpid "" false }}
@@ -209,16 +240,26 @@ type rawClientInterface interface {
             if err := c.applyEditors(ctx, req, reqEditors); err != nil {
                 return nil, fmt.Errorf("apply editors to {{ printf "%s %s" $parent.Method $parent.Path }} request: %w", err)
             }
+            {{ range $oauth2 := $oauth2AuthSchemes -}}
+                {{- $name := goPascalCase $oauth2.Name -}}
+                if source := c.{{ $name }}.TokenSource; source != nil {
+                    token, err := source.Token()
+                    if err != nil {
+                        return nil, fmt.Errorf("get OAuth2 access token for {{ printf "%s %s" $parent.Method $parent.Path }} request: %w", err)
+                    }
+                    token.SetAuthHeader(req)
+                }
+            {{ end -}}
             {{ range $basic := $basicAuthSchemes -}}
             {{- $name := goPascalCase $basic.Name -}}
-            if c.{{ $name }}.Username != "" && c.{{ $name }}.Password != "" {
-                req.SetBasicAuth(c.{{ $name }}.Username, c.{{ $name }}.Password)
+            if user, pass := c.{{ $name }}.Username, c.{{ $name }}.Password; user != "" && pass != "" {
+                req.SetBasicAuth(user, pass)
             }
             {{ end -}}
             {{ range $bearer := $bearerAuthSchemes -}}
             {{- $name := goPascalCase $bearer.Name -}}
-            if c.{{ $name }}.Provider != nil {
-                token, err := c.{{ $name }}.Provider.GetToken(ctx)
+            if provider := c.{{ $name }}.Provider; provider != nil {
+                token, err := provider.Token(ctx)
                 if err != nil {
                     return nil, fmt.Errorf("get authentication token for {{ printf "%s %s" $parent.Method $parent.Path }}: %w", err)
                 }
@@ -227,17 +268,17 @@ type rawClientInterface interface {
             {{ end -}}
             {{ range $apiKey := $apiKeyAuthSchemes -}}
             {{- $name := goPascalCase $apiKey.Name -}}
-            if c.{{ $name }}.APIKey != "" {
+            if apiKey := c.{{ $name }}.APIKey; apiKey != "" {
                 {{ if eq $apiKey.In "header" -}}
-                req.Header.Set("{{$apiKey.KeyName}}", c.{{ $name }}.APIKey)
+                req.Header.Set("{{$apiKey.KeyName}}", apiKey)
                 {{ else if eq $apiKey.In "query" -}}
                 q := req.URL.Query()
-                q.Set("{{$apiKey.KeyName}}", c.{{ $name }}.APIKey)
+                q.Set("{{$apiKey.KeyName}}", apiKey)
                 req.URL.RawQuery = q.Encode()
                 {{ else if eq $apiKey.In "cookie" -}}
                 req.AddCookie(&http.Cookie{
                     Name:  "{{$apiKey.KeyName}}",
-                    Value: c.{{ $name }}.APIKey,
+                    Value: apiKey,
                 })
                 {{ end -}}
             }
@@ -252,7 +293,7 @@ type rawClientInterface interface {
                 return resp, nil
             }
             resp.Body.Close()
-            if err := c.BearerAuth.Provider.InvalidateToken(ctx); err != nil {
+            if err := c.BearerAuth.Provider.Invalidate(ctx); err != nil {
                 return nil, fmt.Errorf("invalidate token after unauthorized {{ printf "%s %s" $parent.Method $parent.Path }} response: %w", err)
             }
         }
@@ -266,25 +307,45 @@ type rawClientInterface interface {
         if err := c.applyEditors(ctx, req, reqEditors); err != nil {
             return nil, fmt.Errorf("apply editors to {{ printf "%s %s" $parent.Method $parent.Path }} request: %w", err)
         }
+        {{ range $oauth2 := $oauth2AuthSchemes -}}
+            {{- $name := goPascalCase $oauth2.Name -}}
+            if source := c.{{ $name }}.TokenSource; source != nil {
+                token, err := source.Token()
+                if err != nil {
+                    return nil, fmt.Errorf("get OAuth2 access token for {{ printf "%s %s" $parent.Method $parent.Path }} request: %w", err)
+                }
+                token.SetAuthHeader(req)
+            }
+        {{ end -}}
         {{ range $basic := $basicAuthSchemes -}}
         {{- $name := goPascalCase $basic.Name -}}
-        if c.{{ $name }}.Username != "" && c.{{ $name }}.Password != "" {
-            req.SetBasicAuth(c.{{ $name }}.Username, c.{{ $name }}.Password)
+        if user, pass := c.{{ $name }}.Username, c.{{ $name }}.Password; user != "" && pass != "" {
+            req.SetBasicAuth(user, pass)
+        }
+        {{ end -}}
+        {{ range $bearer := $bearerAuthSchemes -}}
+        {{- $name := goPascalCase $bearer.Name -}}
+        if provider := c.{{ $name }}.Provider; provider != nil {
+            token, err := provider.Token(ctx)
+            if err != nil {
+                return nil, fmt.Errorf("get authentication token for {{ printf "%s %s" $parent.Method $parent.Path }}: %w", err)
+            }
+            req.Header.Set("Authorization", "Bearer "+token)
         }
         {{ end -}}
         {{ range $apiKey := $apiKeyAuthSchemes -}}
         {{- $name := goPascalCase $apiKey.Name -}}
-        if c.{{ $name }}.APIKey != "" {
+        if apiKey := c.{{ $name }}.APIKey; apiKey != "" {
             {{ if eq $apiKey.In "header" -}}
-            req.Header.Set("{{$apiKey.KeyName}}", c.{{ $name }}.APIKey)
+            req.Header.Set("{{$apiKey.KeyName}}", apiKey)
             {{ else if eq $apiKey.In "query" -}}
             q := req.URL.Query()
-            q.Set("{{$apiKey.KeyName}}", c.{{ $name }}.APIKey)
+            q.Set("{{$apiKey.KeyName}}", apiKey)
             req.URL.RawQuery = q.Encode()
             {{ else if eq $apiKey.In "cookie" -}}
             req.AddCookie(&http.Cookie{
                 Name:  "{{$apiKey.KeyName}}",
-                Value: c.{{ $name }}.APIKey,
+                Value: apiKey,
             })
             {{ end -}}
         }
@@ -306,13 +367,60 @@ type rawClientInterface interface {
 {{end -}}func (c *rawClient) {{$unexportedOpid}}{{.Suffix}}(ctx context.Context{{genParamArgs $pathParams}}{{if $hasParams}}, params *{{$opid}}Params{{end}}, body {{$opid}}{{.NameTag}}RequestBody, reqEditors... RequestEditorFn) (*http.Response, error) {
     req, err := new{{$opid}}Request{{.Suffix}}(c.Server{{genParamNames $pathParams}}{{if $hasParams}}, params{{end}}, body)
     if err != nil {
-        return nil, err
+        return nil, fmt.Errorf("create {{ printf "%s %s" $parent.Method $parent.Path }} request: %w", err)
     }
     req = req.WithContext(ctx)
     if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-        return nil, err
+        return nil, fmt.Errorf("apply editors to {{ printf "%s %s" $parent.Method $parent.Path }} request: %w", err)
     }
-    return c.Client.Do(req)
+    {{ range $oauth2 := $oauth2AuthSchemes -}}
+        {{- $name := goPascalCase $oauth2.Name -}}
+        if source := c.{{ $name }}.TokenSource; source != nil {
+            token, err := source.Token()
+            if err != nil {
+                return nil, fmt.Errorf("get OAuth2 access token for {{ printf "%s %s" $parent.Method $parent.Path }} request: %w", err)
+            }
+            token.SetAuthHeader(req)
+        }
+    {{ end -}}
+    {{ range $basic := $basicAuthSchemes -}}
+    {{- $name := goPascalCase $basic.Name -}}
+    if user, pass := c.{{ $name }}.Username, c.{{ $name }}.Password; user != "" && pass != "" {
+        req.SetBasicAuth(user, pass)
+    }
+    {{ end -}}
+    {{ range $bearer := $bearerAuthSchemes -}}
+    {{- $name := goPascalCase $bearer.Name -}}
+    if provider := c.{{ $name }}.Provider; provider != nil {
+        token, err := provider.Token(ctx)
+        if err != nil {
+            return nil, fmt.Errorf("get authentication token for {{ printf "%s %s" $parent.Method $parent.Path }}: %w", err)
+        }
+        req.Header.Set("Authorization", "Bearer "+token)
+    }
+    {{ end -}}
+    {{ range $apiKey := $apiKeyAuthSchemes -}}
+    {{- $name := goPascalCase $apiKey.Name -}}
+    if apiKey := c.{{ $name }}.APIKey; apiKey != "" {
+        {{ if eq $apiKey.In "header" -}}
+        req.Header.Set("{{$apiKey.KeyName}}", apiKey)
+        {{ else if eq $apiKey.In "query" -}}
+        q := req.URL.Query()
+        q.Set("{{$apiKey.KeyName}}", apiKey)
+        req.URL.RawQuery = q.Encode()
+        {{ else if eq $apiKey.In "cookie" -}}
+        req.AddCookie(&http.Cookie{
+            Name:  "{{$apiKey.KeyName}}",
+            Value: apiKey,
+        })
+        {{ end -}}
+    }
+    {{ end -}}
+    resp, err := c.Client.Do(req)
+    if err != nil {
+        return nil, fmt.Errorf("perform {{ printf "%s %s" $parent.Method $parent.Path }} request: %w", err)
+    }
+    return resp, nil
 }
 {{end -}}{{/* if .IsSupported */}}
 {{end}}{{/* range .Bodies */}}
