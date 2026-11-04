@@ -2,13 +2,13 @@ package response
 
 import (
 	"cmp"
+	"go/ast"
+	"go/parser"
 	"slices"
 	"strings"
 
 	"github.com/jinzhu/inflection"
 	"github.com/oapi-codegen/oapi-codegen/v2/pkg/codegen"
-	"go/parser"
-	"go/ast"
 )
 
 type statusCodes []string
@@ -55,6 +55,31 @@ func isAnonymousCompositeType(typ string) bool {
 		}
 	}
 }
+
+func baseTypeName(typ string) string {
+	expr, err := parser.ParseExpr(typ)
+	if err != nil {
+		return typ
+	}
+
+	for {
+		switch t := expr.(type) {
+		case *ast.StarExpr:
+			expr = t.X
+		case *ast.ArrayType:
+			expr = t.Elt
+		case *ast.ParenExpr:
+			expr = t.X
+		case *ast.SelectorExpr:
+			return t.Sel.Name
+		case *ast.Ident:
+			return t.Name
+		default:
+			return typ
+		}
+	}
+}
+
 func GroupResponses(defs []codegen.ResponseTypeDefinition) []*ResponseGroup {
 	byType := make(map[string]*ResponseGroup)
 
@@ -67,9 +92,10 @@ func GroupResponses(defs []codegen.ResponseTypeDefinition) []*ResponseGroup {
 
 		group := byType[typ]
 		if group == nil {
-			name := typ
+			name := baseTypeName(typ)
 			if def.Schema.ArrayType != nil {
-				name = inflection.Plural(def.Schema.ArrayType.TypeDecl())
+				singular := baseTypeName(def.Schema.ArrayType.TypeDecl())
+				name = inflection.Plural(singular)
 			}
 
 			group = &ResponseGroup{
