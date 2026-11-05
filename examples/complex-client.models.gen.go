@@ -8,7 +8,7 @@ type Beer struct {
 	Abv     float32 `json:"abv"`
 	Brewery *string `json:"brewery,omitempty"`
 	IBU     *int    `json:"ibu,omitempty"`
-	ID      *int    `json:"id,omitempty"`
+	ID      int     `json:"id"`
 	Name    string  `json:"name"`
 	Style   string  `json:"style"`
 }
@@ -18,15 +18,9 @@ func (v *Beer) HasReadOnlyChanges(patch map[string]any) bool {
 		return len(patch) > 0
 	}
 	if value, exists := patch["id"]; exists {
-		if value == nil {
-			if v.ID != nil {
-				return true
-			}
-		} else {
-			number, ok := value.(float64)
-			if !ok || v.ID == nil || int(number) != *v.ID {
-				return true
-			}
+		number, ok := value.(float64)
+		if !ok || int(number) != v.ID {
+			return true
 		}
 	}
 	return false
@@ -34,13 +28,13 @@ func (v *Beer) HasReadOnlyChanges(patch map[string]any) bool {
 
 // BeerPage defines model for BeerPage.
 type BeerPage struct {
-	HasNext     *bool   `json:"hasNext,omitempty"`
-	HasPrevious *bool   `json:"hasPrevious,omitempty"`
-	Items       *[]Beer `json:"items,omitempty"`
-	Page        int     `json:"page"`
-	PageSize    int     `json:"pageSize"`
-	TotalItems  *int    `json:"totalItems,omitempty"`
-	TotalPages  *int    `json:"totalPages,omitempty"`
+	HasNext     *bool  `json:"hasNext,omitempty"`
+	HasPrevious *bool  `json:"hasPrevious,omitempty"`
+	Items       []Beer `json:"items"`
+	Page        int    `json:"page"`
+	PageSize    int    `json:"pageSize"`
+	TotalItems  int    `json:"totalItems"`
+	TotalPages  int    `json:"totalPages"`
 }
 
 func (v *BeerPage) HasReadOnlyChanges(patch map[string]any) bool {
@@ -76,27 +70,15 @@ func (v *BeerPage) HasReadOnlyChanges(patch map[string]any) bool {
 		return true
 	}
 	if value, exists := patch["totalItems"]; exists {
-		if value == nil {
-			if v.TotalItems != nil {
-				return true
-			}
-		} else {
-			number, ok := value.(float64)
-			if !ok || v.TotalItems == nil || int(number) != *v.TotalItems {
-				return true
-			}
+		number, ok := value.(float64)
+		if !ok || int(number) != v.TotalItems {
+			return true
 		}
 	}
 	if value, exists := patch["totalPages"]; exists {
-		if value == nil {
-			if v.TotalPages != nil {
-				return true
-			}
-		} else {
-			number, ok := value.(float64)
-			if !ok || v.TotalPages == nil || int(number) != *v.TotalPages {
-				return true
-			}
+		number, ok := value.(float64)
+		if !ok || int(number) != v.TotalPages {
+			return true
 		}
 	}
 	return false

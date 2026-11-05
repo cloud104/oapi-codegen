@@ -87,6 +87,9 @@ func TestGenerate(t *testing.T) {
 					result, err := codegen.Generate(spec, codegen.Configuration{
 						PackageName: "examples",
 						Generate:    output.options,
+						Compatibility: codegen.CompatibilityOptions{
+							DisableRequiredReadOnlyAsPointer: true,
+						},
 						OutputOptions: codegen.OutputOptions{
 							//SkipFmt: true,
 							UserTemplates: map[string]string{
