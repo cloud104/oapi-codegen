@@ -3,116 +3,159 @@
 {{.DocComment}}
 type {{.TypeName}} {{if .IsAlias}}={{end}} {{.Schema.TypeDecl}}
 {{if and (not .IsAlias) .Schema.Properties}}
-func (v *{{.TypeName}}) HasReadOnlyChanges(patch map[string]any) bool {
+func (v *{{.TypeName}}) ReadOnlyChanges(patch map[string]any) []string {
+	var changes []string
 	{{- range $property := .Schema.Properties}}
 	{{- $type := $property.GoTypeDef}}
 	{{- $field := $property.GoFieldName}}
 	{{- $json := $property.JsonFieldName}}
 	{{- $base := trimPrefix "*" $type}}
-	{{- if $property.ReadOnly}}
+	{{- $objectModel := ""}}
+	{{- $arrayModel := ""}}
+	{{- $arrayPointer := false}}
+	{{- range $model := $types}}
+	{{- if and (not $model.IsAlias) $model.Schema.Properties}}
+	{{- if eq $base $model.TypeName}}
+	{{- $objectModel = $model.TypeName}}
+	{{- end}}
+	{{- if eq $type (printf "[]%s" $model.TypeName)}}
+	{{- $arrayModel = $model.TypeName}}
+	{{- end}}
+	{{- if eq $type (printf "[]*%s" $model.TypeName)}}
+	{{- $arrayModel = $model.TypeName}}
+	{{- $arrayPointer = true}}
+	{{- end}}
+	{{- end}}
+	{{- end}}
+	{{- if $arrayModel}}
+	if value, exists := patch["{{$json}}"]; exists {
+		items, ok := value.([]any)
+		if !ok || len(items) != len(v.{{$field}}) {
+			changes = append(changes, "{{$json}}")
+		} else {
+			for i, item := range items {
+				nested, ok := item.(map[string]any)
+				if !ok {
+					changes = append(changes, fmt.Sprintf("{{$json}}[%d]", i))
+					continue
+				}
+				{{- if $arrayPointer}}
+				if v.{{$field}}[i] == nil {
+					changes = append(changes, fmt.Sprintf("{{$json}}[%d]", i))
+					continue
+				}
+				{{- end}}
+				for _, field := range v.{{$field}}[i].ReadOnlyChanges(nested) {
+					changes = append(changes, fmt.Sprintf("{{$json}}[%d].%s", i, field))
+				}
+			}
+		}
+	}
+	{{- else if $objectModel}}
+	if value, exists := patch["{{$json}}"]; exists {
+		if value == nil {
+			{{- if eq $type (printf "*%s" $objectModel)}}
+			if v.{{$field}} != nil {
+				changes = append(changes, "{{$json}}")
+			}
+			{{- else}}
+			changes = append(changes, "{{$json}}")
+			{{- end}}
+		} else {
+			nested, ok := value.(map[string]any)
+			if !ok {
+				changes = append(changes, "{{$json}}")
+			} else {
+				{{- if eq $type (printf "*%s" $objectModel)}}
+				if v.{{$field}} == nil {
+					changes = append(changes, "{{$json}}")
+				} else {
+					for _, field := range v.{{$field}}.ReadOnlyChanges(nested) {
+						changes = append(changes, "{{$json}}."+field)
+					}
+				}
+				{{- else}}
+				for _, field := range (&v.{{$field}}).ReadOnlyChanges(nested) {
+					changes = append(changes, "{{$json}}."+field)
+				}
+				{{- end}}
+			}
+		}
+	}
+	{{- else if $property.ReadOnly}}
 	if value, exists := patch["{{$json}}"]; exists {
 		{{- if or (eq $type "*int") (eq $type "*int32") (eq $type "*int64")}}
 		if value == nil {
 			if v.{{$field}} != nil {
-				return true
+				changes = append(changes, "{{$json}}")
 			}
 		} else {
 			number, ok := value.(float64)
 			if !ok || v.{{$field}} == nil || number != float64(*v.{{$field}}) {
-				return true
+				changes = append(changes, "{{$json}}")
 			}
 		}
 		{{- else if or (eq $type "int") (eq $type "int32") (eq $type "int64")}}
 		number, ok := value.(float64)
 		if !ok || number != float64(v.{{$field}}) {
-			return true
+			changes = append(changes, "{{$json}}")
 		}
 		{{- else if or (eq $type "*float32") (eq $type "*float64")}}
 		if value == nil {
 			if v.{{$field}} != nil {
-				return true
+				changes = append(changes, "{{$json}}")
 			}
 		} else {
 			number, ok := value.(float64)
 			if !ok || v.{{$field}} == nil || {{$base}}(number) != *v.{{$field}} {
-				return true
+				changes = append(changes, "{{$json}}")
 			}
 		}
 		{{- else if or (eq $type "float32") (eq $type "float64")}}
 		number, ok := value.(float64)
 		if !ok || {{$type}}(number) != v.{{$field}} {
-			return true
+			changes = append(changes, "{{$json}}")
 		}
 		{{- else if eq $type "*string"}}
 		if value == nil {
 			if v.{{$field}} != nil {
-				return true
+				changes = append(changes, "{{$json}}")
 			}
 		} else {
 			str, ok := value.(string)
 			if !ok || v.{{$field}} == nil || str != *v.{{$field}} {
-				return true
+				changes = append(changes, "{{$json}}")
 			}
 		}
 		{{- else if eq $type "string"}}
 		str, ok := value.(string)
 		if !ok || str != v.{{$field}} {
-			return true
+			changes = append(changes, "{{$json}}")
 		}
 		{{- else if eq $type "*bool"}}
 		if value == nil {
 			if v.{{$field}} != nil {
-				return true
+				changes = append(changes, "{{$json}}")
 			}
 		} else {
 			b, ok := value.(bool)
 			if !ok || v.{{$field}} == nil || b != *v.{{$field}} {
-				return true
+				changes = append(changes, "{{$json}}")
 			}
 		}
 		{{- else if eq $type "bool"}}
 		b, ok := value.(bool)
 		if !ok || b != v.{{$field}} {
-			return true
+			changes = append(changes, "{{$json}}")
 		}
 		{{- else}}
 		_ = value
-		return true
+		changes = append(changes, "{{$json}}")
 		{{- end}}
 	}
-	{{- else}}
-	{{- range $model := $types}}
-	{{- if and (not $model.IsAlias) $model.Schema.Properties (eq $base $model.TypeName)}}
-	if value, exists := patch["{{$json}}"]; exists {
-		if value == nil {
-			{{- if eq $type (printf "*%s" $base)}}
-			if v.{{$field}} != nil {
-				return true
-			}
-			{{- else}}
-			return true
-			{{- end}}
-		} else {
-			nested, ok := value.(map[string]any)
-			if !ok {
-				return true
-			}
-			{{- if eq $type (printf "*%s" $base)}}
-			if v.{{$field}}.HasReadOnlyChanges(nested) {
-				return true
-			}
-			{{- else}}
-			if (&v.{{$field}}).HasReadOnlyChanges(nested) {
-				return true
-			}
-			{{- end}}
-		}
-	}
 	{{- end}}
 	{{- end}}
-	{{- end}}
-	{{- end}}
-	return false
+	return changes
 }
 {{end -}}
 {{end -}}
