@@ -1,4 +1,10 @@
 {{range .Types}}
 {{ .DocComment }}
 type {{.TypeName}} {{if .IsAlias }}={{end}} {{.Schema.TypeDecl}}
+
+{{if not .IsAlias}}
+func (v {{.TypeName}}) String() string {
+	return fmt.Sprintf("%+v", v)
+}
+{{end}}
 {{end}}
