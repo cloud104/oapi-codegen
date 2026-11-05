@@ -181,32 +181,26 @@ components:
 
     Beer:
       type: object
-      required:
-        - id
-        - name
-        - style
-        - abv
       properties:
         id:
           type: integer
           readOnly: true
-          example: 7
         name:
           type: string
-          example: Midnight Hops
-        style:
-          type: string
-          example: Imperial IPA
-        abv:
-          type: number
-          format: float
-          example: 8.5
-        ibu:
-          type: integer
-          example: 70
         brewery:
+          $ref: '#/components/schemas/Brewery'
+      required:
+        - id
+        - name
+
+    Brewery:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
           type: string
-          example: Northern Trail Brewing
 
     BeerCreate:
       type: object

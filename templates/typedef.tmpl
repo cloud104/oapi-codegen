@@ -8,42 +8,54 @@ func (v *{{.TypeName}}) HasReadOnlyChanges(patch map[string]any) bool {
         return len(patch) > 0
     }
 	{{- range $property := .Schema.Properties}}
-	{{- if $property.ReadOnly}}
 	{{- $type := $property.GoTypeDef}}
 	{{- $field := $property.GoFieldName}}
-    if value, exists := patch["{{$property.JsonFieldName}}"]; exists {
-		{{- if or (eq $type "*int") (eq $type "*int32") (eq $type "*int64") (eq $type "*float32") (eq $type "*float64") (eq $type "*string") (eq $type "*bool")}}
+	{{- $json := $property.JsonFieldName}}
+	{{- $ref := $property.Schema.RefType}}
+	{{- if $property.ReadOnly}}
+	if value, exists := patch["{{$json}}"]; exists {
+		{{- if or (eq $type "*int") (eq $type "*int32") (eq $type "*int64") (eq $type "*float32") (eq $type "*float64")}}
         if value == nil {
             if v.{{$field}} != nil {
                 return true
             }
         } else {
-			{{- if or (eq $type "*int") (eq $type "*int32") (eq $type "*int64") (eq $type "*float32") (eq $type "*float64")}}
             number, ok := value.(float64)
             if !ok || v.{{$field}} == nil || {{trimPrefix "*" $type}}(number) != *v.{{$field}} {
                 return true
             }
+		}
+		{{- else if or (eq $type "int") (eq $type "int32") (eq $type "int64") (eq $type "float32") (eq $type "float64")}}
+		number, ok := value.(float64)
+		if !ok || {{$type}}(number) != v.{{$field}} {
+			return true
+		}
 			{{- else if eq $type "*string"}}
+		if value == nil {
+			if v.{{$field}} != nil {
+				return true
+			}
+		} else {
             str, ok := value.(string)
             if !ok || v.{{$field}} == nil || str != *v.{{$field}} {
                 return true
+			}
+		}
+		{{- else if eq $type "string"}}
+		str, ok := value.(string)
+		if !ok || str != v.{{$field}} {
+			return true
             }
 			{{- else if eq $type "*bool"}}
+		if value == nil {
+			if v.{{$field}} != nil {
+				return true
+			}
+		} else {
             b, ok := value.(bool)
             if !ok || v.{{$field}} == nil || b != *v.{{$field}} {
                 return true
             }
-			{{- end}}
-        }
-		{{- else if or (eq $type "int") (eq $type "int32") (eq $type "int64") (eq $type "float32") (eq $type "float64")}}
-        number, ok := value.(float64)
-        if !ok || {{$type}}(number) != v.{{$field}} {
-            return true
-        }
-		{{- else if eq $type "string"}}
-        str, ok := value.(string)
-        if !ok || str != v.{{$field}} {
-            return true
         }
 		{{- else if eq $type "bool"}}
         b, ok := value.(bool)
@@ -55,6 +67,41 @@ func (v *{{.TypeName}}) HasReadOnlyChanges(patch map[string]any) bool {
         return true
 		{{- end}}
     }
+	{{- else if $ref}}
+	{{- if or (eq $type $ref) (eq $type (printf "*%s" $ref))}}
+	if value, exists := patch["{{$json}}"]; exists {
+		if value == nil {
+			{{- if eq $type (printf "*%s" $ref)}}
+			if v.{{$field}} != nil {
+				return true
+			}
+			{{- else}}
+			return true
+			{{- end}}
+		} else {
+			nested, ok := value.(map[string]any)
+			if !ok {
+				return true
+			}
+			{{- if eq $type (printf "*%s" $ref)}}
+			if v.{{$field}} == nil {
+				var zero {{$ref}}
+				if checker, ok := any(&zero).(interface{ HasReadOnlyChanges(map[string]any) bool }); !ok || checker.HasReadOnlyChanges(nested) {
+					return true
+				}
+			} else {
+				if checker, ok := any(v.{{$field}}).(interface{ HasReadOnlyChanges(map[string]any) bool }); !ok || checker.HasReadOnlyChanges(nested) {
+					return true
+				}
+			}
+			{{- else}}
+			if checker, ok := any(&v.{{$field}}).(interface{ HasReadOnlyChanges(map[string]any) bool }); !ok || checker.HasReadOnlyChanges(nested) {
+				return true
+			}
+			{{- end}}
+		}
+	}
+	{{- end}}
 	{{- end}}
 	{{- end}}
     return false

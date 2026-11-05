@@ -5,12 +5,9 @@ package examples
 
 // Beer defines model for Beer.
 type Beer struct {
-	Abv     float32 `json:"abv"`
-	Brewery *string `json:"brewery,omitempty"`
-	IBU     *int    `json:"ibu,omitempty"`
-	ID      int     `json:"id"`
-	Name    string  `json:"name"`
-	Style   string  `json:"style"`
+	Brewery *Brewery `json:"brewery,omitempty"`
+	ID      int      `json:"id"`
+	Name    string   `json:"name"`
 }
 
 func (v *Beer) HasReadOnlyChanges(patch map[string]any) bool {
@@ -79,6 +76,31 @@ func (v *BeerPage) HasReadOnlyChanges(patch map[string]any) bool {
 		number, ok := value.(float64)
 		if !ok || int(number) != v.TotalPages {
 			return true
+		}
+	}
+	return false
+}
+
+// Brewery defines model for Brewery.
+type Brewery struct {
+	ID   *int    `json:"id,omitempty"`
+	Name *string `json:"name,omitempty"`
+}
+
+func (v *Brewery) HasReadOnlyChanges(patch map[string]any) bool {
+	if v == nil {
+		return len(patch) > 0
+	}
+	if value, exists := patch["id"]; exists {
+		if value == nil {
+			if v.ID != nil {
+				return true
+			}
+		} else {
+			number, ok := value.(float64)
+			if !ok || v.ID == nil || int(number) != *v.ID {
+				return true
+			}
 		}
 	}
 	return false
