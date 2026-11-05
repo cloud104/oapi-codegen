@@ -11,12 +11,24 @@ type Beer struct {
 }
 
 func (v *Beer) HasReadOnlyChanges(patch map[string]any) bool {
-	if v == nil {
-		return len(patch) > 0
+	if value, exists := patch["brewery"]; exists {
+		if value == nil {
+			if v.Brewery != nil {
+				return true
+			}
+		} else {
+			nested, ok := value.(map[string]any)
+			if !ok {
+				return true
+			}
+			if v.Brewery.HasReadOnlyChanges(nested) {
+				return true
+			}
+		}
 	}
 	if value, exists := patch["id"]; exists {
 		number, ok := value.(float64)
-		if !ok || int(number) != v.ID {
+		if !ok || number != float64(v.ID) {
 			return true
 		}
 	}
@@ -35,9 +47,6 @@ type BeerPage struct {
 }
 
 func (v *BeerPage) HasReadOnlyChanges(patch map[string]any) bool {
-	if v == nil {
-		return len(patch) > 0
-	}
 	if value, exists := patch["hasNext"]; exists {
 		if value == nil {
 			if v.HasNext != nil {
@@ -68,13 +77,13 @@ func (v *BeerPage) HasReadOnlyChanges(patch map[string]any) bool {
 	}
 	if value, exists := patch["totalItems"]; exists {
 		number, ok := value.(float64)
-		if !ok || int(number) != v.TotalItems {
+		if !ok || number != float64(v.TotalItems) {
 			return true
 		}
 	}
 	if value, exists := patch["totalPages"]; exists {
 		number, ok := value.(float64)
-		if !ok || int(number) != v.TotalPages {
+		if !ok || number != float64(v.TotalPages) {
 			return true
 		}
 	}
@@ -88,9 +97,6 @@ type Brewery struct {
 }
 
 func (v *Brewery) HasReadOnlyChanges(patch map[string]any) bool {
-	if v == nil {
-		return len(patch) > 0
-	}
 	if value, exists := patch["id"]; exists {
 		if value == nil {
 			if v.ID != nil {
@@ -98,7 +104,7 @@ func (v *Brewery) HasReadOnlyChanges(patch map[string]any) bool {
 			}
 		} else {
 			number, ok := value.(float64)
-			if !ok || v.ID == nil || int(number) != *v.ID {
+			if !ok || v.ID == nil || number != float64(*v.ID) {
 				return true
 			}
 		}
