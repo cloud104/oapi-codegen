@@ -9,7 +9,7 @@ require (
 	github.com/getkin/kin-openapi v0.152.0
 	github.com/jinzhu/inflection v1.0.0
 	github.com/oapi-codegen/oapi-codegen/v2 v2.8.2
-	github.com/pb33f/libopenapi v0.42.0
+	github.com/pb33f/libopenapi v0.42.3
 	go.yaml.in/yaml/v3 v3.0.6
 )
 
