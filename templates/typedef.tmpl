@@ -2,9 +2,62 @@
 {{ .DocComment }}
 type {{.TypeName}} {{if .IsAlias }}={{end}} {{.Schema.TypeDecl}}
 
-{{if not .IsAlias}}
-func (v {{.TypeName}}) String() string {
-	return fmt.Sprintf("%+v", v)
+{{if and (not .IsAlias) .Schema.Properties}}
+func (v *{{.TypeName}}) HasReadOnlyChanges(patch map[string]any) bool {
+    if v == nil {
+        return len(patch) > 0
+    }
+	{{- range $property := .Schema.Properties}}
+	{{- if $property.ReadOnly}}
+	{{- $type := $property.GoTypeDef}}
+	{{- $field := $property.GoFieldName}}
+    if value, exists := patch["{{$property.JsonFieldName}}"]; exists {
+		{{- if or (eq $type "*int") (eq $type "*int32") (eq $type "*int64") (eq $type "*float32") (eq $type "*float64") (eq $type "*string") (eq $type "*bool")}}
+        if value == nil {
+            if v.{{$field}} != nil {
+                return true
+            }
+        } else {
+			{{- if or (eq $type "*int") (eq $type "*int32") (eq $type "*int64") (eq $type "*float32") (eq $type "*float64")}}
+            number, ok := value.(float64)
+            if !ok || v.{{$field}} == nil || {{trimPrefix "*" $type}}(number) != *v.{{$field}} {
+                return true
+            }
+			{{- else if eq $type "*string"}}
+            str, ok := value.(string)
+            if !ok || v.{{$field}} == nil || str != *v.{{$field}} {
+                return true
+            }
+			{{- else if eq $type "*bool"}}
+            b, ok := value.(bool)
+            if !ok || v.{{$field}} == nil || b != *v.{{$field}} {
+                return true
+            }
+			{{- end}}
+        }
+		{{- else if or (eq $type "int") (eq $type "int32") (eq $type "int64") (eq $type "float32") (eq $type "float64")}}
+        number, ok := value.(float64)
+        if !ok || {{$type}}(number) != v.{{$field}} {
+            return true
+        }
+		{{- else if eq $type "string"}}
+        str, ok := value.(string)
+        if !ok || str != v.{{$field}} {
+            return true
+        }
+		{{- else if eq $type "bool"}}
+        b, ok := value.(bool)
+        if !ok || b != v.{{$field}} {
+            return true
+        }
+		{{- else}}
+        _ = value
+        return true
+		{{- end}}
+    }
+	{{- end}}
+	{{- end}}
+    return false
 }
-{{end}}
-{{end}}
+{{end -}}
+{{end -}}

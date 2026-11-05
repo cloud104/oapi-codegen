@@ -149,6 +149,7 @@ components:
       properties:
         items:
           type: array
+          readOnly: true
           items:
             $ref: '#/components/schemas/Beer'
         page:
@@ -161,17 +162,21 @@ components:
           example: 20
         totalItems:
           type: integer
+          readOnly: true
           minimum: 0
           example: 87
         totalPages:
           type: integer
+          readOnly: true
           minimum: 0
           example: 5
         hasNext:
           type: boolean
+          readOnly: true
           example: true
         hasPrevious:
           type: boolean
+          readOnly: true
           example: false
 
     Beer:
@@ -184,6 +189,7 @@ components:
       properties:
         id:
           type: integer
+          readOnly: true
           example: 7
         name:
           type: string
@@ -253,6 +259,10 @@ components:
     BeerUpdate:
       type: object
       properties:
+        id:
+          type: integer
+          readOnly: true
+          example: 7
         name:
           type: string
           example: Midnight Hops Reserve
@@ -279,10 +289,13 @@ components:
       properties:
         status:
           type: integer
+          readOnly: true
           example: 404
         error:
           type: string
+          readOnly: true
           example: Not Found
         message:
           type: string
+          readOnly: true
           example: Beer with id 7 was not found
