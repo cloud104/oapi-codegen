@@ -304,6 +304,106 @@ func (r ListBeersResponse) GetBeerPage() (*BeerPage, error) {
 	}
 }
 
+// GetLink returns the Link response header.
+func (r ListBeersResponse) GetLink() (*string, error) {
+	var zero *string
+
+	if r.HTTPResponse == nil {
+		return zero, fmt.Errorf("missing HTTP response")
+	}
+
+	switch {
+	case r.HTTPResponse.StatusCode == 200:
+		if r.Headers200 == nil {
+			return zero, fmt.Errorf("expected response headers for status %d, but none were found", r.HTTPResponse.StatusCode)
+		}
+		return r.Headers200.Link, nil
+	case r.HTTPResponse.StatusCode == 202:
+		if r.Headers202 == nil {
+			return zero, fmt.Errorf("expected response headers for status %d, but none were found", r.HTTPResponse.StatusCode)
+		}
+		return r.Headers202.Link, nil
+	default:
+		return zero, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
+	}
+}
+
+// GetXTotalCount200 returns the XTotalCount response header.
+func (r ListBeersResponse) GetXTotalCount200() (*int, error) {
+	var zero *int
+
+	if r.HTTPResponse == nil {
+		return zero, fmt.Errorf("missing HTTP response")
+	}
+
+	switch {
+	case r.HTTPResponse.StatusCode == 200:
+		if r.Headers200 == nil {
+			return zero, fmt.Errorf("expected response headers for status %d, but none were found", r.HTTPResponse.StatusCode)
+		}
+		return r.Headers200.XTotalCount, nil
+	default:
+		return zero, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
+	}
+}
+
+// GetRetryAfter returns the RetryAfter response header.
+func (r ListBeersResponse) GetRetryAfter() (*int, error) {
+	var zero *int
+
+	if r.HTTPResponse == nil {
+		return zero, fmt.Errorf("missing HTTP response")
+	}
+
+	switch {
+	case r.HTTPResponse.StatusCode == 202:
+		if r.Headers202 == nil {
+			return zero, fmt.Errorf("expected response headers for status %d, but none were found", r.HTTPResponse.StatusCode)
+		}
+		return r.Headers202.RetryAfter, nil
+	default:
+		return zero, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
+	}
+}
+
+// GetXRequestID returns the XRequestID response header.
+func (r ListBeersResponse) GetXRequestID() (*string, error) {
+	var zero *string
+
+	if r.HTTPResponse == nil {
+		return zero, fmt.Errorf("missing HTTP response")
+	}
+
+	switch {
+	case r.HTTPResponse.StatusCode == 202:
+		if r.Headers202 == nil {
+			return zero, fmt.Errorf("expected response headers for status %d, but none were found", r.HTTPResponse.StatusCode)
+		}
+		return r.Headers202.XRequestID, nil
+	default:
+		return zero, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
+	}
+}
+
+// GetXTotalCount202 returns the XTotalCount response header.
+func (r ListBeersResponse) GetXTotalCount202() (int, error) {
+	var zero int
+
+	if r.HTTPResponse == nil {
+		return zero, fmt.Errorf("missing HTTP response")
+	}
+
+	switch {
+	case r.HTTPResponse.StatusCode == 202:
+		if r.Headers202 == nil {
+			return zero, fmt.Errorf("expected response headers for status %d, but none were found", r.HTTPResponse.StatusCode)
+		}
+		return r.Headers202.XTotalCount, nil
+	default:
+		return zero, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
+	}
+}
+
 // GetBody returns the raw response body bytes
 func (r ListBeersResponse) GetBody() []byte {
 	return r.Body

@@ -99,6 +99,63 @@ type {{genResponseTypeName $opid | ucFirst}} struct {
   }
 {{- end}}
 
+{{- range $responseIndex, $headerResponse := $headerResponses }}
+{{- range $headerIndex, $header := $headerResponse.Headers }}
+
+{{- $duplicate := false }}
+{{- $typeConflict := false }}
+
+{{- /* Detect an earlier occurrence of the same name and type. */}}
+{{- range $i, $response := $headerResponses }}
+    {{- range $j, $other := $response.Headers }}
+        {{- if eq $other.GoName $header.GoName }}
+            {{- if eq $other.GoTypeDef $header.GoTypeDef }}
+                {{- if or (lt $i $responseIndex) (and (eq $i $responseIndex) (lt $j $headerIndex)) }}
+                    {{- $duplicate = true }}
+                {{- end }}
+            {{- else }}
+                {{- $typeConflict = true }}
+            {{- end }}
+        {{- end }}
+    {{- end }}
+{{- end }}
+
+{{- if not $duplicate }}
+
+{{- $method := printf "Get%s" $header.GoName }}
+{{- if $typeConflict }}
+    {{- $method = printf "Get%s%s" $header.GoName ($headerResponse.StatusCode | ucFirst) }}
+{{- end }}
+
+// {{ $method }} returns the {{ $header.GoName }} response header.
+func (r {{genResponseTypeName $opid | ucFirst}}) {{ $method }}() ({{ $header.GoTypeDef }}, error) {
+    var zero {{ $header.GoTypeDef }}
+
+    if r.HTTPResponse == nil {
+        return zero, fmt.Errorf("missing HTTP response")
+    }
+
+    switch {
+    {{- range $response := $headerResponses }}
+        {{- $statusCode := $response.StatusCode }}
+        {{- range $other := $response.Headers }}
+            {{- if and (eq $other.GoName $header.GoName) (eq $other.GoTypeDef $header.GoTypeDef) }}
+    case {{getConditionOfResponseName "r.HTTPResponse.StatusCode" $statusCode}}:
+        if r.Headers{{ $statusCode | ucFirst }} == nil {
+            return zero, fmt.Errorf("expected response headers for status %d, but none were found", r.HTTPResponse.StatusCode)
+        }
+        return r.Headers{{ $statusCode | ucFirst }}.{{ $header.GoName }}, nil
+            {{- end }}
+        {{- end }}
+    {{- end }}
+    default:
+        return zero, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
+    }
+}
+{{- end }}
+{{- end }}
+{{- end }}
+
 // GetBody returns the raw response body bytes
 func (r {{genResponseTypeName $opid | ucFirst}}) GetBody() []byte {
     return r.Body
