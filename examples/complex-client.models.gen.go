@@ -17,28 +17,17 @@ type Beer struct {
 func (v *Beer) ReadOnlyChanges(patch map[string]any) []string {
 	var changes []string
 	if value, exists := patch["brewery"]; exists {
-		if value == nil {
+		if nested, ok := value.(map[string]any); ok {
 			if v.Brewery != nil {
-				changes = append(changes, "brewery")
-			}
-		} else {
-			nested, ok := value.(map[string]any)
-			if !ok {
-				changes = append(changes, "brewery")
-			} else {
-				if v.Brewery == nil {
-					changes = append(changes, "brewery")
-				} else {
-					for _, field := range v.Brewery.ReadOnlyChanges(nested) {
-						changes = append(changes, "brewery."+field)
-					}
+				for _, field := range v.Brewery.ReadOnlyChanges(nested) {
+					changes = append(changes, "brewery."+field)
 				}
 			}
 		}
 	}
 	if value, exists := patch["id"]; exists {
 		number, ok := value.(float64)
-		if !ok || number != float64(v.ID) {
+		if !ok || int(number) != v.ID {
 			changes = append(changes, "id")
 		}
 	}
@@ -83,14 +72,13 @@ func (v *BeerPage) ReadOnlyChanges(patch map[string]any) []string {
 		}
 	}
 	if value, exists := patch["items"]; exists {
-		items, ok := value.([]any)
-		if !ok || len(items) != len(v.Items) {
-			changes = append(changes, "items")
-		} else {
+		if items, ok := value.([]any); ok {
 			for i, item := range items {
+				if i >= len(v.Items) {
+					break
+				}
 				nested, ok := item.(map[string]any)
 				if !ok {
-					changes = append(changes, fmt.Sprintf("items[%d]", i))
 					continue
 				}
 				for _, field := range v.Items[i].ReadOnlyChanges(nested) {
@@ -101,13 +89,13 @@ func (v *BeerPage) ReadOnlyChanges(patch map[string]any) []string {
 	}
 	if value, exists := patch["totalItems"]; exists {
 		number, ok := value.(float64)
-		if !ok || number != float64(v.TotalItems) {
+		if !ok || int(number) != v.TotalItems {
 			changes = append(changes, "totalItems")
 		}
 	}
 	if value, exists := patch["totalPages"]; exists {
 		number, ok := value.(float64)
-		if !ok || number != float64(v.TotalPages) {
+		if !ok || int(number) != v.TotalPages {
 			changes = append(changes, "totalPages")
 		}
 	}
@@ -129,7 +117,7 @@ func (v *Brewery) ReadOnlyChanges(patch map[string]any) []string {
 			}
 		} else {
 			number, ok := value.(float64)
-			if !ok || v.ID == nil || number != float64(*v.ID) {
+			if !ok || v.ID == nil || int(number) != *v.ID {
 				changes = append(changes, "id")
 			}
 		}

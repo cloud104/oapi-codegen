@@ -29,19 +29,17 @@ func (v *{{.TypeName}}) ReadOnlyChanges(patch map[string]any) []string {
 	{{- end}}
 	{{- if $arrayModel}}
 	if value, exists := patch["{{$json}}"]; exists {
-		items, ok := value.([]any)
-		if !ok || len(items) != len(v.{{$field}}) {
-			changes = append(changes, "{{$json}}")
-		} else {
+		if items, ok := value.([]any); ok {
 			for i, item := range items {
+				if i >= len(v.{{$field}}) {
+					break
+				}
 				nested, ok := item.(map[string]any)
 				if !ok {
-					changes = append(changes, fmt.Sprintf("{{$json}}[%d]", i))
 					continue
 				}
 				{{- if $arrayPointer}}
 				if v.{{$field}}[i] == nil {
-					changes = append(changes, fmt.Sprintf("{{$json}}[%d]", i))
 					continue
 				}
 				{{- end}}
@@ -53,54 +51,23 @@ func (v *{{.TypeName}}) ReadOnlyChanges(patch map[string]any) []string {
 	}
 	{{- else if $objectModel}}
 	if value, exists := patch["{{$json}}"]; exists {
-		if value == nil {
+		if nested, ok := value.(map[string]any); ok {
 			{{- if eq $type (printf "*%s" $objectModel)}}
 			if v.{{$field}} != nil {
-				changes = append(changes, "{{$json}}")
-			}
-			{{- else}}
-			changes = append(changes, "{{$json}}")
-			{{- end}}
-		} else {
-			nested, ok := value.(map[string]any)
-			if !ok {
-				changes = append(changes, "{{$json}}")
-			} else {
-				{{- if eq $type (printf "*%s" $objectModel)}}
-				if v.{{$field}} == nil {
-					changes = append(changes, "{{$json}}")
-				} else {
-					for _, field := range v.{{$field}}.ReadOnlyChanges(nested) {
-						changes = append(changes, "{{$json}}."+field)
-					}
-				}
-				{{- else}}
-				for _, field := range (&v.{{$field}}).ReadOnlyChanges(nested) {
+				for _, field := range v.{{$field}}.ReadOnlyChanges(nested) {
 					changes = append(changes, "{{$json}}."+field)
 				}
-				{{- end}}
 			}
+			{{- else}}
+			for _, field := range (&v.{{$field}}).ReadOnlyChanges(nested) {
+				changes = append(changes, "{{$json}}."+field)
+			}
+			{{- end}}
 		}
 	}
 	{{- else if $property.ReadOnly}}
 	if value, exists := patch["{{$json}}"]; exists {
-		{{- if or (eq $type "*int") (eq $type "*int32") (eq $type "*int64")}}
-		if value == nil {
-			if v.{{$field}} != nil {
-				changes = append(changes, "{{$json}}")
-			}
-		} else {
-			number, ok := value.(float64)
-			if !ok || v.{{$field}} == nil || number != float64(*v.{{$field}}) {
-				changes = append(changes, "{{$json}}")
-			}
-		}
-		{{- else if or (eq $type "int") (eq $type "int32") (eq $type "int64")}}
-		number, ok := value.(float64)
-		if !ok || number != float64(v.{{$field}}) {
-			changes = append(changes, "{{$json}}")
-		}
-		{{- else if or (eq $type "*float32") (eq $type "*float64")}}
+		{{- if or (eq $type "*int") (eq $type "*int32") (eq $type "*int64") (eq $type "*float32") (eq $type "*float64")}}
 		if value == nil {
 			if v.{{$field}} != nil {
 				changes = append(changes, "{{$json}}")
@@ -111,7 +78,7 @@ func (v *{{.TypeName}}) ReadOnlyChanges(patch map[string]any) []string {
 				changes = append(changes, "{{$json}}")
 			}
 		}
-		{{- else if or (eq $type "float32") (eq $type "float64")}}
+		{{- else if or (eq $type "int") (eq $type "int32") (eq $type "int64") (eq $type "float32") (eq $type "float64")}}
 		number, ok := value.(float64)
 		if !ok || {{$type}}(number) != v.{{$field}} {
 			changes = append(changes, "{{$json}}")
@@ -158,4 +125,4 @@ func (v *{{.TypeName}}) ReadOnlyChanges(patch map[string]any) []string {
 	return changes
 }
 {{end -}}
-{{end}}
+{{end -}}
