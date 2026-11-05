@@ -95,6 +95,7 @@ func TestGenerate(t *testing.T) {
 								"chi/chi-middleware.tmpl":    "../../templates/chi-middleware.tmpl",
 								"client.tmpl":                "../../templates/client.tmpl",
 								"client-with-responses.tmpl": "../../templates/client-with-responses.tmpl",
+								"typedef.tmpl":               "../../templates/typedef.tmpl",
 							},
 							AdditionalInitialisms: []string{"ID", "IBU"},
 							NameNormalizer:        "ToCamelCaseWithInitialisms",
