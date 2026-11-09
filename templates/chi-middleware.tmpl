@@ -375,7 +375,14 @@ func (siw *ServerInterfaceWrapper) {{$opid}}(w http.ResponseWriter, r *http.Requ
       siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
       return
   }
+
+  var body {{$bodyType.TypeName}}
+  if err := json.Unmarshal(bodyBytes, &body); err != nil {
+    siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
+    return
+  }
   {{- else }}
+  var body *{{$bodyType.TypeName}}
   if r.Body != nil && r.Body != http.NoBody {
     bodyBytes, err := io.ReadAll(http.MaxBytesReader(w, r.Body, {{ $limit.Bytes }})) // max {{ $limit.String }}
     if err != nil {
@@ -393,6 +400,12 @@ func (siw *ServerInterfaceWrapper) {{$opid}}(w http.ResponseWriter, r *http.Requ
       }
 
       if err := validator.Validate(bytes.NewReader(bodyBytes)); err != nil {
+          siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
+          return
+      }
+
+      body = new({{$bodyType.TypeName}})
+      if err := json.Unmarshal(bodyBytes, body); err != nil {
           siw.ErrorHandlerFunc(w, r, &InvalidBodyRequestError{Err: err})
           return
       }
