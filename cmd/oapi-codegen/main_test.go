@@ -51,33 +51,75 @@ func TestGenerate(t *testing.T) {
 				t.Fatalf("load spec %q: %v", specPath, err)
 			}
 
-			// Act
-			result, err := codegen.Generate(spec, codegen.Configuration{
-				PackageName: "examples",
-				Generate: codegen.GenerateOptions{
-					Client: true,
-					Models: true,
-				},
-				OutputOptions: codegen.OutputOptions{
-					UserTemplates: map[string]string{
-						"client.tmpl":                "../../templates/client.tmpl",
-						"client-with-responses.tmpl": "../../templates/client-with-responses.tmpl",
+			basePath := strings.TrimSuffix(specPath, filepath.Ext(specPath))
+			outputDir := basePath
+
+			outputs := []struct {
+				name     string
+				filename string
+				options  codegen.GenerateOptions
+			}{
+				{
+					name:     "models",
+					filename: filepath.Join(outputDir, "models.gen.go"),
+					options: codegen.GenerateOptions{
+						Models: true,
 					},
 				},
-			})
-
-			// Assert
-			if err != nil {
-				t.Fatalf("generate %q: %v", specPath, err)
+				{
+					name:     "server",
+					filename: filepath.Join(outputDir, "server.gen.go"),
+					options: codegen.GenerateOptions{
+						ChiServer: true,
+					},
+				},
+				{
+					name:     "client",
+					filename: filepath.Join(outputDir, "client.gen.go"),
+					options: codegen.GenerateOptions{
+						Client: true,
+					},
+				},
 			}
 
-			if !*writeResults {
-				return
-			}
+			for _, output := range outputs {
+				t.Run(output.name, func(t *testing.T) {
+					// Act
+					result, err := codegen.Generate(spec, codegen.Configuration{
+						PackageName: "examples",
+						Generate:    output.options,
+						Compatibility: codegen.CompatibilityOptions{
+							DisableRequiredReadOnlyAsPointer: true,
+						},
+						OutputOptions: codegen.OutputOptions{
+							UserTemplates: map[string]string{
+								"chi/chi-handler.tmpl":       "../../templates/chi-handler.tmpl",
+								"chi/chi-interface.tmpl":     "../../templates/chi-interface.tmpl",
+								"chi/chi-middleware.tmpl":    "../../templates/chi-middleware.tmpl",
+								"client.tmpl":                "../../templates/client.tmpl",
+								"client-with-responses.tmpl": "../../templates/client-with-responses.tmpl",
+							},
+							AdditionalInitialisms: []string{"ID", "IBU"},
+							NameNormalizer:        "ToCamelCaseWithInitialisms",
+						},
+					})
+					// Assert
+					if err != nil {
+						t.Fatalf("generate %s for %q: %v", output.name, specPath, err)
+					}
 
-			outputPath := strings.TrimSuffix(specPath, filepath.Ext(specPath)) + ".gen.go"
-			if err := os.WriteFile(outputPath, []byte(result), 0o644); err != nil {
-				t.Fatalf("write %q: %v", outputPath, err)
+					if !*writeResults {
+						return
+					}
+
+					if err := os.MkdirAll(outputDir, 0o755); err != nil {
+						t.Fatalf("create output directory %q: %v", outputDir, err)
+					}
+
+					if err := os.WriteFile(output.filename, []byte(result), 0o644); err != nil {
+						t.Fatalf("write %q: %v", output.filename, err)
+					}
+				})
 			}
 		})
 	}
