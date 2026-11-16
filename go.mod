@@ -9,7 +9,7 @@ require (
 	github.com/getkin/kin-openapi v0.153.0
 	github.com/jinzhu/inflection v1.0.0
 	github.com/oapi-codegen/oapi-codegen/v2 v2.8.2
-	github.com/pb33f/libopenapi v0.42.4
+	github.com/pb33f/libopenapi v0.42.5
 	go.yaml.in/yaml/v3 v3.0.6
 )
 
@@ -38,7 +38,7 @@ require (
 	go.yaml.in/yaml/v4 v4.0.0 // indirect
 	golang.org/x/crypto v0.58.0 // indirect
 	golang.org/x/mod v0.42.0 // indirect
-	golang.org/x/sync v0.24.0 // indirect
+	golang.org/x/sync v0.25.0 // indirect
 	golang.org/x/text v0.43.0 // indirect
 	golang.org/x/tools v0.52.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
