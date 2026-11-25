@@ -67,6 +67,14 @@ func TestGenerate(t *testing.T) {
 					},
 				},
 				{
+					name:     "server",
+					filename: filepath.Join(outputDir, "server.gen.go"),
+					options: codegen.GenerateOptions{
+						ChiServer: true,
+						Strict:    true,
+					},
+				},
+				{
 					name:     "client",
 					filename: filepath.Join(outputDir, "client.gen.go"),
 					options: codegen.GenerateOptions{
@@ -88,6 +96,7 @@ func TestGenerate(t *testing.T) {
 							UserTemplates: map[string]string{
 								"client.tmpl":                "../../templates/client.tmpl",
 								"client-with-responses.tmpl": "../../templates/client-with-responses.tmpl",
+								"strict/strict-http.tmpl":    "../../templates/strict-http.tmpl",
 							},
 							AdditionalInitialisms: []string{"ID", "IBU"},
 							NameNormalizer:        "ToCamelCaseWithInitialisms",
