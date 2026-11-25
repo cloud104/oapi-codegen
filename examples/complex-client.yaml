@@ -144,6 +144,7 @@ paths:
         required: true
         schema:
           type: integer
+          minimum: 1
           example: 7
 
     get:
@@ -159,16 +160,23 @@ paths:
                 properties:
                   id:
                     type: integer
+                    minimum: 1
                     example: 7
                   name:
                     type: string
+                    minLength: 1
+                    maxLength: 100
                     example: "IPA"
                   style:
                     type: string
+                    minLength: 1
+                    maxLength: 100
                     example: "India Pale Ale"
                   abv:
                     type: number
                     format: float
+                    minimum: 0
+                    maximum: 100
                     example: 6.5
                 required:
                   - id
@@ -324,6 +332,7 @@ components:
 
     Beer:
       type: object
+      additionalProperties: false
       required:
         - id
         - name
@@ -332,26 +341,38 @@ components:
       properties:
         id:
           type: integer
+          minimum: 1
           example: 7
         name:
           type: string
+          minLength: 1
+          maxLength: 100
           example: Midnight Hops
         style:
           type: string
+          minLength: 1
+          maxLength: 100
           example: Imperial IPA
         abv:
           type: number
           format: float
+          minimum: 0
+          maximum: 100
           example: 8.5
         ibu:
           type: integer
+          minimum: 0
+          maximum: 200
           example: 70
         brewery:
           type: string
+          minLength: 1
+          maxLength: 200
           example: Northern Trail Brewing
 
     BeerCreate:
       type: object
+      additionalProperties: false
       required:
         - name
         - style
@@ -359,23 +380,34 @@ components:
       properties:
         name:
           type: string
+          minLength: 1
+          maxLength: 100
           example: Midnight Hops
         style:
           type: string
+          minLength: 1
+          maxLength: 100
           example: Imperial IPA
         abv:
           type: number
           format: float
+          minimum: 0
+          maximum: 100
           example: 8.5
         ibu:
           type: integer
+          minimum: 0
+          maximum: 200
           example: 70
         brewery:
           type: string
+          minLength: 1
+          maxLength: 200
           example: Northern Trail Brewing
 
     BeerReplace:
       type: object
+      additionalProperties: false
       required:
         - name
         - style
@@ -383,39 +415,61 @@ components:
       properties:
         name:
           type: string
+          minLength: 1
+          maxLength: 100
           example: Midnight Hops Reserve
         style:
           type: string
+          minLength: 1
+          maxLength: 100
           example: Double IPA
         abv:
           type: number
           format: float
+          minimum: 0
+          maximum: 100
           example: 9.2
         ibu:
           type: integer
+          minimum: 0
+          maximum: 200
           example: 85
         brewery:
           type: string
+          minLength: 1
+          maxLength: 200
           example: Northern Trail Brewing
 
     BeerUpdate:
       type: object
+      additionalProperties: false
+      minProperties: 1
       properties:
         name:
           type: string
+          minLength: 1
+          maxLength: 100
           example: Midnight Hops Reserve
         style:
           type: string
+          minLength: 1
+          maxLength: 100
           example: Double IPA
         abv:
           type: number
           format: float
+          minimum: 0
+          maximum: 100
           example: 9.2
         ibu:
           type: integer
+          minimum: 0
+          maximum: 200
           example: 85
         brewery:
           type: string
+          minLength: 1
+          maxLength: 200
           example: Northern Trail Brewing
 
     Error:
@@ -427,6 +481,8 @@ components:
       properties:
         status:
           type: integer
+          minimum: 400
+          maximum: 599
           example: 404
         error:
           type: string
