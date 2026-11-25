@@ -81,11 +81,16 @@ func TestGenerate(t *testing.T) {
 					result, err := codegen.Generate(spec, codegen.Configuration{
 						PackageName: "examples",
 						Generate:    output.options,
+						Compatibility: codegen.CompatibilityOptions{
+							DisableRequiredReadOnlyAsPointer: true,
+						},
 						OutputOptions: codegen.OutputOptions{
 							UserTemplates: map[string]string{
 								"client.tmpl":                "../../templates/client.tmpl",
 								"client-with-responses.tmpl": "../../templates/client-with-responses.tmpl",
 							},
+							AdditionalInitialisms: []string{"ID", "IBU"},
+							NameNormalizer:        "ToCamelCaseWithInitialisms",
 						},
 					})
 
