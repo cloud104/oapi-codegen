@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/oapi-codegen/runtime"
 	"github.com/santhosh-tekuri/jsonschema/v6"
 	"github.com/santhosh-tekuri/jsonschema/v6/kind"
 	"golang.org/x/text/language"
@@ -21,97 +22,80 @@ import (
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
-	// GetDevices Device authentication endpoint
-	// (GET /devices)
-	GetDevices(w http.ResponseWriter, r *http.Request)
-	// GetLegacyImplicit Legacy implicit authentication
-	// (GET /legacy/implicit)
-	//
-	// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
-	GetLegacyImplicit(w http.ResponseWriter, r *http.Request)
-	// GetLegacyPassword Legacy password authentication
-	// (GET /legacy/password)
-	//
-	// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
-	GetLegacyPassword(w http.ResponseWriter, r *http.Request)
-	// GetOptionalAuth Optional authentication
-	// (GET /optional-auth)
-	GetOptionalAuth(w http.ResponseWriter, r *http.Request)
-	// GetPublic Public endpoint without authentication
-	// (GET /public)
-	GetPublic(w http.ResponseWriter, r *http.Request)
-	// GetReports Accept multiple authentication flows
-	// (GET /reports)
-	GetReports(w http.ResponseWriter, r *http.Request)
-	// GetServices Machine-to-machine endpoint
-	// (GET /services)
-	GetServices(w http.ResponseWriter, r *http.Request)
-	// ListUsers List users
-	// (GET /users)
-	ListUsers(w http.ResponseWriter, r *http.Request)
-	// CreateUser Create a user
-	// (POST /users)
-	CreateUser(w http.ResponseWriter, r *http.Request)
+	// StartChargingSession Start an EV charging session
+	// (POST /charging-sessions)
+	StartChargingSession(w http.ResponseWriter, r *http.Request, params StartChargingSessionParams)
+	// GetChargingSession Retrieve live charging session details
+	// (GET /charging-sessions/{sessionId})
+	GetChargingSession(w http.ResponseWriter, r *http.Request, sessionID SessionID)
+	// StopChargingSession Request termination of a charging session
+	// (POST /charging-sessions/{sessionId}/stop)
+	StopChargingSession(w http.ResponseWriter, r *http.Request, sessionID SessionID, params StopChargingSessionParams)
+	// GetCurrentDriver Retrieve the authenticated driver profile
+	// (GET /drivers/me)
+	GetCurrentDriver(w http.ResponseWriter, r *http.Request)
+	// ListFleetInvoices Retrieve corporate monthly invoices
+	// (GET /fleets/{fleetId}/invoices)
+	ListFleetInvoices(w http.ResponseWriter, r *http.Request, fleetID FleetID, params ListFleetInvoicesParams)
+	// ListFleetVehicles List registered corporate fleet vehicles
+	// (GET /fleets/{fleetId}/vehicles)
+	ListFleetVehicles(w http.ResponseWriter, r *http.Request, fleetID FleetID, params ListFleetVehiclesParams)
+	// GetHealth Platform health check
+	// (GET /health)
+	GetHealth(w http.ResponseWriter, r *http.Request)
+	// SearchChargingStations Discover nearby charging stations
+	// (GET /stations)
+	SearchChargingStations(w http.ResponseWriter, r *http.Request, params SearchChargingStationsParams)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
 type Unimplemented struct{}
 
-// GetDevices Device authentication endpoint
-// (GET /devices)
-func (_ Unimplemented) GetDevices(w http.ResponseWriter, r *http.Request) {
+// StartChargingSession Start an EV charging session
+// (POST /charging-sessions)
+func (_ Unimplemented) StartChargingSession(w http.ResponseWriter, r *http.Request, params StartChargingSessionParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// GetLegacyImplicit Legacy implicit authentication
-// (GET /legacy/implicit)
-//
-// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
-func (_ Unimplemented) GetLegacyImplicit(w http.ResponseWriter, r *http.Request) {
+// GetChargingSession Retrieve live charging session details
+// (GET /charging-sessions/{sessionId})
+func (_ Unimplemented) GetChargingSession(w http.ResponseWriter, r *http.Request, sessionID SessionID) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// GetLegacyPassword Legacy password authentication
-// (GET /legacy/password)
-//
-// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
-func (_ Unimplemented) GetLegacyPassword(w http.ResponseWriter, r *http.Request) {
+// StopChargingSession Request termination of a charging session
+// (POST /charging-sessions/{sessionId}/stop)
+func (_ Unimplemented) StopChargingSession(w http.ResponseWriter, r *http.Request, sessionID SessionID, params StopChargingSessionParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// GetOptionalAuth Optional authentication
-// (GET /optional-auth)
-func (_ Unimplemented) GetOptionalAuth(w http.ResponseWriter, r *http.Request) {
+// GetCurrentDriver Retrieve the authenticated driver profile
+// (GET /drivers/me)
+func (_ Unimplemented) GetCurrentDriver(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// GetPublic Public endpoint without authentication
-// (GET /public)
-func (_ Unimplemented) GetPublic(w http.ResponseWriter, r *http.Request) {
+// ListFleetInvoices Retrieve corporate monthly invoices
+// (GET /fleets/{fleetId}/invoices)
+func (_ Unimplemented) ListFleetInvoices(w http.ResponseWriter, r *http.Request, fleetID FleetID, params ListFleetInvoicesParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// GetReports Accept multiple authentication flows
-// (GET /reports)
-func (_ Unimplemented) GetReports(w http.ResponseWriter, r *http.Request) {
+// ListFleetVehicles List registered corporate fleet vehicles
+// (GET /fleets/{fleetId}/vehicles)
+func (_ Unimplemented) ListFleetVehicles(w http.ResponseWriter, r *http.Request, fleetID FleetID, params ListFleetVehiclesParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// GetServices Machine-to-machine endpoint
-// (GET /services)
-func (_ Unimplemented) GetServices(w http.ResponseWriter, r *http.Request) {
+// GetHealth Platform health check
+// (GET /health)
+func (_ Unimplemented) GetHealth(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// ListUsers List users
-// (GET /users)
-func (_ Unimplemented) ListUsers(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
-// CreateUser Create a user
-// (POST /users)
-func (_ Unimplemented) CreateUser(w http.ResponseWriter, r *http.Request) {
+// SearchChargingStations Discover nearby charging stations
+// (GET /stations)
+func (_ Unimplemented) SearchChargingStations(w http.ResponseWriter, r *http.Request, params SearchChargingStationsParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -124,11 +108,42 @@ type ServerInterfaceWrapper struct {
 
 type MiddlewareFunc func(http.Handler) http.Handler
 
-// GetDevices operation middleware
-func (siw *ServerInterfaceWrapper) GetDevices(w http.ResponseWriter, r *http.Request) {
+// StartChargingSession operation middleware
+func (siw *ServerInterfaceWrapper) StartChargingSession(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params StartChargingSessionParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetDevices(w, r)
+		siw.Handler.StartChargingSession(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -138,11 +153,23 @@ func (siw *ServerInterfaceWrapper) GetDevices(w http.ResponseWriter, r *http.Req
 	handler.ServeHTTP(w, r)
 }
 
-// GetLegacyImplicit operation middleware
-func (siw *ServerInterfaceWrapper) GetLegacyImplicit(w http.ResponseWriter, r *http.Request) {
+// GetChargingSession operation middleware
+func (siw *ServerInterfaceWrapper) GetChargingSession(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "sessionId" -------------
+	var sessionID SessionID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "sessionId", chi.URLParam(r, "sessionId"), &sessionID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "sessionId", Err: err})
+		return
+	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetLegacyImplicit(w, r)
+		siw.Handler.GetChargingSession(w, r, sessionID)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -152,11 +179,51 @@ func (siw *ServerInterfaceWrapper) GetLegacyImplicit(w http.ResponseWriter, r *h
 	handler.ServeHTTP(w, r)
 }
 
-// GetLegacyPassword operation middleware
-func (siw *ServerInterfaceWrapper) GetLegacyPassword(w http.ResponseWriter, r *http.Request) {
+// StopChargingSession operation middleware
+func (siw *ServerInterfaceWrapper) StopChargingSession(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "sessionId" -------------
+	var sessionID SessionID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "sessionId", chi.URLParam(r, "sessionId"), &sessionID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "sessionId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params StopChargingSessionParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetLegacyPassword(w, r)
+		siw.Handler.StopChargingSession(w, r, sessionID, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -166,11 +233,11 @@ func (siw *ServerInterfaceWrapper) GetLegacyPassword(w http.ResponseWriter, r *h
 	handler.ServeHTTP(w, r)
 }
 
-// GetOptionalAuth operation middleware
-func (siw *ServerInterfaceWrapper) GetOptionalAuth(w http.ResponseWriter, r *http.Request) {
+// GetCurrentDriver operation middleware
+func (siw *ServerInterfaceWrapper) GetCurrentDriver(w http.ResponseWriter, r *http.Request) {
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetOptionalAuth(w, r)
+		siw.Handler.GetCurrentDriver(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -180,11 +247,39 @@ func (siw *ServerInterfaceWrapper) GetOptionalAuth(w http.ResponseWriter, r *htt
 	handler.ServeHTTP(w, r)
 }
 
-// GetPublic operation middleware
-func (siw *ServerInterfaceWrapper) GetPublic(w http.ResponseWriter, r *http.Request) {
+// ListFleetInvoices operation middleware
+func (siw *ServerInterfaceWrapper) ListFleetInvoices(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "fleetId" -------------
+	var fleetID FleetID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "fleetId", chi.URLParam(r, "fleetId"), &fleetID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "fleetId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListFleetInvoicesParams
+
+	// ------------- Required query parameter "billingPeriod" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "billingPeriod", r.URL.Query(), &params.BillingPeriod, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "billingPeriod"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "billingPeriod", Err: err})
+		}
+		return
+	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetPublic(w, r)
+		siw.Handler.ListFleetInvoices(w, r, fleetID, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -194,11 +289,52 @@ func (siw *ServerInterfaceWrapper) GetPublic(w http.ResponseWriter, r *http.Requ
 	handler.ServeHTTP(w, r)
 }
 
-// GetReports operation middleware
-func (siw *ServerInterfaceWrapper) GetReports(w http.ResponseWriter, r *http.Request) {
+// ListFleetVehicles operation middleware
+func (siw *ServerInterfaceWrapper) ListFleetVehicles(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "fleetId" -------------
+	var fleetID FleetID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "fleetId", chi.URLParam(r, "fleetId"), &fleetID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "fleetId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListFleetVehiclesParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetReports(w, r)
+		siw.Handler.ListFleetVehicles(w, r, fleetID, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -208,11 +344,11 @@ func (siw *ServerInterfaceWrapper) GetReports(w http.ResponseWriter, r *http.Req
 	handler.ServeHTTP(w, r)
 }
 
-// GetServices operation middleware
-func (siw *ServerInterfaceWrapper) GetServices(w http.ResponseWriter, r *http.Request) {
+// GetHealth operation middleware
+func (siw *ServerInterfaceWrapper) GetHealth(w http.ResponseWriter, r *http.Request) {
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetServices(w, r)
+		siw.Handler.GetHealth(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -222,25 +358,69 @@ func (siw *ServerInterfaceWrapper) GetServices(w http.ResponseWriter, r *http.Re
 	handler.ServeHTTP(w, r)
 }
 
-// ListUsers operation middleware
-func (siw *ServerInterfaceWrapper) ListUsers(w http.ResponseWriter, r *http.Request) {
+// SearchChargingStations operation middleware
+func (siw *ServerInterfaceWrapper) SearchChargingStations(w http.ResponseWriter, r *http.Request) {
 
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.ListUsers(w, r)
-	}))
+	var err error
+	_ = err
 
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
+	// Parameter object where we will unmarshal all parameters from the context
+	var params SearchChargingStationsParams
+
+	// ------------- Required query parameter "latitude" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "latitude", r.URL.Query(), &params.Latitude, runtime.BindQueryParameterOptions{Type: "number", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "latitude"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "latitude", Err: err})
+		}
+		return
 	}
 
-	handler.ServeHTTP(w, r)
-}
+	// ------------- Required query parameter "longitude" -------------
 
-// CreateUser operation middleware
-func (siw *ServerInterfaceWrapper) CreateUser(w http.ResponseWriter, r *http.Request) {
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "longitude", r.URL.Query(), &params.Longitude, runtime.BindQueryParameterOptions{Type: "number", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "longitude"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "longitude", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "radiusKm" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "radiusKm", r.URL.Query(), &params.RadiusKm, runtime.BindQueryParameterOptions{Type: "number", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "radiusKm"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "radiusKm", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "availableOnly" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "availableOnly", r.URL.Query(), &params.AvailableOnly, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "availableOnly"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "availableOnly", Err: err})
+		}
+		return
+	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.CreateUser(w, r)
+		siw.Handler.SearchChargingStations(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -365,228 +545,675 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	}
 
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/public", wrapper.GetPublic)
+		r.Get(options.BaseURL+"/stations", wrapper.SearchChargingStations)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/users", wrapper.ListUsers)
+		r.Get(options.BaseURL+"/drivers/me", wrapper.GetCurrentDriver)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/users", wrapper.CreateUser)
+		r.Post(options.BaseURL+"/charging-sessions", wrapper.StartChargingSession)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/services", wrapper.GetServices)
+		r.Get(options.BaseURL+"/charging-sessions/{sessionId}", wrapper.GetChargingSession)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/devices", wrapper.GetDevices)
+		r.Post(options.BaseURL+"/charging-sessions/{sessionId}/stop", wrapper.StopChargingSession)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/legacy/password", wrapper.GetLegacyPassword)
+		r.Get(options.BaseURL+"/fleets/{fleetId}/vehicles", wrapper.ListFleetVehicles)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/legacy/implicit", wrapper.GetLegacyImplicit)
+		r.Get(options.BaseURL+"/fleets/{fleetId}/invoices", wrapper.ListFleetInvoices)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/reports", wrapper.GetReports)
-	})
-	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/optional-auth", wrapper.GetOptionalAuth)
+		r.Get(options.BaseURL+"/health", wrapper.GetHealth)
 	})
 
 	return r
 }
 
-type GetDevicesRequestObject struct {
+type BadRequestApplicationProblemPlusJSONResponse Problem
+
+type ForbiddenApplicationProblemPlusJSONResponse Problem
+
+type NotFoundApplicationProblemPlusJSONResponse Problem
+
+type RateLimitedResponseHeaders struct {
+	RetryAfter *int
+}
+type RateLimitedApplicationProblemPlusJSONResponse struct {
+	Body Problem
+
+	Headers RateLimitedResponseHeaders
 }
 
-type GetDevicesResponseObject interface {
-	VisitGetDevicesResponse(w http.ResponseWriter) error
+type UnauthorizedResponseHeaders struct {
+	WWWAuthenticate *string
+}
+type UnauthorizedApplicationProblemPlusJSONResponse struct {
+	Body Problem
+
+	Headers UnauthorizedResponseHeaders
 }
 
-type GetDevices200Response struct {
+type StartChargingSessionRequestObject struct {
+	Params StartChargingSessionParams
+	Body   *StartChargingSessionJSONRequestBody
 }
 
-func (response GetDevices200Response) VisitGetDevicesResponse(w http.ResponseWriter) error {
-	w.WriteHeader(200)
-	return nil
+type StartChargingSessionResponseObject interface {
+	VisitStartChargingSessionResponse(w http.ResponseWriter) error
 }
 
-type GetLegacyImplicitRequestObject struct {
+type StartChargingSession201ResponseHeaders struct {
+	Location *string
 }
 
-type GetLegacyImplicitResponseObject interface {
-	VisitGetLegacyImplicitResponse(w http.ResponseWriter) error
+type StartChargingSession201JSONResponse struct {
+	Body    ChargingSession
+	Headers StartChargingSession201ResponseHeaders
 }
 
-type GetLegacyImplicit200Response struct {
-}
+func (response StartChargingSession201JSONResponse) VisitStartChargingSessionResponse(w http.ResponseWriter) error {
 
-func (response GetLegacyImplicit200Response) VisitGetLegacyImplicitResponse(w http.ResponseWriter) error {
-	w.WriteHeader(200)
-	return nil
-}
-
-type GetLegacyPasswordRequestObject struct {
-}
-
-type GetLegacyPasswordResponseObject interface {
-	VisitGetLegacyPasswordResponse(w http.ResponseWriter) error
-}
-
-type GetLegacyPassword200Response struct {
-}
-
-func (response GetLegacyPassword200Response) VisitGetLegacyPasswordResponse(w http.ResponseWriter) error {
-	w.WriteHeader(200)
-	return nil
-}
-
-type GetOptionalAuthRequestObject struct {
-}
-
-type GetOptionalAuthResponseObject interface {
-	VisitGetOptionalAuthResponse(w http.ResponseWriter) error
-}
-
-type GetOptionalAuth200Response struct {
-}
-
-func (response GetOptionalAuth200Response) VisitGetOptionalAuthResponse(w http.ResponseWriter) error {
-	w.WriteHeader(200)
-	return nil
-}
-
-type GetPublicRequestObject struct {
-}
-
-type GetPublicResponseObject interface {
-	VisitGetPublicResponse(w http.ResponseWriter) error
-}
-
-type GetPublic200Response struct {
-}
-
-func (response GetPublic200Response) VisitGetPublicResponse(w http.ResponseWriter) error {
-	w.WriteHeader(200)
-	return nil
-}
-
-type GetReportsRequestObject struct {
-}
-
-type GetReportsResponseObject interface {
-	VisitGetReportsResponse(w http.ResponseWriter) error
-}
-
-type GetReports200Response struct {
-}
-
-func (response GetReports200Response) VisitGetReportsResponse(w http.ResponseWriter) error {
-	w.WriteHeader(200)
-	return nil
-}
-
-type GetServicesRequestObject struct {
-}
-
-type GetServicesResponseObject interface {
-	VisitGetServicesResponse(w http.ResponseWriter) error
-}
-
-type GetServices200Response struct {
-}
-
-func (response GetServices200Response) VisitGetServicesResponse(w http.ResponseWriter) error {
-	w.WriteHeader(200)
-	return nil
-}
-
-type ListUsersRequestObject struct {
-}
-
-type ListUsersResponseObject interface {
-	VisitListUsersResponse(w http.ResponseWriter) error
-}
-
-type ListUsers200Response struct {
-}
-
-func (response ListUsers200Response) VisitListUsersResponse(w http.ResponseWriter) error {
-	w.WriteHeader(200)
-	return nil
-}
-
-type ListUsers401Response struct {
-}
-
-func (response ListUsers401Response) VisitListUsersResponse(w http.ResponseWriter) error {
-	w.WriteHeader(401)
-	return nil
-}
-
-type ListUsers403Response struct {
-}
-
-func (response ListUsers403Response) VisitListUsersResponse(w http.ResponseWriter) error {
-	w.WriteHeader(403)
-	return nil
-}
-
-type CreateUserRequestObject struct {
-}
-
-type CreateUserResponseObject interface {
-	VisitCreateUserResponse(w http.ResponseWriter) error
-}
-
-type CreateUser201Response struct {
-}
-
-func (response CreateUser201Response) VisitCreateUserResponse(w http.ResponseWriter) error {
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.Location != nil {
+		{
+			v, err := runtime.StyleParamWithOptions("simple", false, "Location", *response.Headers.Location, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: "uri-reference"})
+			if err != nil {
+				return fmt.Errorf("error styling response header Location: %w", err)
+			}
+			w.Header().Set("Location", v)
+		}
+	}
 	w.WriteHeader(201)
-	return nil
+	_, err := buf.WriteTo(w)
+	return err
 }
 
-type CreateUser401Response struct {
+type StartChargingSession400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
 }
 
-func (response CreateUser401Response) VisitCreateUserResponse(w http.ResponseWriter) error {
+func (response StartChargingSession400ApplicationProblemPlusJSONResponse) VisitStartChargingSessionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.BadRequestApplicationProblemPlusJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartChargingSession401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response StartChargingSession401ApplicationProblemPlusJSONResponse) VisitStartChargingSessionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.WWWAuthenticate != nil {
+		{
+			v, err := runtime.StyleParamWithOptions("simple", false, "WWW-Authenticate", *response.Headers.WWWAuthenticate, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return fmt.Errorf("error styling response header WWW-Authenticate: %w", err)
+			}
+			w.Header().Set("WWW-Authenticate", v)
+		}
+	}
 	w.WriteHeader(401)
-	return nil
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartChargingSession403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response StartChargingSession403ApplicationProblemPlusJSONResponse) VisitStartChargingSessionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ForbiddenApplicationProblemPlusJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartChargingSession409ApplicationProblemPlusJSONResponse Problem
+
+func (response StartChargingSession409ApplicationProblemPlusJSONResponse) VisitStartChargingSessionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetChargingSessionRequestObject struct {
+	SessionID SessionID `json:"sessionId"`
+}
+
+type GetChargingSessionResponseObject interface {
+	VisitGetChargingSessionResponse(w http.ResponseWriter) error
+}
+
+type GetChargingSession200JSONResponse ChargingSession
+
+func (response GetChargingSession200JSONResponse) VisitGetChargingSessionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetChargingSession401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response GetChargingSession401ApplicationProblemPlusJSONResponse) VisitGetChargingSessionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.WWWAuthenticate != nil {
+		{
+			v, err := runtime.StyleParamWithOptions("simple", false, "WWW-Authenticate", *response.Headers.WWWAuthenticate, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return fmt.Errorf("error styling response header WWW-Authenticate: %w", err)
+			}
+			w.Header().Set("WWW-Authenticate", v)
+		}
+	}
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetChargingSession403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GetChargingSession403ApplicationProblemPlusJSONResponse) VisitGetChargingSessionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ForbiddenApplicationProblemPlusJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetChargingSession404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GetChargingSession404ApplicationProblemPlusJSONResponse) VisitGetChargingSessionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.NotFoundApplicationProblemPlusJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StopChargingSessionRequestObject struct {
+	SessionID SessionID `json:"sessionId"`
+	Params    StopChargingSessionParams
+}
+
+type StopChargingSessionResponseObject interface {
+	VisitStopChargingSessionResponse(w http.ResponseWriter) error
+}
+
+type StopChargingSession202JSONResponse ChargingSession
+
+func (response StopChargingSession202JSONResponse) VisitStopChargingSessionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(202)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StopChargingSession401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response StopChargingSession401ApplicationProblemPlusJSONResponse) VisitStopChargingSessionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.WWWAuthenticate != nil {
+		{
+			v, err := runtime.StyleParamWithOptions("simple", false, "WWW-Authenticate", *response.Headers.WWWAuthenticate, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return fmt.Errorf("error styling response header WWW-Authenticate: %w", err)
+			}
+			w.Header().Set("WWW-Authenticate", v)
+		}
+	}
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StopChargingSession403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response StopChargingSession403ApplicationProblemPlusJSONResponse) VisitStopChargingSessionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ForbiddenApplicationProblemPlusJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StopChargingSession404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response StopChargingSession404ApplicationProblemPlusJSONResponse) VisitStopChargingSessionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.NotFoundApplicationProblemPlusJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCurrentDriverRequestObject struct {
+}
+
+type GetCurrentDriverResponseObject interface {
+	VisitGetCurrentDriverResponse(w http.ResponseWriter) error
+}
+
+type GetCurrentDriver200JSONResponse Driver
+
+func (response GetCurrentDriver200JSONResponse) VisitGetCurrentDriverResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCurrentDriver401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response GetCurrentDriver401ApplicationProblemPlusJSONResponse) VisitGetCurrentDriverResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.WWWAuthenticate != nil {
+		{
+			v, err := runtime.StyleParamWithOptions("simple", false, "WWW-Authenticate", *response.Headers.WWWAuthenticate, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return fmt.Errorf("error styling response header WWW-Authenticate: %w", err)
+			}
+			w.Header().Set("WWW-Authenticate", v)
+		}
+	}
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCurrentDriver403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GetCurrentDriver403ApplicationProblemPlusJSONResponse) VisitGetCurrentDriverResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ForbiddenApplicationProblemPlusJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListFleetInvoicesRequestObject struct {
+	FleetID FleetID `json:"fleetId"`
+	Params  ListFleetInvoicesParams
+}
+
+type ListFleetInvoicesResponseObject interface {
+	VisitListFleetInvoicesResponse(w http.ResponseWriter) error
+}
+
+type ListFleetInvoices200JSONResponse []Invoice
+
+func (response ListFleetInvoices200JSONResponse) VisitListFleetInvoicesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListFleetInvoices401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response ListFleetInvoices401ApplicationProblemPlusJSONResponse) VisitListFleetInvoicesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.WWWAuthenticate != nil {
+		{
+			v, err := runtime.StyleParamWithOptions("simple", false, "WWW-Authenticate", *response.Headers.WWWAuthenticate, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return fmt.Errorf("error styling response header WWW-Authenticate: %w", err)
+			}
+			w.Header().Set("WWW-Authenticate", v)
+		}
+	}
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListFleetInvoices403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ListFleetInvoices403ApplicationProblemPlusJSONResponse) VisitListFleetInvoicesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ForbiddenApplicationProblemPlusJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListFleetVehiclesRequestObject struct {
+	FleetID FleetID `json:"fleetId"`
+	Params  ListFleetVehiclesParams
+}
+
+type ListFleetVehiclesResponseObject interface {
+	VisitListFleetVehiclesResponse(w http.ResponseWriter) error
+}
+
+type ListFleetVehicles200JSONResponse struct {
+	Items      []Vehicle `json:"items"`
+	NextCursor *string   `json:"nextCursor"`
+}
+
+func (response ListFleetVehicles200JSONResponse) VisitListFleetVehiclesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListFleetVehicles401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response ListFleetVehicles401ApplicationProblemPlusJSONResponse) VisitListFleetVehiclesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.WWWAuthenticate != nil {
+		{
+			v, err := runtime.StyleParamWithOptions("simple", false, "WWW-Authenticate", *response.Headers.WWWAuthenticate, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return fmt.Errorf("error styling response header WWW-Authenticate: %w", err)
+			}
+			w.Header().Set("WWW-Authenticate", v)
+		}
+	}
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListFleetVehicles403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ListFleetVehicles403ApplicationProblemPlusJSONResponse) VisitListFleetVehiclesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ForbiddenApplicationProblemPlusJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListFleetVehicles404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response ListFleetVehicles404ApplicationProblemPlusJSONResponse) VisitListFleetVehiclesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.NotFoundApplicationProblemPlusJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetHealthRequestObject struct {
+}
+
+type GetHealthResponseObject interface {
+	VisitGetHealthResponse(w http.ResponseWriter) error
+}
+
+type GetHealth200JSONResponse struct {
+	Status GetHealth200JSONResponseBodyStatus `json:"status"`
+}
+
+func (response GetHealth200JSONResponse) VisitGetHealthResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SearchChargingStationsRequestObject struct {
+	Params SearchChargingStationsParams
+}
+
+type SearchChargingStationsResponseObject interface {
+	VisitSearchChargingStationsResponse(w http.ResponseWriter) error
+}
+
+type SearchChargingStations200JSONResponse struct {
+	Items []Station `json:"items"`
+	Total int       `json:"total"`
+}
+
+func (response SearchChargingStations200JSONResponse) VisitSearchChargingStationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SearchChargingStations401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response SearchChargingStations401ApplicationProblemPlusJSONResponse) VisitSearchChargingStationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.WWWAuthenticate != nil {
+		{
+			v, err := runtime.StyleParamWithOptions("simple", false, "WWW-Authenticate", *response.Headers.WWWAuthenticate, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return fmt.Errorf("error styling response header WWW-Authenticate: %w", err)
+			}
+			w.Header().Set("WWW-Authenticate", v)
+		}
+	}
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SearchChargingStations403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response SearchChargingStations403ApplicationProblemPlusJSONResponse) VisitSearchChargingStationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ForbiddenApplicationProblemPlusJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SearchChargingStations429ApplicationProblemPlusJSONResponse struct {
+	RateLimitedApplicationProblemPlusJSONResponse
+}
+
+func (response SearchChargingStations429ApplicationProblemPlusJSONResponse) VisitSearchChargingStationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		{
+			v, err := runtime.StyleParamWithOptions("simple", false, "Retry-After", *response.Headers.RetryAfter, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "integer", Format: ""})
+			if err != nil {
+				return fmt.Errorf("error styling response header Retry-After: %w", err)
+			}
+			w.Header().Set("Retry-After", v)
+		}
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
 }
 
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
-	// GetDevices Device authentication endpoint
-	// (GET /devices)
-	GetDevices(ctx context.Context, request GetDevicesRequestObject) (GetDevicesResponseObject, error)
-	// GetLegacyImplicit Legacy implicit authentication
-	// (GET /legacy/implicit)
-	//
-	// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
-	GetLegacyImplicit(ctx context.Context, request GetLegacyImplicitRequestObject) (GetLegacyImplicitResponseObject, error)
-	// GetLegacyPassword Legacy password authentication
-	// (GET /legacy/password)
-	//
-	// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
-	GetLegacyPassword(ctx context.Context, request GetLegacyPasswordRequestObject) (GetLegacyPasswordResponseObject, error)
-	// GetOptionalAuth Optional authentication
-	// (GET /optional-auth)
-	GetOptionalAuth(ctx context.Context, request GetOptionalAuthRequestObject) (GetOptionalAuthResponseObject, error)
-	// GetPublic Public endpoint without authentication
-	// (GET /public)
-	GetPublic(ctx context.Context, request GetPublicRequestObject) (GetPublicResponseObject, error)
-	// GetReports Accept multiple authentication flows
-	// (GET /reports)
-	GetReports(ctx context.Context, request GetReportsRequestObject) (GetReportsResponseObject, error)
-	// GetServices Machine-to-machine endpoint
-	// (GET /services)
-	GetServices(ctx context.Context, request GetServicesRequestObject) (GetServicesResponseObject, error)
-	// ListUsers List users
-	// (GET /users)
-	ListUsers(ctx context.Context, request ListUsersRequestObject) (ListUsersResponseObject, error)
-	// CreateUser Create a user
-	// (POST /users)
-	CreateUser(ctx context.Context, request CreateUserRequestObject) (CreateUserResponseObject, error)
+	// StartChargingSession Start an EV charging session
+	// (POST /charging-sessions)
+	StartChargingSession(ctx context.Context, request StartChargingSessionRequestObject) (StartChargingSessionResponseObject, error)
+	// GetChargingSession Retrieve live charging session details
+	// (GET /charging-sessions/{sessionId})
+	GetChargingSession(ctx context.Context, request GetChargingSessionRequestObject) (GetChargingSessionResponseObject, error)
+	// StopChargingSession Request termination of a charging session
+	// (POST /charging-sessions/{sessionId}/stop)
+	StopChargingSession(ctx context.Context, request StopChargingSessionRequestObject) (StopChargingSessionResponseObject, error)
+	// GetCurrentDriver Retrieve the authenticated driver profile
+	// (GET /drivers/me)
+	GetCurrentDriver(ctx context.Context, request GetCurrentDriverRequestObject) (GetCurrentDriverResponseObject, error)
+	// ListFleetInvoices Retrieve corporate monthly invoices
+	// (GET /fleets/{fleetId}/invoices)
+	ListFleetInvoices(ctx context.Context, request ListFleetInvoicesRequestObject) (ListFleetInvoicesResponseObject, error)
+	// ListFleetVehicles List registered corporate fleet vehicles
+	// (GET /fleets/{fleetId}/vehicles)
+	ListFleetVehicles(ctx context.Context, request ListFleetVehiclesRequestObject) (ListFleetVehiclesResponseObject, error)
+	// GetHealth Platform health check
+	// (GET /health)
+	GetHealth(ctx context.Context, request GetHealthRequestObject) (GetHealthResponseObject, error)
+	// SearchChargingStations Discover nearby charging stations
+	// (GET /stations)
+	SearchChargingStations(ctx context.Context, request SearchChargingStationsRequestObject) (SearchChargingStationsResponseObject, error)
 }
 
 // StrictHandlerFunc and StrictMiddlewareFunc are type aliases rather than
@@ -644,23 +1271,36 @@ type strictHandler struct {
 	options     StrictHTTPServerOptions
 }
 
-// GetDevices operation middleware
-func (sh *strictHandler) GetDevices(w http.ResponseWriter, r *http.Request) {
-	var request GetDevicesRequestObject
+// StartChargingSession operation middleware
+func (sh *strictHandler) StartChargingSession(w http.ResponseWriter, r *http.Request, params StartChargingSessionParams) {
+	var request StartChargingSessionRequestObject
+
+	request.Params = params
+
+	if err := sh.validateJSONBody("StartChargingSession", r); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, err)
+		return
+	}
+	var body StartChargingSessionJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
-		return sh.ssi.GetDevices(ctx, request.(GetDevicesRequestObject))
+		return sh.ssi.StartChargingSession(ctx, request.(StartChargingSessionRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "GetDevices")
+		handler = middleware(handler, "StartChargingSession")
 	}
 
 	response, err := handler(r.Context(), w, r, request)
 
 	if err != nil {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(GetDevicesResponseObject); ok {
-		if err := validResponse.VisitGetDevicesResponse(w); err != nil {
+	} else if validResponse, ok := response.(StartChargingSessionResponseObject); ok {
+		if err := validResponse.VisitStartChargingSessionResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -668,23 +1308,25 @@ func (sh *strictHandler) GetDevices(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// GetLegacyImplicit operation middleware
-func (sh *strictHandler) GetLegacyImplicit(w http.ResponseWriter, r *http.Request) {
-	var request GetLegacyImplicitRequestObject
+// GetChargingSession operation middleware
+func (sh *strictHandler) GetChargingSession(w http.ResponseWriter, r *http.Request, sessionID SessionID) {
+	var request GetChargingSessionRequestObject
+
+	request.SessionID = sessionID
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
-		return sh.ssi.GetLegacyImplicit(ctx, request.(GetLegacyImplicitRequestObject))
+		return sh.ssi.GetChargingSession(ctx, request.(GetChargingSessionRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "GetLegacyImplicit")
+		handler = middleware(handler, "GetChargingSession")
 	}
 
 	response, err := handler(r.Context(), w, r, request)
 
 	if err != nil {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(GetLegacyImplicitResponseObject); ok {
-		if err := validResponse.VisitGetLegacyImplicitResponse(w); err != nil {
+	} else if validResponse, ok := response.(GetChargingSessionResponseObject); ok {
+		if err := validResponse.VisitGetChargingSessionResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -692,23 +1334,26 @@ func (sh *strictHandler) GetLegacyImplicit(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-// GetLegacyPassword operation middleware
-func (sh *strictHandler) GetLegacyPassword(w http.ResponseWriter, r *http.Request) {
-	var request GetLegacyPasswordRequestObject
+// StopChargingSession operation middleware
+func (sh *strictHandler) StopChargingSession(w http.ResponseWriter, r *http.Request, sessionID SessionID, params StopChargingSessionParams) {
+	var request StopChargingSessionRequestObject
+
+	request.SessionID = sessionID
+	request.Params = params
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
-		return sh.ssi.GetLegacyPassword(ctx, request.(GetLegacyPasswordRequestObject))
+		return sh.ssi.StopChargingSession(ctx, request.(StopChargingSessionRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "GetLegacyPassword")
+		handler = middleware(handler, "StopChargingSession")
 	}
 
 	response, err := handler(r.Context(), w, r, request)
 
 	if err != nil {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(GetLegacyPasswordResponseObject); ok {
-		if err := validResponse.VisitGetLegacyPasswordResponse(w); err != nil {
+	} else if validResponse, ok := response.(StopChargingSessionResponseObject); ok {
+		if err := validResponse.VisitStopChargingSessionResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -716,23 +1361,23 @@ func (sh *strictHandler) GetLegacyPassword(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-// GetOptionalAuth operation middleware
-func (sh *strictHandler) GetOptionalAuth(w http.ResponseWriter, r *http.Request) {
-	var request GetOptionalAuthRequestObject
+// GetCurrentDriver operation middleware
+func (sh *strictHandler) GetCurrentDriver(w http.ResponseWriter, r *http.Request) {
+	var request GetCurrentDriverRequestObject
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
-		return sh.ssi.GetOptionalAuth(ctx, request.(GetOptionalAuthRequestObject))
+		return sh.ssi.GetCurrentDriver(ctx, request.(GetCurrentDriverRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "GetOptionalAuth")
+		handler = middleware(handler, "GetCurrentDriver")
 	}
 
 	response, err := handler(r.Context(), w, r, request)
 
 	if err != nil {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(GetOptionalAuthResponseObject); ok {
-		if err := validResponse.VisitGetOptionalAuthResponse(w); err != nil {
+	} else if validResponse, ok := response.(GetCurrentDriverResponseObject); ok {
+		if err := validResponse.VisitGetCurrentDriverResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -740,23 +1385,26 @@ func (sh *strictHandler) GetOptionalAuth(w http.ResponseWriter, r *http.Request)
 	}
 }
 
-// GetPublic operation middleware
-func (sh *strictHandler) GetPublic(w http.ResponseWriter, r *http.Request) {
-	var request GetPublicRequestObject
+// ListFleetInvoices operation middleware
+func (sh *strictHandler) ListFleetInvoices(w http.ResponseWriter, r *http.Request, fleetID FleetID, params ListFleetInvoicesParams) {
+	var request ListFleetInvoicesRequestObject
+
+	request.FleetID = fleetID
+	request.Params = params
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
-		return sh.ssi.GetPublic(ctx, request.(GetPublicRequestObject))
+		return sh.ssi.ListFleetInvoices(ctx, request.(ListFleetInvoicesRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "GetPublic")
+		handler = middleware(handler, "ListFleetInvoices")
 	}
 
 	response, err := handler(r.Context(), w, r, request)
 
 	if err != nil {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(GetPublicResponseObject); ok {
-		if err := validResponse.VisitGetPublicResponse(w); err != nil {
+	} else if validResponse, ok := response.(ListFleetInvoicesResponseObject); ok {
+		if err := validResponse.VisitListFleetInvoicesResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -764,23 +1412,26 @@ func (sh *strictHandler) GetPublic(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// GetReports operation middleware
-func (sh *strictHandler) GetReports(w http.ResponseWriter, r *http.Request) {
-	var request GetReportsRequestObject
+// ListFleetVehicles operation middleware
+func (sh *strictHandler) ListFleetVehicles(w http.ResponseWriter, r *http.Request, fleetID FleetID, params ListFleetVehiclesParams) {
+	var request ListFleetVehiclesRequestObject
+
+	request.FleetID = fleetID
+	request.Params = params
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
-		return sh.ssi.GetReports(ctx, request.(GetReportsRequestObject))
+		return sh.ssi.ListFleetVehicles(ctx, request.(ListFleetVehiclesRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "GetReports")
+		handler = middleware(handler, "ListFleetVehicles")
 	}
 
 	response, err := handler(r.Context(), w, r, request)
 
 	if err != nil {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(GetReportsResponseObject); ok {
-		if err := validResponse.VisitGetReportsResponse(w); err != nil {
+	} else if validResponse, ok := response.(ListFleetVehiclesResponseObject); ok {
+		if err := validResponse.VisitListFleetVehiclesResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -788,23 +1439,23 @@ func (sh *strictHandler) GetReports(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// GetServices operation middleware
-func (sh *strictHandler) GetServices(w http.ResponseWriter, r *http.Request) {
-	var request GetServicesRequestObject
+// GetHealth operation middleware
+func (sh *strictHandler) GetHealth(w http.ResponseWriter, r *http.Request) {
+	var request GetHealthRequestObject
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
-		return sh.ssi.GetServices(ctx, request.(GetServicesRequestObject))
+		return sh.ssi.GetHealth(ctx, request.(GetHealthRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "GetServices")
+		handler = middleware(handler, "GetHealth")
 	}
 
 	response, err := handler(r.Context(), w, r, request)
 
 	if err != nil {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(GetServicesResponseObject); ok {
-		if err := validResponse.VisitGetServicesResponse(w); err != nil {
+	} else if validResponse, ok := response.(GetHealthResponseObject); ok {
+		if err := validResponse.VisitGetHealthResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -812,47 +1463,25 @@ func (sh *strictHandler) GetServices(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// ListUsers operation middleware
-func (sh *strictHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
-	var request ListUsersRequestObject
+// SearchChargingStations operation middleware
+func (sh *strictHandler) SearchChargingStations(w http.ResponseWriter, r *http.Request, params SearchChargingStationsParams) {
+	var request SearchChargingStationsRequestObject
+
+	request.Params = params
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
-		return sh.ssi.ListUsers(ctx, request.(ListUsersRequestObject))
+		return sh.ssi.SearchChargingStations(ctx, request.(SearchChargingStationsRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "ListUsers")
+		handler = middleware(handler, "SearchChargingStations")
 	}
 
 	response, err := handler(r.Context(), w, r, request)
 
 	if err != nil {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(ListUsersResponseObject); ok {
-		if err := validResponse.VisitListUsersResponse(w); err != nil {
-			sh.options.ResponseErrorHandlerFunc(w, r, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
-// CreateUser operation middleware
-func (sh *strictHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
-	var request CreateUserRequestObject
-
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
-		return sh.ssi.CreateUser(ctx, request.(CreateUserRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "CreateUser")
-	}
-
-	response, err := handler(r.Context(), w, r, request)
-
-	if err != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(CreateUserResponseObject); ok {
-		if err := validResponse.VisitCreateUserResponse(w); err != nil {
+	} else if validResponse, ok := response.(SearchChargingStationsResponseObject); ok {
+		if err := validResponse.VisitSearchChargingStationsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -887,6 +1516,40 @@ func (sh *strictHandler) validateJSONBody(operationID string, r *http.Request) e
 	return validator.Validate(bytes.NewReader(body))
 }
 
+// StartChargingSessionJSONRequestBodySchema defines the JSON schema used to validate StartChargingSessionJSONRequestBody request bodies.
+const StartChargingSessionJSONRequestBodySchema = `{
+  "additionalProperties": false,
+  "dependentRequired": {
+    "costCenter": [
+      "fleetId"
+    ]
+  },
+  "properties": {
+    "connectorId": {
+      "type": "string"
+    },
+    "costCenter": {
+      "maxLength": 64,
+      "type": "string"
+    },
+    "fleetId": {
+      "type": "string"
+    },
+    "stationId": {
+      "type": "string"
+    },
+    "vehicleId": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "stationId",
+    "connectorId",
+    "vehicleId"
+  ],
+  "type": "object"
+}`
+
 // SchemaRegistry manages registered JSON schemas.
 type SchemaRegistry interface {
 	Register(name, source string) error
@@ -919,7 +1582,9 @@ func NewInMemorySchemaRegistry() *InMemorySchemaRegistry {
 func NewDefaultSchemaRegistry() (*InMemorySchemaRegistry, error) {
 	registry := NewInMemorySchemaRegistry()
 
-	schemas := map[string]string{}
+	schemas := map[string]string{
+		"StartChargingSession": StartChargingSessionJSONRequestBodySchema,
+	}
 	for name, schema := range schemas {
 		if err := registry.Register(name, schema); err != nil {
 			return nil, err

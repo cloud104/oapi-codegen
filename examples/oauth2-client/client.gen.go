@@ -4,6 +4,7 @@
 package examples
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -13,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/coreos/go-oidc/v3/oidc"
+	"github.com/oapi-codegen/runtime"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
 )
@@ -43,13 +45,13 @@ type rawClient struct {
 	// the network.
 	RequestEditors []RequestEditorFn
 
-	// OAuth2ClientCredentials authenticates requests using the OAuth 2.0 Client Credentials Grant.
-	OAuth2ClientCredentials struct {
+	// DriverOAuth authenticates requests using the OAuth 2.0 Resource Owner Password Credentials Grant.
+	DriverOAuth struct {
 		TokenSource oauth2.TokenSource
 	}
 
-	// OAuth2Password authenticates requests using the OAuth 2.0 Resource Owner Password Credentials Grant.
-	OAuth2Password struct {
+	// PartnerOAuth authenticates requests using the OAuth 2.0 Client Credentials Grant.
+	PartnerOAuth struct {
 		TokenSource oauth2.TokenSource
 	}
 }
@@ -98,44 +100,7 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 	}
 }
 
-func WithOAuth2ClientCredentials(clientID, clientSecret string, issuer ...string) ClientOption {
-	return func(c *rawClient) error {
-		ctx := context.Background()
-
-		config := &clientcredentials.Config{
-			ClientID:     clientID,
-			ClientSecret: clientSecret,
-			TokenURL:     "https://auth.example.com/oauth2/token",
-			Scopes: []string{
-				"read",
-			},
-		}
-
-		if len(issuer) > 1 {
-			return fmt.Errorf("expected at most one issuer")
-		}
-
-		if len(issuer) == 1 && issuer[0] != "" {
-			provider, err := oidc.NewProvider(ctx, issuer[0])
-			if err != nil {
-				return fmt.Errorf("discover OIDC provider: %w", err)
-			}
-
-			endpoint := provider.Endpoint()
-			if endpoint.TokenURL == "" {
-				return fmt.Errorf("OIDC provider has no token endpoint")
-			}
-
-			config.TokenURL = endpoint.TokenURL
-			config.AuthStyle = endpoint.AuthStyle
-		}
-
-		c.OAuth2ClientCredentials.TokenSource = config.TokenSource(ctx)
-		return nil
-	}
-}
-
-func WithOAuth2Password(clientID, clientSecret, username, password string, issuer ...string) ClientOption {
+func WithDriverOAuth(clientID, clientSecret, username, password string, issuer ...string) ClientOption {
 	return func(c *rawClient) error {
 		ctx := context.Background()
 
@@ -143,10 +108,10 @@ func WithOAuth2Password(clientID, clientSecret, username, password string, issue
 			ClientID:     clientID,
 			ClientSecret: clientSecret,
 			Endpoint: oauth2.Endpoint{
-				TokenURL: "https://auth.example.com/oauth2/token",
+				TokenURL: "https://identity.voltgrid.example/oauth2/token",
 			},
 			Scopes: []string{
-				"read",
+				"charging:start",
 			},
 		}
 
@@ -173,7 +138,44 @@ func WithOAuth2Password(clientID, clientSecret, username, password string, issue
 			return fmt.Errorf("authenticate: %w", err)
 		}
 
-		c.OAuth2Password.TokenSource = config.TokenSource(ctx, token)
+		c.DriverOAuth.TokenSource = config.TokenSource(ctx, token)
+		return nil
+	}
+}
+
+func WithPartnerOAuth(clientID, clientSecret string, issuer ...string) ClientOption {
+	return func(c *rawClient) error {
+		ctx := context.Background()
+
+		config := &clientcredentials.Config{
+			ClientID:     clientID,
+			ClientSecret: clientSecret,
+			TokenURL:     "https://identity.voltgrid.example/oauth2/token",
+			Scopes: []string{
+				"fleet:charging:start",
+			},
+		}
+
+		if len(issuer) > 1 {
+			return fmt.Errorf("expected at most one issuer")
+		}
+
+		if len(issuer) == 1 && issuer[0] != "" {
+			provider, err := oidc.NewProvider(ctx, issuer[0])
+			if err != nil {
+				return fmt.Errorf("discover OIDC provider: %w", err)
+			}
+
+			endpoint := provider.Endpoint()
+			if endpoint.TokenURL == "" {
+				return fmt.Errorf("OIDC provider has no token endpoint")
+			}
+
+			config.TokenURL = endpoint.TokenURL
+			config.AuthStyle = endpoint.AuthStyle
+		}
+
+		c.PartnerOAuth.TokenSource = config.TokenSource(ctx)
 		return nil
 	}
 }
@@ -181,275 +183,327 @@ func WithOAuth2Password(clientID, clientSecret, username, password string, issue
 // The interface specification for the client above.
 type rawClientInterface interface {
 
-	// GetDevices Device authentication endpoint
+	// StartChargingSession Start an EV charging session
 	//
-	// Corresponds with GET /devices (the `GetDevices` operationId).
-	getDevices(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Drivers may start sessions for themselves.
+	// Fleet partners may start sessions for authorized
+	// vehicles belonging to their fleet.
+	//
+	// Reusing an idempotency key with the same payload
+	// returns the original operation result.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /charging-sessions (the `StartChargingSession` operationId).
+	startChargingSession(ctx context.Context, params *StartChargingSessionParams, body StartChargingSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetLegacyImplicit Legacy implicit authentication
+	// GetChargingSession Retrieve live charging session details
 	//
-	// Corresponds with GET /legacy/implicit (the `GetLegacyImplicit` operationId).
-	//
-	// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
-	getLegacyImplicit(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Corresponds with GET /charging-sessions/{sessionId} (the `GetChargingSession` operationId).
+	getChargingSession(ctx context.Context, sessionID SessionID, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetLegacyPassword Legacy password authentication
+	// StopChargingSession Request termination of a charging session
 	//
-	// Corresponds with GET /legacy/password (the `GetLegacyPassword` operationId).
-	//
-	// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
-	getLegacyPassword(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Corresponds with POST /charging-sessions/{sessionId}/stop (the `StopChargingSession` operationId).
+	stopChargingSession(ctx context.Context, sessionID SessionID, params *StopChargingSessionParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetOptionalAuth Optional authentication
+	// GetCurrentDriver Retrieve the authenticated driver profile
 	//
-	// Corresponds with GET /optional-auth (the `GetOptionalAuth` operationId).
-	getOptionalAuth(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Corresponds with GET /drivers/me (the `GetCurrentDriver` operationId).
+	getCurrentDriver(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetPublic Public endpoint without authentication
+	// ListFleetInvoices Retrieve corporate monthly invoices
 	//
-	// Corresponds with GET /public (the `GetPublic` operationId).
-	getPublic(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Corresponds with GET /fleets/{fleetId}/invoices (the `ListFleetInvoices` operationId).
+	listFleetInvoices(ctx context.Context, fleetID FleetID, params *ListFleetInvoicesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetReports Accept multiple authentication flows
+	// ListFleetVehicles List registered corporate fleet vehicles
 	//
-	// Corresponds with GET /reports (the `GetReports` operationId).
-	getReports(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Corresponds with GET /fleets/{fleetId}/vehicles (the `ListFleetVehicles` operationId).
+	listFleetVehicles(ctx context.Context, fleetID FleetID, params *ListFleetVehiclesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetServices Machine-to-machine endpoint
+	// GetHealth Platform health check
 	//
-	// Corresponds with GET /services (the `GetServices` operationId).
-	getServices(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Corresponds with GET /health (the `GetHealth` operationId).
+	getHealth(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListUsers List users
+	// SearchChargingStations Discover nearby charging stations
 	//
-	// Corresponds with GET /users (the `ListUsers` operationId).
-	listUsers(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CreateUser Create a user
+	// Returns charging stations within the specified radius,
+	// including real-time connector availability.
 	//
-	// Corresponds with POST /users (the `CreateUser` operationId).
-	createUser(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// Accessible to both drivers and integration partners.
+	//
+	// Corresponds with GET /stations (the `SearchChargingStations` operationId).
+	searchChargingStations(ctx context.Context, params *SearchChargingStationsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
-// getDevices performs a GET /devices (the `GetDevices` operationId) request.
-func (c *rawClient) getDevices(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := newGetDevicesRequest(c.Server)
-	if err != nil {
-		return nil, fmt.Errorf("create GET /devices request: %w", err)
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, fmt.Errorf("apply editors to GET /devices request: %w", err)
-	}
-	resp, err := c.Client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("perform GET /devices request: %w", err)
-	}
-	return resp, nil
-}
-
-// getLegacyImplicit performs a GET /legacy/implicit (the `GetLegacyImplicit` operationId) request.
-func (c *rawClient) getLegacyImplicit(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := newGetLegacyImplicitRequest(c.Server)
-	if err != nil {
-		return nil, fmt.Errorf("create GET /legacy/implicit request: %w", err)
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, fmt.Errorf("apply editors to GET /legacy/implicit request: %w", err)
-	}
-	resp, err := c.Client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("perform GET /legacy/implicit request: %w", err)
-	}
-	return resp, nil
-}
-
-// getLegacyPassword performs an authenticated GET /legacy/password (the `GetLegacyPassword` operationId) request.
-func (c *rawClient) getLegacyPassword(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+// startChargingSession performs an authenticated POST /charging-sessions (the `StartChargingSession` operationId) request.
+func (c *rawClient) startChargingSession(ctx context.Context, params *StartChargingSessionParams, body StartChargingSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	editors := append(slices.Clone(reqEditors), func(ctx context.Context, req *http.Request) error {
-		if c.OAuth2Password.TokenSource != nil {
-			token, err := c.OAuth2Password.TokenSource.Token()
+		if c.DriverOAuth.TokenSource != nil {
+			token, err := c.DriverOAuth.TokenSource.Token()
 			if err != nil {
-				return fmt.Errorf("get authentication token for GET /legacy/password: %w", err)
+				return fmt.Errorf("get authentication token for POST /charging-sessions: %w", err)
+			}
+			token.SetAuthHeader(req)
+		}
+		if c.PartnerOAuth.TokenSource != nil {
+			token, err := c.PartnerOAuth.TokenSource.Token()
+			if err != nil {
+				return fmt.Errorf("get authentication token for POST /charging-sessions: %w", err)
 			}
 			token.SetAuthHeader(req)
 		}
 		return nil
 	})
 
-	return c.unauthenticatedGetLegacyPassword(ctx, editors...)
+	return c.unauthenticatedStartChargingSession(ctx, params, body, editors...)
 }
 
-// unauthenticatedGetLegacyPassword performs a GET /legacy/password (the `GetLegacyPassword` operationId) request without authentication.
-func (c *rawClient) unauthenticatedGetLegacyPassword(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := newGetLegacyPasswordRequest(c.Server)
+// unauthenticatedStartChargingSession performs a POST /charging-sessions (the `StartChargingSession` operationId) request without authentication.
+func (c *rawClient) unauthenticatedStartChargingSession(ctx context.Context, params *StartChargingSessionParams, body StartChargingSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := newStartChargingSessionRequest(c.Server, params, body)
 	if err != nil {
-		return nil, fmt.Errorf("create GET /legacy/password request: %w", err)
+		return nil, fmt.Errorf("create POST /charging-sessions request: %w", err)
 	}
 	req = req.WithContext(ctx)
 	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, fmt.Errorf("apply editors to GET /legacy/password request: %w", err)
+		return nil, fmt.Errorf("apply editors to POST /charging-sessions request: %w", err)
 	}
 	resp, err := c.Client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("perform GET /legacy/password request: %w", err)
+		return nil, fmt.Errorf("perform POST /charging-sessions request: %w", err)
 	}
 	return resp, nil
 }
 
-// getOptionalAuth performs an authenticated GET /optional-auth (the `GetOptionalAuth` operationId) request.
-func (c *rawClient) getOptionalAuth(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+// getChargingSession performs an authenticated GET /charging-sessions/{sessionId} (the `GetChargingSession` operationId) request.
+func (c *rawClient) getChargingSession(ctx context.Context, sessionID SessionID, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	editors := append(slices.Clone(reqEditors), func(ctx context.Context, req *http.Request) error {
-		if c.OAuth2ClientCredentials.TokenSource != nil {
-			token, err := c.OAuth2ClientCredentials.TokenSource.Token()
+		if c.DriverOAuth.TokenSource != nil {
+			token, err := c.DriverOAuth.TokenSource.Token()
 			if err != nil {
-				return fmt.Errorf("get authentication token for GET /optional-auth: %w", err)
+				return fmt.Errorf("get authentication token for GET /charging-sessions/{sessionId}: %w", err)
+			}
+			token.SetAuthHeader(req)
+		}
+		if c.PartnerOAuth.TokenSource != nil {
+			token, err := c.PartnerOAuth.TokenSource.Token()
+			if err != nil {
+				return fmt.Errorf("get authentication token for GET /charging-sessions/{sessionId}: %w", err)
 			}
 			token.SetAuthHeader(req)
 		}
 		return nil
 	})
 
-	return c.unauthenticatedGetOptionalAuth(ctx, editors...)
+	return c.unauthenticatedGetChargingSession(ctx, sessionID, editors...)
 }
 
-// unauthenticatedGetOptionalAuth performs a GET /optional-auth (the `GetOptionalAuth` operationId) request without authentication.
-func (c *rawClient) unauthenticatedGetOptionalAuth(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := newGetOptionalAuthRequest(c.Server)
+// unauthenticatedGetChargingSession performs a GET /charging-sessions/{sessionId} (the `GetChargingSession` operationId) request without authentication.
+func (c *rawClient) unauthenticatedGetChargingSession(ctx context.Context, sessionID SessionID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := newGetChargingSessionRequest(c.Server, sessionID)
 	if err != nil {
-		return nil, fmt.Errorf("create GET /optional-auth request: %w", err)
+		return nil, fmt.Errorf("create GET /charging-sessions/{sessionId} request: %w", err)
 	}
 	req = req.WithContext(ctx)
 	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, fmt.Errorf("apply editors to GET /optional-auth request: %w", err)
+		return nil, fmt.Errorf("apply editors to GET /charging-sessions/{sessionId} request: %w", err)
 	}
 	resp, err := c.Client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("perform GET /optional-auth request: %w", err)
+		return nil, fmt.Errorf("perform GET /charging-sessions/{sessionId} request: %w", err)
 	}
 	return resp, nil
 }
 
-// getPublic performs a GET /public (the `GetPublic` operationId) request.
-func (c *rawClient) getPublic(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := newGetPublicRequest(c.Server)
-	if err != nil {
-		return nil, fmt.Errorf("create GET /public request: %w", err)
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, fmt.Errorf("apply editors to GET /public request: %w", err)
-	}
-	resp, err := c.Client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("perform GET /public request: %w", err)
-	}
-	return resp, nil
-}
-
-// getReports performs an authenticated GET /reports (the `GetReports` operationId) request.
-func (c *rawClient) getReports(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+// stopChargingSession performs an authenticated POST /charging-sessions/{sessionId}/stop (the `StopChargingSession` operationId) request.
+func (c *rawClient) stopChargingSession(ctx context.Context, sessionID SessionID, params *StopChargingSessionParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	editors := append(slices.Clone(reqEditors), func(ctx context.Context, req *http.Request) error {
-		if c.OAuth2ClientCredentials.TokenSource != nil {
-			token, err := c.OAuth2ClientCredentials.TokenSource.Token()
+		if c.DriverOAuth.TokenSource != nil {
+			token, err := c.DriverOAuth.TokenSource.Token()
 			if err != nil {
-				return fmt.Errorf("get authentication token for GET /reports: %w", err)
+				return fmt.Errorf("get authentication token for POST /charging-sessions/{sessionId}/stop: %w", err)
+			}
+			token.SetAuthHeader(req)
+		}
+		if c.PartnerOAuth.TokenSource != nil {
+			token, err := c.PartnerOAuth.TokenSource.Token()
+			if err != nil {
+				return fmt.Errorf("get authentication token for POST /charging-sessions/{sessionId}/stop: %w", err)
 			}
 			token.SetAuthHeader(req)
 		}
 		return nil
 	})
 
-	return c.unauthenticatedGetReports(ctx, editors...)
+	return c.unauthenticatedStopChargingSession(ctx, sessionID, params, editors...)
 }
 
-// unauthenticatedGetReports performs a GET /reports (the `GetReports` operationId) request without authentication.
-func (c *rawClient) unauthenticatedGetReports(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := newGetReportsRequest(c.Server)
+// unauthenticatedStopChargingSession performs a POST /charging-sessions/{sessionId}/stop (the `StopChargingSession` operationId) request without authentication.
+func (c *rawClient) unauthenticatedStopChargingSession(ctx context.Context, sessionID SessionID, params *StopChargingSessionParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := newStopChargingSessionRequest(c.Server, sessionID, params)
 	if err != nil {
-		return nil, fmt.Errorf("create GET /reports request: %w", err)
+		return nil, fmt.Errorf("create POST /charging-sessions/{sessionId}/stop request: %w", err)
 	}
 	req = req.WithContext(ctx)
 	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, fmt.Errorf("apply editors to GET /reports request: %w", err)
+		return nil, fmt.Errorf("apply editors to POST /charging-sessions/{sessionId}/stop request: %w", err)
 	}
 	resp, err := c.Client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("perform GET /reports request: %w", err)
+		return nil, fmt.Errorf("perform POST /charging-sessions/{sessionId}/stop request: %w", err)
 	}
 	return resp, nil
 }
 
-// getServices performs an authenticated GET /services (the `GetServices` operationId) request.
-func (c *rawClient) getServices(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+// getCurrentDriver performs an authenticated GET /drivers/me (the `GetCurrentDriver` operationId) request.
+func (c *rawClient) getCurrentDriver(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	editors := append(slices.Clone(reqEditors), func(ctx context.Context, req *http.Request) error {
-		if c.OAuth2ClientCredentials.TokenSource != nil {
-			token, err := c.OAuth2ClientCredentials.TokenSource.Token()
+		if c.DriverOAuth.TokenSource != nil {
+			token, err := c.DriverOAuth.TokenSource.Token()
 			if err != nil {
-				return fmt.Errorf("get authentication token for GET /services: %w", err)
+				return fmt.Errorf("get authentication token for GET /drivers/me: %w", err)
 			}
 			token.SetAuthHeader(req)
 		}
 		return nil
 	})
 
-	return c.unauthenticatedGetServices(ctx, editors...)
+	return c.unauthenticatedGetCurrentDriver(ctx, editors...)
 }
 
-// unauthenticatedGetServices performs a GET /services (the `GetServices` operationId) request without authentication.
-func (c *rawClient) unauthenticatedGetServices(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := newGetServicesRequest(c.Server)
+// unauthenticatedGetCurrentDriver performs a GET /drivers/me (the `GetCurrentDriver` operationId) request without authentication.
+func (c *rawClient) unauthenticatedGetCurrentDriver(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := newGetCurrentDriverRequest(c.Server)
 	if err != nil {
-		return nil, fmt.Errorf("create GET /services request: %w", err)
+		return nil, fmt.Errorf("create GET /drivers/me request: %w", err)
 	}
 	req = req.WithContext(ctx)
 	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, fmt.Errorf("apply editors to GET /services request: %w", err)
+		return nil, fmt.Errorf("apply editors to GET /drivers/me request: %w", err)
 	}
 	resp, err := c.Client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("perform GET /services request: %w", err)
+		return nil, fmt.Errorf("perform GET /drivers/me request: %w", err)
 	}
 	return resp, nil
 }
 
-// listUsers performs a GET /users (the `ListUsers` operationId) request.
-func (c *rawClient) listUsers(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := newListUsersRequest(c.Server)
+// listFleetInvoices performs an authenticated GET /fleets/{fleetId}/invoices (the `ListFleetInvoices` operationId) request.
+func (c *rawClient) listFleetInvoices(ctx context.Context, fleetID FleetID, params *ListFleetInvoicesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	editors := append(slices.Clone(reqEditors), func(ctx context.Context, req *http.Request) error {
+		if c.PartnerOAuth.TokenSource != nil {
+			token, err := c.PartnerOAuth.TokenSource.Token()
+			if err != nil {
+				return fmt.Errorf("get authentication token for GET /fleets/{fleetId}/invoices: %w", err)
+			}
+			token.SetAuthHeader(req)
+		}
+		return nil
+	})
+
+	return c.unauthenticatedListFleetInvoices(ctx, fleetID, params, editors...)
+}
+
+// unauthenticatedListFleetInvoices performs a GET /fleets/{fleetId}/invoices (the `ListFleetInvoices` operationId) request without authentication.
+func (c *rawClient) unauthenticatedListFleetInvoices(ctx context.Context, fleetID FleetID, params *ListFleetInvoicesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := newListFleetInvoicesRequest(c.Server, fleetID, params)
 	if err != nil {
-		return nil, fmt.Errorf("create GET /users request: %w", err)
+		return nil, fmt.Errorf("create GET /fleets/{fleetId}/invoices request: %w", err)
 	}
 	req = req.WithContext(ctx)
 	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, fmt.Errorf("apply editors to GET /users request: %w", err)
+		return nil, fmt.Errorf("apply editors to GET /fleets/{fleetId}/invoices request: %w", err)
 	}
 	resp, err := c.Client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("perform GET /users request: %w", err)
+		return nil, fmt.Errorf("perform GET /fleets/{fleetId}/invoices request: %w", err)
 	}
 	return resp, nil
 }
 
-// createUser performs a POST /users (the `CreateUser` operationId) request.
-func (c *rawClient) createUser(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := newCreateUserRequest(c.Server)
+// listFleetVehicles performs an authenticated GET /fleets/{fleetId}/vehicles (the `ListFleetVehicles` operationId) request.
+func (c *rawClient) listFleetVehicles(ctx context.Context, fleetID FleetID, params *ListFleetVehiclesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	editors := append(slices.Clone(reqEditors), func(ctx context.Context, req *http.Request) error {
+		if c.PartnerOAuth.TokenSource != nil {
+			token, err := c.PartnerOAuth.TokenSource.Token()
+			if err != nil {
+				return fmt.Errorf("get authentication token for GET /fleets/{fleetId}/vehicles: %w", err)
+			}
+			token.SetAuthHeader(req)
+		}
+		return nil
+	})
+
+	return c.unauthenticatedListFleetVehicles(ctx, fleetID, params, editors...)
+}
+
+// unauthenticatedListFleetVehicles performs a GET /fleets/{fleetId}/vehicles (the `ListFleetVehicles` operationId) request without authentication.
+func (c *rawClient) unauthenticatedListFleetVehicles(ctx context.Context, fleetID FleetID, params *ListFleetVehiclesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := newListFleetVehiclesRequest(c.Server, fleetID, params)
 	if err != nil {
-		return nil, fmt.Errorf("create POST /users request: %w", err)
+		return nil, fmt.Errorf("create GET /fleets/{fleetId}/vehicles request: %w", err)
 	}
 	req = req.WithContext(ctx)
 	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, fmt.Errorf("apply editors to POST /users request: %w", err)
+		return nil, fmt.Errorf("apply editors to GET /fleets/{fleetId}/vehicles request: %w", err)
 	}
 	resp, err := c.Client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("perform POST /users request: %w", err)
+		return nil, fmt.Errorf("perform GET /fleets/{fleetId}/vehicles request: %w", err)
 	}
 	return resp, nil
 }
 
-// newGetDevicesRequest constructs an http.Request for the GetDevices method
-func newGetDevicesRequest(server string) (*http.Request, error) {
+// getHealth performs a GET /health (the `GetHealth` operationId) request.
+func (c *rawClient) getHealth(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := newGetHealthRequest(c.Server)
+	if err != nil {
+		return nil, fmt.Errorf("create GET /health request: %w", err)
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, fmt.Errorf("apply editors to GET /health request: %w", err)
+	}
+	resp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("perform GET /health request: %w", err)
+	}
+	return resp, nil
+}
+
+// searchChargingStations performs a GET /stations (the `SearchChargingStations` operationId) request.
+func (c *rawClient) searchChargingStations(ctx context.Context, params *SearchChargingStationsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := newSearchChargingStationsRequest(c.Server, params)
+	if err != nil {
+		return nil, fmt.Errorf("create GET /stations request: %w", err)
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, fmt.Errorf("apply editors to GET /stations request: %w", err)
+	}
+	resp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("perform GET /stations request: %w", err)
+	}
+	return resp, nil
+}
+
+// newStartChargingSessionRequest calls the generic StartChargingSession builder with application/json body
+func newStartChargingSessionRequest(server string, params *StartChargingSessionParams, body StartChargingSessionJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := runtime.JSONMarshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return newStartChargingSessionRequestWithBody(server, params, "application/json", bodyReader)
+}
+
+// newStartChargingSessionRequestWithBody constructs an http.Request for the StartChargingSession method, with any body, and a specified content type
+func newStartChargingSessionRequestWithBody(server string, params *StartChargingSessionParams, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -457,7 +511,56 @@ func newGetDevicesRequest(server string) (*http.Request, error) {
 		return nil, err
 	}
 
-	operationPath := "/devices"
+	operationPath := "/charging-sessions"
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: "uuid"})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Idempotency-Key", headerParam0)
+
+	}
+
+	return req, nil
+}
+
+// newGetChargingSessionRequest constructs an http.Request for the GetChargingSession method
+func newGetChargingSessionRequest(server string, sessionID SessionID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "sessionId", sessionID, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := "/charging-sessions/" + pathParam0
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -475,205 +578,23 @@ func newGetDevicesRequest(server string) (*http.Request, error) {
 	return req, nil
 }
 
-// newGetLegacyImplicitRequest constructs an http.Request for the GetLegacyImplicit method
-func newGetLegacyImplicitRequest(server string) (*http.Request, error) {
+// newStopChargingSessionRequest constructs an http.Request for the StopChargingSession method
+func newStopChargingSessionRequest(server string, sessionID SessionID, params *StopChargingSessionParams) (*http.Request, error) {
 	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "sessionId", sessionID, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
 
 	serverURL, err := url.Parse(server)
 	if err != nil {
 		return nil, err
 	}
 
-	operationPath := "/legacy/implicit"
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// newGetLegacyPasswordRequest constructs an http.Request for the GetLegacyPassword method
-func newGetLegacyPasswordRequest(server string) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := "/legacy/password"
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// newGetOptionalAuthRequest constructs an http.Request for the GetOptionalAuth method
-func newGetOptionalAuthRequest(server string) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := "/optional-auth"
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// newGetPublicRequest constructs an http.Request for the GetPublic method
-func newGetPublicRequest(server string) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := "/public"
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// newGetReportsRequest constructs an http.Request for the GetReports method
-func newGetReportsRequest(server string) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := "/reports"
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// newGetServicesRequest constructs an http.Request for the GetServices method
-func newGetServicesRequest(server string) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := "/services"
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// newListUsersRequest constructs an http.Request for the ListUsers method
-func newListUsersRequest(server string) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := "/users"
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// newCreateUserRequest constructs an http.Request for the CreateUser method
-func newCreateUserRequest(server string) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := "/users"
+	operationPath := "/charging-sessions/" + pathParam0 + "/stop"
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -684,6 +605,285 @@ func newCreateUserRequest(server string) (*http.Request, error) {
 	}
 
 	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: "uuid"})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Idempotency-Key", headerParam0)
+
+	}
+
+	return req, nil
+}
+
+// newGetCurrentDriverRequest constructs an http.Request for the GetCurrentDriver method
+func newGetCurrentDriverRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := "/drivers/me"
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// newListFleetInvoicesRequest constructs an http.Request for the ListFleetInvoices method
+func newListFleetInvoicesRequest(server string, fleetID FleetID, params *ListFleetInvoicesParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "fleetId", fleetID, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := "/fleets/" + pathParam0 + "/invoices"
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "billingPeriod", params.BillingPeriod, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			return nil, err
+		} else {
+			for _, qp := range strings.Split(queryFrag, "&") {
+				rawQueryFragments = append(rawQueryFragments, qp)
+			}
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// newListFleetVehiclesRequest constructs an http.Request for the ListFleetVehicles method
+func newListFleetVehiclesRequest(server string, fleetID FleetID, params *ListFleetVehiclesParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "fleetId", fleetID, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := "/fleets/" + pathParam0 + "/vehicles"
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// newGetHealthRequest constructs an http.Request for the GetHealth method
+func newGetHealthRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := "/health"
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// newSearchChargingStationsRequest constructs an http.Request for the SearchChargingStations method
+func newSearchChargingStationsRequest(server string, params *SearchChargingStationsParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := "/stations"
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "latitude", params.Latitude, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "number", Format: ""}); err != nil {
+			return nil, err
+		} else {
+			for _, qp := range strings.Split(queryFrag, "&") {
+				rawQueryFragments = append(rawQueryFragments, qp)
+			}
+		}
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "longitude", params.Longitude, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "number", Format: ""}); err != nil {
+			return nil, err
+		} else {
+			for _, qp := range strings.Split(queryFrag, "&") {
+				rawQueryFragments = append(rawQueryFragments, qp)
+			}
+		}
+
+		if params.RadiusKm != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "radiusKm", *params.RadiusKm, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "number", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.AvailableOnly != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "availableOnly", *params.AvailableOnly, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -735,68 +935,177 @@ func WithBaseURL(baseURL string) ClientOption {
 // ClientInterface is the interface specification for the client with responses above.
 type ClientInterface interface {
 
-	// GetDevices Device authentication endpoint
+	// StartChargingSession Start an EV charging session
 	//
-	// Corresponds with GET /devices (the `GetDevices` operationId).
-	GetDevices(ctx context.Context, reqEditors ...RequestEditorFn) (*GetDevicesResponse, error)
+	// Drivers may start sessions for themselves.
+	// Fleet partners may start sessions for authorized
+	// vehicles belonging to their fleet.
+	//
+	// Reusing an idempotency key with the same payload
+	// returns the original operation result.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /charging-sessions (the `StartChargingSession` operationId).
+	StartChargingSession(ctx context.Context, params *StartChargingSessionParams, body StartChargingSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*StartChargingSessionResponse, error)
 
-	// GetLegacyImplicit Legacy implicit authentication
+	// GetChargingSession Retrieve live charging session details
 	//
-	// Corresponds with GET /legacy/implicit (the `GetLegacyImplicit` operationId).
-	//
-	// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
-	GetLegacyImplicit(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLegacyImplicitResponse, error)
+	// Corresponds with GET /charging-sessions/{sessionId} (the `GetChargingSession` operationId).
+	GetChargingSession(ctx context.Context, sessionID SessionID, reqEditors ...RequestEditorFn) (*GetChargingSessionResponse, error)
 
-	// GetLegacyPassword Legacy password authentication
+	// StopChargingSession Request termination of a charging session
 	//
-	// Corresponds with GET /legacy/password (the `GetLegacyPassword` operationId).
-	//
-	// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
-	GetLegacyPassword(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLegacyPasswordResponse, error)
+	// Corresponds with POST /charging-sessions/{sessionId}/stop (the `StopChargingSession` operationId).
+	StopChargingSession(ctx context.Context, sessionID SessionID, params *StopChargingSessionParams, reqEditors ...RequestEditorFn) (*StopChargingSessionResponse, error)
 
-	// GetOptionalAuth Optional authentication
+	// GetCurrentDriver Retrieve the authenticated driver profile
 	//
-	// Corresponds with GET /optional-auth (the `GetOptionalAuth` operationId).
-	GetOptionalAuth(ctx context.Context, reqEditors ...RequestEditorFn) (*GetOptionalAuthResponse, error)
+	// Corresponds with GET /drivers/me (the `GetCurrentDriver` operationId).
+	GetCurrentDriver(ctx context.Context, reqEditors ...RequestEditorFn) (*GetCurrentDriverResponse, error)
 
-	// GetPublic Public endpoint without authentication
+	// ListFleetInvoices Retrieve corporate monthly invoices
 	//
-	// Corresponds with GET /public (the `GetPublic` operationId).
-	GetPublic(ctx context.Context, reqEditors ...RequestEditorFn) (*GetPublicResponse, error)
+	// Corresponds with GET /fleets/{fleetId}/invoices (the `ListFleetInvoices` operationId).
+	ListFleetInvoices(ctx context.Context, fleetID FleetID, params *ListFleetInvoicesParams, reqEditors ...RequestEditorFn) (*ListFleetInvoicesResponse, error)
 
-	// GetReports Accept multiple authentication flows
+	// ListFleetVehicles List registered corporate fleet vehicles
 	//
-	// Corresponds with GET /reports (the `GetReports` operationId).
-	GetReports(ctx context.Context, reqEditors ...RequestEditorFn) (*GetReportsResponse, error)
+	// Corresponds with GET /fleets/{fleetId}/vehicles (the `ListFleetVehicles` operationId).
+	ListFleetVehicles(ctx context.Context, fleetID FleetID, params *ListFleetVehiclesParams, reqEditors ...RequestEditorFn) (*ListFleetVehiclesResponse, error)
 
-	// GetServices Machine-to-machine endpoint
+	// GetHealth Platform health check
 	//
-	// Corresponds with GET /services (the `GetServices` operationId).
-	GetServices(ctx context.Context, reqEditors ...RequestEditorFn) (*GetServicesResponse, error)
+	// Corresponds with GET /health (the `GetHealth` operationId).
+	GetHealth(ctx context.Context, reqEditors ...RequestEditorFn) (*GetHealthResponse, error)
 
-	// ListUsers List users
+	// SearchChargingStations Discover nearby charging stations
 	//
-	// Corresponds with GET /users (the `ListUsers` operationId).
-	ListUsers(ctx context.Context, reqEditors ...RequestEditorFn) (*ListUsersResponse, error)
-
-	// CreateUser Create a user
+	// Returns charging stations within the specified radius,
+	// including real-time connector availability.
 	//
-	// Corresponds with POST /users (the `CreateUser` operationId).
-	CreateUser(ctx context.Context, reqEditors ...RequestEditorFn) (*CreateUserResponse, error)
+	// Accessible to both drivers and integration partners.
+	//
+	// Corresponds with GET /stations (the `SearchChargingStations` operationId).
+	SearchChargingStations(ctx context.Context, params *SearchChargingStationsParams, reqEditors ...RequestEditorFn) (*SearchChargingStationsResponse, error)
 }
 
-type GetDevicesResponse struct {
+// StartChargingSessionResponse201Headers the declared response headers of an HTTP 201 response for StartChargingSession
+type StartChargingSessionResponse201Headers struct {
+	Location *string
+}
+
+// StartChargingSessionResponse401Headers the declared response headers of an HTTP 401 response for StartChargingSession
+type StartChargingSessionResponse401Headers struct {
+	WWWAuthenticate *string
+}
+
+type StartChargingSessionResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	// JSON201 the response for an HTTP 201 `application/json` response
+	JSON201 *ChargingSession
+	// ApplicationProblemJSON400 the response for an HTTP 400 `application/problem+json` response
+	ApplicationProblemJSON400 *BadRequest
+	// ApplicationProblemJSON401 the response for an HTTP 401 `application/problem+json` response
+	ApplicationProblemJSON401 *Unauthorized
+	// ApplicationProblemJSON403 the response for an HTTP 403 `application/problem+json` response
+	ApplicationProblemJSON403 *Forbidden
+	// ApplicationProblemJSON409 the response for an HTTP 409 `application/problem+json` response
+	ApplicationProblemJSON409 *Problem
+	// Headers201 the parsed response headers for an HTTP 201 response
+	Headers201 *StartChargingSessionResponse201Headers
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *StartChargingSessionResponse401Headers
+}
+
+// GetChargingSession checks if the HTTP response status code is 201, and if so, returns the ChargingSession.
+func (r StartChargingSessionResponse) GetChargingSession() (*ChargingSession, error) {
+	if r.JSON201 != nil {
+		return r.JSON201, nil
+	}
+	if r.HTTPResponse == nil {
+		return nil, fmt.Errorf("missing HTTP response")
+	}
+	switch r.HTTPResponse.StatusCode {
+	case 201:
+		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
+	default:
+		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
+	}
+}
+
+// GetBadRequest checks if the HTTP response status code is 400, and if so, returns the BadRequest.
+func (r StartChargingSessionResponse) GetBadRequest() (*BadRequest, error) {
+	if r.ApplicationProblemJSON400 != nil {
+		return r.ApplicationProblemJSON400, nil
+	}
+	if r.HTTPResponse == nil {
+		return nil, fmt.Errorf("missing HTTP response")
+	}
+	switch r.HTTPResponse.StatusCode {
+	case 400:
+		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
+	default:
+		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
+	}
+}
+
+// GetUnauthorized checks if the HTTP response status code is 401, and if so, returns the Unauthorized.
+func (r StartChargingSessionResponse) GetUnauthorized() (*Unauthorized, error) {
+	if r.ApplicationProblemJSON401 != nil {
+		return r.ApplicationProblemJSON401, nil
+	}
+	if r.HTTPResponse == nil {
+		return nil, fmt.Errorf("missing HTTP response")
+	}
+	switch r.HTTPResponse.StatusCode {
+	case 401:
+		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
+	default:
+		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
+	}
+}
+
+// GetForbidden checks if the HTTP response status code is 403, and if so, returns the Forbidden.
+func (r StartChargingSessionResponse) GetForbidden() (*Forbidden, error) {
+	if r.ApplicationProblemJSON403 != nil {
+		return r.ApplicationProblemJSON403, nil
+	}
+	if r.HTTPResponse == nil {
+		return nil, fmt.Errorf("missing HTTP response")
+	}
+	switch r.HTTPResponse.StatusCode {
+	case 403:
+		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
+	default:
+		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
+	}
+}
+
+// GetProblem checks if the HTTP response status code is 409, and if so, returns the Problem.
+func (r StartChargingSessionResponse) GetProblem() (*Problem, error) {
+	if r.ApplicationProblemJSON409 != nil {
+		return r.ApplicationProblemJSON409, nil
+	}
+	if r.HTTPResponse == nil {
+		return nil, fmt.Errorf("missing HTTP response")
+	}
+	switch r.HTTPResponse.StatusCode {
+	case 409:
+		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
+	default:
+		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
+	}
 }
 
 // GetBody returns the raw response body bytes
-func (r GetDevicesResponse) GetBody() []byte {
+func (r StartChargingSessionResponse) GetBody() []byte {
 	return r.Body
 }
 
 // Error returns an error when the HTTP response does not indicate success.
-func (r GetDevicesResponse) Error() error {
+func (r StartChargingSessionResponse) Error() error {
 	if r.HTTPResponse == nil {
 		return fmt.Errorf("missing HTTP response")
 	}
@@ -807,7 +1116,7 @@ func (r GetDevicesResponse) Error() error {
 }
 
 // Status returns HTTPResponse.Status
-func (r GetDevicesResponse) Status() string {
+func (r StartChargingSessionResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -815,7 +1124,7 @@ func (r GetDevicesResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r GetDevicesResponse) StatusCode() int {
+func (r StartChargingSessionResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -823,25 +1132,104 @@ func (r GetDevicesResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetDevicesResponse) ContentType() string {
+func (r StartChargingSessionResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
-type GetLegacyImplicitResponse struct {
+// GetChargingSessionResponse401Headers the declared response headers of an HTTP 401 response for GetChargingSession
+type GetChargingSessionResponse401Headers struct {
+	WWWAuthenticate *string
+}
+
+type GetChargingSessionResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *ChargingSession
+	// ApplicationProblemJSON401 the response for an HTTP 401 `application/problem+json` response
+	ApplicationProblemJSON401 *Unauthorized
+	// ApplicationProblemJSON403 the response for an HTTP 403 `application/problem+json` response
+	ApplicationProblemJSON403 *Forbidden
+	// ApplicationProblemJSON404 the response for an HTTP 404 `application/problem+json` response
+	ApplicationProblemJSON404 *NotFound
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *GetChargingSessionResponse401Headers
+}
+
+// GetChargingSession checks if the HTTP response status code is 200, and if so, returns the ChargingSession.
+func (r GetChargingSessionResponse) GetChargingSession() (*ChargingSession, error) {
+	if r.JSON200 != nil {
+		return r.JSON200, nil
+	}
+	if r.HTTPResponse == nil {
+		return nil, fmt.Errorf("missing HTTP response")
+	}
+	switch r.HTTPResponse.StatusCode {
+	case 200:
+		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
+	default:
+		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
+	}
+}
+
+// GetUnauthorized checks if the HTTP response status code is 401, and if so, returns the Unauthorized.
+func (r GetChargingSessionResponse) GetUnauthorized() (*Unauthorized, error) {
+	if r.ApplicationProblemJSON401 != nil {
+		return r.ApplicationProblemJSON401, nil
+	}
+	if r.HTTPResponse == nil {
+		return nil, fmt.Errorf("missing HTTP response")
+	}
+	switch r.HTTPResponse.StatusCode {
+	case 401:
+		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
+	default:
+		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
+	}
+}
+
+// GetForbidden checks if the HTTP response status code is 403, and if so, returns the Forbidden.
+func (r GetChargingSessionResponse) GetForbidden() (*Forbidden, error) {
+	if r.ApplicationProblemJSON403 != nil {
+		return r.ApplicationProblemJSON403, nil
+	}
+	if r.HTTPResponse == nil {
+		return nil, fmt.Errorf("missing HTTP response")
+	}
+	switch r.HTTPResponse.StatusCode {
+	case 403:
+		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
+	default:
+		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
+	}
+}
+
+// GetNotFound checks if the HTTP response status code is 404, and if so, returns the NotFound.
+func (r GetChargingSessionResponse) GetNotFound() (*NotFound, error) {
+	if r.ApplicationProblemJSON404 != nil {
+		return r.ApplicationProblemJSON404, nil
+	}
+	if r.HTTPResponse == nil {
+		return nil, fmt.Errorf("missing HTTP response")
+	}
+	switch r.HTTPResponse.StatusCode {
+	case 404:
+		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
+	default:
+		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
+	}
 }
 
 // GetBody returns the raw response body bytes
-func (r GetLegacyImplicitResponse) GetBody() []byte {
+func (r GetChargingSessionResponse) GetBody() []byte {
 	return r.Body
 }
 
 // Error returns an error when the HTTP response does not indicate success.
-func (r GetLegacyImplicitResponse) Error() error {
+func (r GetChargingSessionResponse) Error() error {
 	if r.HTTPResponse == nil {
 		return fmt.Errorf("missing HTTP response")
 	}
@@ -852,7 +1240,7 @@ func (r GetLegacyImplicitResponse) Error() error {
 }
 
 // Status returns HTTPResponse.Status
-func (r GetLegacyImplicitResponse) Status() string {
+func (r GetChargingSessionResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -860,7 +1248,7 @@ func (r GetLegacyImplicitResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r GetLegacyImplicitResponse) StatusCode() int {
+func (r GetChargingSessionResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -868,25 +1256,104 @@ func (r GetLegacyImplicitResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetLegacyImplicitResponse) ContentType() string {
+func (r GetChargingSessionResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
-type GetLegacyPasswordResponse struct {
+// StopChargingSessionResponse401Headers the declared response headers of an HTTP 401 response for StopChargingSession
+type StopChargingSessionResponse401Headers struct {
+	WWWAuthenticate *string
+}
+
+type StopChargingSessionResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	// JSON202 the response for an HTTP 202 `application/json` response
+	JSON202 *ChargingSession
+	// ApplicationProblemJSON401 the response for an HTTP 401 `application/problem+json` response
+	ApplicationProblemJSON401 *Unauthorized
+	// ApplicationProblemJSON403 the response for an HTTP 403 `application/problem+json` response
+	ApplicationProblemJSON403 *Forbidden
+	// ApplicationProblemJSON404 the response for an HTTP 404 `application/problem+json` response
+	ApplicationProblemJSON404 *NotFound
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *StopChargingSessionResponse401Headers
+}
+
+// GetChargingSession checks if the HTTP response status code is 202, and if so, returns the ChargingSession.
+func (r StopChargingSessionResponse) GetChargingSession() (*ChargingSession, error) {
+	if r.JSON202 != nil {
+		return r.JSON202, nil
+	}
+	if r.HTTPResponse == nil {
+		return nil, fmt.Errorf("missing HTTP response")
+	}
+	switch r.HTTPResponse.StatusCode {
+	case 202:
+		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
+	default:
+		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
+	}
+}
+
+// GetUnauthorized checks if the HTTP response status code is 401, and if so, returns the Unauthorized.
+func (r StopChargingSessionResponse) GetUnauthorized() (*Unauthorized, error) {
+	if r.ApplicationProblemJSON401 != nil {
+		return r.ApplicationProblemJSON401, nil
+	}
+	if r.HTTPResponse == nil {
+		return nil, fmt.Errorf("missing HTTP response")
+	}
+	switch r.HTTPResponse.StatusCode {
+	case 401:
+		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
+	default:
+		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
+	}
+}
+
+// GetForbidden checks if the HTTP response status code is 403, and if so, returns the Forbidden.
+func (r StopChargingSessionResponse) GetForbidden() (*Forbidden, error) {
+	if r.ApplicationProblemJSON403 != nil {
+		return r.ApplicationProblemJSON403, nil
+	}
+	if r.HTTPResponse == nil {
+		return nil, fmt.Errorf("missing HTTP response")
+	}
+	switch r.HTTPResponse.StatusCode {
+	case 403:
+		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
+	default:
+		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
+	}
+}
+
+// GetNotFound checks if the HTTP response status code is 404, and if so, returns the NotFound.
+func (r StopChargingSessionResponse) GetNotFound() (*NotFound, error) {
+	if r.ApplicationProblemJSON404 != nil {
+		return r.ApplicationProblemJSON404, nil
+	}
+	if r.HTTPResponse == nil {
+		return nil, fmt.Errorf("missing HTTP response")
+	}
+	switch r.HTTPResponse.StatusCode {
+	case 404:
+		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
+	default:
+		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
+	}
 }
 
 // GetBody returns the raw response body bytes
-func (r GetLegacyPasswordResponse) GetBody() []byte {
+func (r StopChargingSessionResponse) GetBody() []byte {
 	return r.Body
 }
 
 // Error returns an error when the HTTP response does not indicate success.
-func (r GetLegacyPasswordResponse) Error() error {
+func (r StopChargingSessionResponse) Error() error {
 	if r.HTTPResponse == nil {
 		return fmt.Errorf("missing HTTP response")
 	}
@@ -897,7 +1364,7 @@ func (r GetLegacyPasswordResponse) Error() error {
 }
 
 // Status returns HTTPResponse.Status
-func (r GetLegacyPasswordResponse) Status() string {
+func (r StopChargingSessionResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -905,7 +1372,7 @@ func (r GetLegacyPasswordResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r GetLegacyPasswordResponse) StatusCode() int {
+func (r StopChargingSessionResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -913,25 +1380,86 @@ func (r GetLegacyPasswordResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetLegacyPasswordResponse) ContentType() string {
+func (r StopChargingSessionResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
-type GetOptionalAuthResponse struct {
+// GetCurrentDriverResponse401Headers the declared response headers of an HTTP 401 response for GetCurrentDriver
+type GetCurrentDriverResponse401Headers struct {
+	WWWAuthenticate *string
+}
+
+type GetCurrentDriverResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *Driver
+	// ApplicationProblemJSON401 the response for an HTTP 401 `application/problem+json` response
+	ApplicationProblemJSON401 *Unauthorized
+	// ApplicationProblemJSON403 the response for an HTTP 403 `application/problem+json` response
+	ApplicationProblemJSON403 *Forbidden
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *GetCurrentDriverResponse401Headers
+}
+
+// GetDriver checks if the HTTP response status code is 200, and if so, returns the Driver.
+func (r GetCurrentDriverResponse) GetDriver() (*Driver, error) {
+	if r.JSON200 != nil {
+		return r.JSON200, nil
+	}
+	if r.HTTPResponse == nil {
+		return nil, fmt.Errorf("missing HTTP response")
+	}
+	switch r.HTTPResponse.StatusCode {
+	case 200:
+		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
+	default:
+		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
+	}
+}
+
+// GetUnauthorized checks if the HTTP response status code is 401, and if so, returns the Unauthorized.
+func (r GetCurrentDriverResponse) GetUnauthorized() (*Unauthorized, error) {
+	if r.ApplicationProblemJSON401 != nil {
+		return r.ApplicationProblemJSON401, nil
+	}
+	if r.HTTPResponse == nil {
+		return nil, fmt.Errorf("missing HTTP response")
+	}
+	switch r.HTTPResponse.StatusCode {
+	case 401:
+		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
+	default:
+		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
+	}
+}
+
+// GetForbidden checks if the HTTP response status code is 403, and if so, returns the Forbidden.
+func (r GetCurrentDriverResponse) GetForbidden() (*Forbidden, error) {
+	if r.ApplicationProblemJSON403 != nil {
+		return r.ApplicationProblemJSON403, nil
+	}
+	if r.HTTPResponse == nil {
+		return nil, fmt.Errorf("missing HTTP response")
+	}
+	switch r.HTTPResponse.StatusCode {
+	case 403:
+		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
+	default:
+		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
+	}
 }
 
 // GetBody returns the raw response body bytes
-func (r GetOptionalAuthResponse) GetBody() []byte {
+func (r GetCurrentDriverResponse) GetBody() []byte {
 	return r.Body
 }
 
 // Error returns an error when the HTTP response does not indicate success.
-func (r GetOptionalAuthResponse) Error() error {
+func (r GetCurrentDriverResponse) Error() error {
 	if r.HTTPResponse == nil {
 		return fmt.Errorf("missing HTTP response")
 	}
@@ -942,7 +1470,7 @@ func (r GetOptionalAuthResponse) Error() error {
 }
 
 // Status returns HTTPResponse.Status
-func (r GetOptionalAuthResponse) Status() string {
+func (r GetCurrentDriverResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -950,7 +1478,7 @@ func (r GetOptionalAuthResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r GetOptionalAuthResponse) StatusCode() int {
+func (r GetCurrentDriverResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -958,25 +1486,86 @@ func (r GetOptionalAuthResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetOptionalAuthResponse) ContentType() string {
+func (r GetCurrentDriverResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
-type GetPublicResponse struct {
+// ListFleetInvoicesResponse401Headers the declared response headers of an HTTP 401 response for ListFleetInvoices
+type ListFleetInvoicesResponse401Headers struct {
+	WWWAuthenticate *string
+}
+
+type ListFleetInvoicesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *[]Invoice
+	// ApplicationProblemJSON401 the response for an HTTP 401 `application/problem+json` response
+	ApplicationProblemJSON401 *Unauthorized
+	// ApplicationProblemJSON403 the response for an HTTP 403 `application/problem+json` response
+	ApplicationProblemJSON403 *Forbidden
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *ListFleetInvoicesResponse401Headers
+}
+
+// GetInvoices checks if the HTTP response status code is 200, and if so, returns the []Invoice.
+func (r ListFleetInvoicesResponse) GetInvoices() (*[]Invoice, error) {
+	if r.JSON200 != nil {
+		return r.JSON200, nil
+	}
+	if r.HTTPResponse == nil {
+		return nil, fmt.Errorf("missing HTTP response")
+	}
+	switch r.HTTPResponse.StatusCode {
+	case 200:
+		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
+	default:
+		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
+	}
+}
+
+// GetUnauthorized checks if the HTTP response status code is 401, and if so, returns the Unauthorized.
+func (r ListFleetInvoicesResponse) GetUnauthorized() (*Unauthorized, error) {
+	if r.ApplicationProblemJSON401 != nil {
+		return r.ApplicationProblemJSON401, nil
+	}
+	if r.HTTPResponse == nil {
+		return nil, fmt.Errorf("missing HTTP response")
+	}
+	switch r.HTTPResponse.StatusCode {
+	case 401:
+		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
+	default:
+		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
+	}
+}
+
+// GetForbidden checks if the HTTP response status code is 403, and if so, returns the Forbidden.
+func (r ListFleetInvoicesResponse) GetForbidden() (*Forbidden, error) {
+	if r.ApplicationProblemJSON403 != nil {
+		return r.ApplicationProblemJSON403, nil
+	}
+	if r.HTTPResponse == nil {
+		return nil, fmt.Errorf("missing HTTP response")
+	}
+	switch r.HTTPResponse.StatusCode {
+	case 403:
+		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
+	default:
+		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
+	}
 }
 
 // GetBody returns the raw response body bytes
-func (r GetPublicResponse) GetBody() []byte {
+func (r ListFleetInvoicesResponse) GetBody() []byte {
 	return r.Body
 }
 
 // Error returns an error when the HTTP response does not indicate success.
-func (r GetPublicResponse) Error() error {
+func (r ListFleetInvoicesResponse) Error() error {
 	if r.HTTPResponse == nil {
 		return fmt.Errorf("missing HTTP response")
 	}
@@ -987,7 +1576,7 @@ func (r GetPublicResponse) Error() error {
 }
 
 // Status returns HTTPResponse.Status
-func (r GetPublicResponse) Status() string {
+func (r ListFleetInvoicesResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -995,7 +1584,7 @@ func (r GetPublicResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r GetPublicResponse) StatusCode() int {
+func (r ListFleetInvoicesResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -1003,25 +1592,91 @@ func (r GetPublicResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetPublicResponse) ContentType() string {
+func (r ListFleetInvoicesResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
-type GetReportsResponse struct {
+// ListFleetVehiclesResponse401Headers the declared response headers of an HTTP 401 response for ListFleetVehicles
+type ListFleetVehiclesResponse401Headers struct {
+	WWWAuthenticate *string
+}
+
+type ListFleetVehiclesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *struct {
+		Items      []Vehicle `json:"items"`
+		NextCursor *string   `json:"nextCursor"`
+	}
+	// ApplicationProblemJSON401 the response for an HTTP 401 `application/problem+json` response
+	ApplicationProblemJSON401 *Unauthorized
+	// ApplicationProblemJSON403 the response for an HTTP 403 `application/problem+json` response
+	ApplicationProblemJSON403 *Forbidden
+	// ApplicationProblemJSON404 the response for an HTTP 404 `application/problem+json` response
+	ApplicationProblemJSON404 *NotFound
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *ListFleetVehiclesResponse401Headers
+}
+
+// GetUnauthorized checks if the HTTP response status code is 401, and if so, returns the Unauthorized.
+func (r ListFleetVehiclesResponse) GetUnauthorized() (*Unauthorized, error) {
+	if r.ApplicationProblemJSON401 != nil {
+		return r.ApplicationProblemJSON401, nil
+	}
+	if r.HTTPResponse == nil {
+		return nil, fmt.Errorf("missing HTTP response")
+	}
+	switch r.HTTPResponse.StatusCode {
+	case 401:
+		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
+	default:
+		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
+	}
+}
+
+// GetForbidden checks if the HTTP response status code is 403, and if so, returns the Forbidden.
+func (r ListFleetVehiclesResponse) GetForbidden() (*Forbidden, error) {
+	if r.ApplicationProblemJSON403 != nil {
+		return r.ApplicationProblemJSON403, nil
+	}
+	if r.HTTPResponse == nil {
+		return nil, fmt.Errorf("missing HTTP response")
+	}
+	switch r.HTTPResponse.StatusCode {
+	case 403:
+		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
+	default:
+		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
+	}
+}
+
+// GetNotFound checks if the HTTP response status code is 404, and if so, returns the NotFound.
+func (r ListFleetVehiclesResponse) GetNotFound() (*NotFound, error) {
+	if r.ApplicationProblemJSON404 != nil {
+		return r.ApplicationProblemJSON404, nil
+	}
+	if r.HTTPResponse == nil {
+		return nil, fmt.Errorf("missing HTTP response")
+	}
+	switch r.HTTPResponse.StatusCode {
+	case 404:
+		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
+	default:
+		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
+	}
 }
 
 // GetBody returns the raw response body bytes
-func (r GetReportsResponse) GetBody() []byte {
+func (r ListFleetVehiclesResponse) GetBody() []byte {
 	return r.Body
 }
 
 // Error returns an error when the HTTP response does not indicate success.
-func (r GetReportsResponse) Error() error {
+func (r ListFleetVehiclesResponse) Error() error {
 	if r.HTTPResponse == nil {
 		return fmt.Errorf("missing HTTP response")
 	}
@@ -1032,7 +1687,7 @@ func (r GetReportsResponse) Error() error {
 }
 
 // Status returns HTTPResponse.Status
-func (r GetReportsResponse) Status() string {
+func (r ListFleetVehiclesResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -1040,7 +1695,7 @@ func (r GetReportsResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r GetReportsResponse) StatusCode() int {
+func (r ListFleetVehiclesResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -1048,25 +1703,29 @@ func (r GetReportsResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetReportsResponse) ContentType() string {
+func (r ListFleetVehiclesResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
-type GetServicesResponse struct {
+type GetHealthResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *struct {
+		Status GetHealth200JSONResponseBodyStatus `json:"status"`
+	}
 }
 
 // GetBody returns the raw response body bytes
-func (r GetServicesResponse) GetBody() []byte {
+func (r GetHealthResponse) GetBody() []byte {
 	return r.Body
 }
 
 // Error returns an error when the HTTP response does not indicate success.
-func (r GetServicesResponse) Error() error {
+func (r GetHealthResponse) Error() error {
 	if r.HTTPResponse == nil {
 		return fmt.Errorf("missing HTTP response")
 	}
@@ -1077,7 +1736,7 @@ func (r GetServicesResponse) Error() error {
 }
 
 // Status returns HTTPResponse.Status
-func (r GetServicesResponse) Status() string {
+func (r GetHealthResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -1085,7 +1744,7 @@ func (r GetServicesResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r GetServicesResponse) StatusCode() int {
+func (r GetHealthResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -1093,25 +1752,98 @@ func (r GetServicesResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetServicesResponse) ContentType() string {
+func (r GetHealthResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
-type ListUsersResponse struct {
+// SearchChargingStationsResponse401Headers the declared response headers of an HTTP 401 response for SearchChargingStations
+type SearchChargingStationsResponse401Headers struct {
+	WWWAuthenticate *string
+}
+
+// SearchChargingStationsResponse429Headers the declared response headers of an HTTP 429 response for SearchChargingStations
+type SearchChargingStationsResponse429Headers struct {
+	RetryAfter *int
+}
+
+type SearchChargingStationsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *struct {
+		Items []Station `json:"items"`
+		Total int       `json:"total"`
+	}
+	// ApplicationProblemJSON401 the response for an HTTP 401 `application/problem+json` response
+	ApplicationProblemJSON401 *Unauthorized
+	// ApplicationProblemJSON403 the response for an HTTP 403 `application/problem+json` response
+	ApplicationProblemJSON403 *Forbidden
+	// ApplicationProblemJSON429 the response for an HTTP 429 `application/problem+json` response
+	ApplicationProblemJSON429 *RateLimited
+	// Headers401 the parsed response headers for an HTTP 401 response
+	Headers401 *SearchChargingStationsResponse401Headers
+	// Headers429 the parsed response headers for an HTTP 429 response
+	Headers429 *SearchChargingStationsResponse429Headers
+}
+
+// GetUnauthorized checks if the HTTP response status code is 401, and if so, returns the Unauthorized.
+func (r SearchChargingStationsResponse) GetUnauthorized() (*Unauthorized, error) {
+	if r.ApplicationProblemJSON401 != nil {
+		return r.ApplicationProblemJSON401, nil
+	}
+	if r.HTTPResponse == nil {
+		return nil, fmt.Errorf("missing HTTP response")
+	}
+	switch r.HTTPResponse.StatusCode {
+	case 401:
+		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
+	default:
+		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
+	}
+}
+
+// GetForbidden checks if the HTTP response status code is 403, and if so, returns the Forbidden.
+func (r SearchChargingStationsResponse) GetForbidden() (*Forbidden, error) {
+	if r.ApplicationProblemJSON403 != nil {
+		return r.ApplicationProblemJSON403, nil
+	}
+	if r.HTTPResponse == nil {
+		return nil, fmt.Errorf("missing HTTP response")
+	}
+	switch r.HTTPResponse.StatusCode {
+	case 403:
+		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
+	default:
+		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
+	}
+}
+
+// GetRateLimited checks if the HTTP response status code is 429, and if so, returns the RateLimited.
+func (r SearchChargingStationsResponse) GetRateLimited() (*RateLimited, error) {
+	if r.ApplicationProblemJSON429 != nil {
+		return r.ApplicationProblemJSON429, nil
+	}
+	if r.HTTPResponse == nil {
+		return nil, fmt.Errorf("missing HTTP response")
+	}
+	switch r.HTTPResponse.StatusCode {
+	case 429:
+		return nil, fmt.Errorf("expected response body for status %d, but no matching response body was found", r.HTTPResponse.StatusCode)
+	default:
+		return nil, fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
+	}
 }
 
 // GetBody returns the raw response body bytes
-func (r ListUsersResponse) GetBody() []byte {
+func (r SearchChargingStationsResponse) GetBody() []byte {
 	return r.Body
 }
 
 // Error returns an error when the HTTP response does not indicate success.
-func (r ListUsersResponse) Error() error {
+func (r SearchChargingStationsResponse) Error() error {
 	if r.HTTPResponse == nil {
 		return fmt.Errorf("missing HTTP response")
 	}
@@ -1122,7 +1854,7 @@ func (r ListUsersResponse) Error() error {
 }
 
 // Status returns HTTPResponse.Status
-func (r ListUsersResponse) Status() string {
+func (r SearchChargingStationsResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -1130,7 +1862,7 @@ func (r ListUsersResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r ListUsersResponse) StatusCode() int {
+func (r SearchChargingStationsResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -1138,298 +1870,577 @@ func (r ListUsersResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListUsersResponse) ContentType() string {
+func (r SearchChargingStationsResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
-type CreateUserResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-}
-
-// GetBody returns the raw response body bytes
-func (r CreateUserResponse) GetBody() []byte {
-	return r.Body
-}
-
-// Error returns an error when the HTTP response does not indicate success.
-func (r CreateUserResponse) Error() error {
-	if r.HTTPResponse == nil {
-		return fmt.Errorf("missing HTTP response")
-	}
-	if r.HTTPResponse.StatusCode >= 200 && r.HTTPResponse.StatusCode < 300 {
-		return nil
-	}
-	return fmt.Errorf("unexpected response: status %d: %s", r.HTTPResponse.StatusCode, string(r.Body))
-}
-
-// Status returns HTTPResponse.Status
-func (r CreateUserResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CreateUserResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r CreateUserResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-// GetDevices Device authentication endpoint
+// StartChargingSession Start an EV charging session
 //
-// Corresponds with GET /devices (the `GetDevices` operationId).
-func (c *Client) GetDevices(ctx context.Context, reqEditors ...RequestEditorFn) (*GetDevicesResponse, error) {
-	rsp, err := c.getDevices(ctx, reqEditors...)
+// Drivers may start sessions for themselves.
+// Fleet partners may start sessions for authorized
+// vehicles belonging to their fleet.
+//
+// Reusing an idempotency key with the same payload
+// returns the original operation result.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /charging-sessions (the `StartChargingSession` operationId).
+func (c *Client) StartChargingSession(ctx context.Context, params *StartChargingSessionParams, body StartChargingSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*StartChargingSessionResponse, error) {
+	rsp, err := c.startChargingSession(ctx, params, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return parseGetDevicesResponse(rsp)
+	return parseStartChargingSessionResponse(rsp)
 }
 
-// GetLegacyImplicit Legacy implicit authentication
+// GetChargingSession Retrieve live charging session details
 //
-// Corresponds with GET /legacy/implicit (the `GetLegacyImplicit` operationId).
-// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
-func (c *Client) GetLegacyImplicit(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLegacyImplicitResponse, error) {
-	rsp, err := c.getLegacyImplicit(ctx, reqEditors...)
+// Corresponds with GET /charging-sessions/{sessionId} (the `GetChargingSession` operationId).
+func (c *Client) GetChargingSession(ctx context.Context, sessionID SessionID, reqEditors ...RequestEditorFn) (*GetChargingSessionResponse, error) {
+	rsp, err := c.getChargingSession(ctx, sessionID, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return parseGetLegacyImplicitResponse(rsp)
+	return parseGetChargingSessionResponse(rsp)
 }
 
-// GetLegacyPassword Legacy password authentication
+// StopChargingSession Request termination of a charging session
 //
-// Corresponds with GET /legacy/password (the `GetLegacyPassword` operationId).
-// Deprecated: this operation has been marked as deprecated upstream, but no `x-deprecated-reason` was set
-func (c *Client) GetLegacyPassword(ctx context.Context, reqEditors ...RequestEditorFn) (*GetLegacyPasswordResponse, error) {
-	rsp, err := c.getLegacyPassword(ctx, reqEditors...)
+// Corresponds with POST /charging-sessions/{sessionId}/stop (the `StopChargingSession` operationId).
+func (c *Client) StopChargingSession(ctx context.Context, sessionID SessionID, params *StopChargingSessionParams, reqEditors ...RequestEditorFn) (*StopChargingSessionResponse, error) {
+	rsp, err := c.stopChargingSession(ctx, sessionID, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return parseGetLegacyPasswordResponse(rsp)
+	return parseStopChargingSessionResponse(rsp)
 }
 
-// GetOptionalAuth Optional authentication
+// GetCurrentDriver Retrieve the authenticated driver profile
 //
-// Corresponds with GET /optional-auth (the `GetOptionalAuth` operationId).
-func (c *Client) GetOptionalAuth(ctx context.Context, reqEditors ...RequestEditorFn) (*GetOptionalAuthResponse, error) {
-	rsp, err := c.getOptionalAuth(ctx, reqEditors...)
+// Corresponds with GET /drivers/me (the `GetCurrentDriver` operationId).
+func (c *Client) GetCurrentDriver(ctx context.Context, reqEditors ...RequestEditorFn) (*GetCurrentDriverResponse, error) {
+	rsp, err := c.getCurrentDriver(ctx, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return parseGetOptionalAuthResponse(rsp)
+	return parseGetCurrentDriverResponse(rsp)
 }
 
-// GetPublic Public endpoint without authentication
+// ListFleetInvoices Retrieve corporate monthly invoices
 //
-// Corresponds with GET /public (the `GetPublic` operationId).
-func (c *Client) GetPublic(ctx context.Context, reqEditors ...RequestEditorFn) (*GetPublicResponse, error) {
-	rsp, err := c.getPublic(ctx, reqEditors...)
+// Corresponds with GET /fleets/{fleetId}/invoices (the `ListFleetInvoices` operationId).
+func (c *Client) ListFleetInvoices(ctx context.Context, fleetID FleetID, params *ListFleetInvoicesParams, reqEditors ...RequestEditorFn) (*ListFleetInvoicesResponse, error) {
+	rsp, err := c.listFleetInvoices(ctx, fleetID, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return parseGetPublicResponse(rsp)
+	return parseListFleetInvoicesResponse(rsp)
 }
 
-// GetReports Accept multiple authentication flows
+// ListFleetVehicles List registered corporate fleet vehicles
 //
-// Corresponds with GET /reports (the `GetReports` operationId).
-func (c *Client) GetReports(ctx context.Context, reqEditors ...RequestEditorFn) (*GetReportsResponse, error) {
-	rsp, err := c.getReports(ctx, reqEditors...)
+// Corresponds with GET /fleets/{fleetId}/vehicles (the `ListFleetVehicles` operationId).
+func (c *Client) ListFleetVehicles(ctx context.Context, fleetID FleetID, params *ListFleetVehiclesParams, reqEditors ...RequestEditorFn) (*ListFleetVehiclesResponse, error) {
+	rsp, err := c.listFleetVehicles(ctx, fleetID, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return parseGetReportsResponse(rsp)
+	return parseListFleetVehiclesResponse(rsp)
 }
 
-// GetServices Machine-to-machine endpoint
+// GetHealth Platform health check
 //
-// Corresponds with GET /services (the `GetServices` operationId).
-func (c *Client) GetServices(ctx context.Context, reqEditors ...RequestEditorFn) (*GetServicesResponse, error) {
-	rsp, err := c.getServices(ctx, reqEditors...)
+// Corresponds with GET /health (the `GetHealth` operationId).
+func (c *Client) GetHealth(ctx context.Context, reqEditors ...RequestEditorFn) (*GetHealthResponse, error) {
+	rsp, err := c.getHealth(ctx, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return parseGetServicesResponse(rsp)
+	return parseGetHealthResponse(rsp)
 }
 
-// ListUsers List users
+// SearchChargingStations Discover nearby charging stations
 //
-// Corresponds with GET /users (the `ListUsers` operationId).
-func (c *Client) ListUsers(ctx context.Context, reqEditors ...RequestEditorFn) (*ListUsersResponse, error) {
-	rsp, err := c.listUsers(ctx, reqEditors...)
+// Returns charging stations within the specified radius,
+// including real-time connector availability.
+//
+// Accessible to both drivers and integration partners.
+//
+// Corresponds with GET /stations (the `SearchChargingStations` operationId).
+func (c *Client) SearchChargingStations(ctx context.Context, params *SearchChargingStationsParams, reqEditors ...RequestEditorFn) (*SearchChargingStationsResponse, error) {
+	rsp, err := c.searchChargingStations(ctx, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return parseListUsersResponse(rsp)
+	return parseSearchChargingStationsResponse(rsp)
 }
 
-// CreateUser Create a user
-//
-// Corresponds with POST /users (the `CreateUser` operationId).
-func (c *Client) CreateUser(ctx context.Context, reqEditors ...RequestEditorFn) (*CreateUserResponse, error) {
-	rsp, err := c.createUser(ctx, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return parseCreateUserResponse(rsp)
-}
-
-// ParseGetDevicesResponse parses an HTTP response from a GetDevices call
-func parseGetDevicesResponse(rsp *http.Response) (*GetDevicesResponse, error) {
+// ParseStartChargingSessionResponse parses an HTTP response from a StartChargingSession call
+func parseStartChargingSessionResponse(rsp *http.Response) (*StartChargingSessionResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &GetDevicesResponse{
+	response := &StartChargingSessionResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest ChargingSession
+		if err := runtime.JSONUnmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := runtime.JSONUnmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationProblemJSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := runtime.JSONUnmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationProblemJSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := runtime.JSONUnmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationProblemJSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Problem
+		if err := runtime.JSONUnmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationProblemJSON409 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 201:
+		var headers StartChargingSessionResponse201Headers
+		if values := rsp.Header.Values("Location"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Location", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: "uri-reference"}); err != nil {
+				return nil, err
+			}
+			headers.Location = &value
+		}
+		response.Headers201 = &headers
+	case rsp.StatusCode == 401:
+		var headers StartChargingSessionResponse401Headers
+		if values := rsp.Header.Values("WWW-Authenticate"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "WWW-Authenticate", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.WWWAuthenticate = &value
+		}
+		response.Headers401 = &headers
 	}
 
 	return response, nil
 }
 
-// ParseGetLegacyImplicitResponse parses an HTTP response from a GetLegacyImplicit call
-func parseGetLegacyImplicitResponse(rsp *http.Response) (*GetLegacyImplicitResponse, error) {
+// ParseGetChargingSessionResponse parses an HTTP response from a GetChargingSession call
+func parseGetChargingSessionResponse(rsp *http.Response) (*GetChargingSessionResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &GetLegacyImplicitResponse{
+	response := &GetChargingSessionResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ChargingSession
+		if err := runtime.JSONUnmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := runtime.JSONUnmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationProblemJSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := runtime.JSONUnmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationProblemJSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := runtime.JSONUnmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationProblemJSON404 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 401:
+		var headers GetChargingSessionResponse401Headers
+		if values := rsp.Header.Values("WWW-Authenticate"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "WWW-Authenticate", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.WWWAuthenticate = &value
+		}
+		response.Headers401 = &headers
 	}
 
 	return response, nil
 }
 
-// ParseGetLegacyPasswordResponse parses an HTTP response from a GetLegacyPassword call
-func parseGetLegacyPasswordResponse(rsp *http.Response) (*GetLegacyPasswordResponse, error) {
+// ParseStopChargingSessionResponse parses an HTTP response from a StopChargingSession call
+func parseStopChargingSessionResponse(rsp *http.Response) (*StopChargingSessionResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &GetLegacyPasswordResponse{
+	response := &StopChargingSessionResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest ChargingSession
+		if err := runtime.JSONUnmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := runtime.JSONUnmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationProblemJSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := runtime.JSONUnmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationProblemJSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := runtime.JSONUnmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationProblemJSON404 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 401:
+		var headers StopChargingSessionResponse401Headers
+		if values := rsp.Header.Values("WWW-Authenticate"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "WWW-Authenticate", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.WWWAuthenticate = &value
+		}
+		response.Headers401 = &headers
 	}
 
 	return response, nil
 }
 
-// ParseGetOptionalAuthResponse parses an HTTP response from a GetOptionalAuth call
-func parseGetOptionalAuthResponse(rsp *http.Response) (*GetOptionalAuthResponse, error) {
+// ParseGetCurrentDriverResponse parses an HTTP response from a GetCurrentDriver call
+func parseGetCurrentDriverResponse(rsp *http.Response) (*GetCurrentDriverResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &GetOptionalAuthResponse{
+	response := &GetCurrentDriverResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Driver
+		if err := runtime.JSONUnmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := runtime.JSONUnmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationProblemJSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := runtime.JSONUnmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationProblemJSON403 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 401:
+		var headers GetCurrentDriverResponse401Headers
+		if values := rsp.Header.Values("WWW-Authenticate"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "WWW-Authenticate", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.WWWAuthenticate = &value
+		}
+		response.Headers401 = &headers
 	}
 
 	return response, nil
 }
 
-// ParseGetPublicResponse parses an HTTP response from a GetPublic call
-func parseGetPublicResponse(rsp *http.Response) (*GetPublicResponse, error) {
+// ParseListFleetInvoicesResponse parses an HTTP response from a ListFleetInvoices call
+func parseListFleetInvoicesResponse(rsp *http.Response) (*ListFleetInvoicesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &GetPublicResponse{
+	response := &ListFleetInvoicesResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest []Invoice
+		if err := runtime.JSONUnmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := runtime.JSONUnmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationProblemJSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := runtime.JSONUnmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationProblemJSON403 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 401:
+		var headers ListFleetInvoicesResponse401Headers
+		if values := rsp.Header.Values("WWW-Authenticate"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "WWW-Authenticate", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.WWWAuthenticate = &value
+		}
+		response.Headers401 = &headers
 	}
 
 	return response, nil
 }
 
-// ParseGetReportsResponse parses an HTTP response from a GetReports call
-func parseGetReportsResponse(rsp *http.Response) (*GetReportsResponse, error) {
+// ParseListFleetVehiclesResponse parses an HTTP response from a ListFleetVehicles call
+func parseListFleetVehiclesResponse(rsp *http.Response) (*ListFleetVehiclesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &GetReportsResponse{
+	response := &ListFleetVehiclesResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			Items      []Vehicle `json:"items"`
+			NextCursor *string   `json:"nextCursor"`
+		}
+		if err := runtime.JSONUnmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := runtime.JSONUnmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationProblemJSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := runtime.JSONUnmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationProblemJSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := runtime.JSONUnmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationProblemJSON404 = &dest
+
+	}
+
+	switch {
+	case rsp.StatusCode == 401:
+		var headers ListFleetVehiclesResponse401Headers
+		if values := rsp.Header.Values("WWW-Authenticate"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "WWW-Authenticate", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.WWWAuthenticate = &value
+		}
+		response.Headers401 = &headers
 	}
 
 	return response, nil
 }
 
-// ParseGetServicesResponse parses an HTTP response from a GetServices call
-func parseGetServicesResponse(rsp *http.Response) (*GetServicesResponse, error) {
+// ParseGetHealthResponse parses an HTTP response from a GetHealth call
+func parseGetHealthResponse(rsp *http.Response) (*GetHealthResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &GetServicesResponse{
+	response := &GetHealthResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			Status GetHealth200JSONResponseBodyStatus `json:"status"`
+		}
+		if err := runtime.JSONUnmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
 	}
 
 	return response, nil
 }
 
-// ParseListUsersResponse parses an HTTP response from a ListUsers call
-func parseListUsersResponse(rsp *http.Response) (*ListUsersResponse, error) {
+// ParseSearchChargingStationsResponse parses an HTTP response from a SearchChargingStations call
+func parseSearchChargingStationsResponse(rsp *http.Response) (*SearchChargingStationsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &ListUsersResponse{
+	response := &SearchChargingStationsResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
-	return response, nil
-}
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			Items []Station `json:"items"`
+			Total int       `json:"total"`
+		}
+		if err := runtime.JSONUnmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
 
-// ParseCreateUserResponse parses an HTTP response from a CreateUser call
-func parseCreateUserResponse(rsp *http.Response) (*CreateUserResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := runtime.JSONUnmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationProblemJSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := runtime.JSONUnmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationProblemJSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest RateLimited
+		if err := runtime.JSONUnmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationProblemJSON429 = &dest
+
 	}
 
-	response := &CreateUserResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
+	switch {
+	case rsp.StatusCode == 401:
+		var headers SearchChargingStationsResponse401Headers
+		if values := rsp.Header.Values("WWW-Authenticate"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "WWW-Authenticate", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.WWWAuthenticate = &value
+		}
+		response.Headers401 = &headers
+	case rsp.StatusCode == 429:
+		var headers SearchChargingStationsResponse429Headers
+		if values := rsp.Header.Values("Retry-After"); len(values) > 0 {
+			var value int
+			if err := runtime.BindStyledParameterWithOptions("simple", "Retry-After", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.RetryAfter = &value
+		}
+		response.Headers429 = &headers
 	}
 
 	return response, nil

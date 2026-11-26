@@ -11,8 +11,9 @@ require (
 	github.com/go-chi/chi/v5 v5.5.0
 	github.com/jinzhu/inflection v1.0.0
 	github.com/oapi-codegen/oapi-codegen/v2 v2.9.0
-	github.com/pb33f/jsonschema/v6 v6.0.3
+	github.com/oapi-codegen/runtime v1.9.1
 	github.com/pb33f/libopenapi v0.44.0
+	github.com/santhosh-tekuri/jsonschema/v6 v6.0.3
 	go.yaml.in/yaml/v4 v4.0.0
 	golang.org/x/oauth2 v0.38.0
 	golang.org/x/text v0.44.0
@@ -22,6 +23,7 @@ require (
 	dario.cat/mergo v1.0.1 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver/v3 v3.3.0 // indirect
+	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
 	github.com/buger/jsonparser v1.1.2 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
@@ -35,7 +37,6 @@ require (
 	github.com/pb33f/go-yaml v0.2.0 // indirect
 	github.com/pb33f/jsonpath v0.8.5 // indirect
 	github.com/pb33f/ordered-map/v2 v2.3.2 // indirect
-	github.com/santhosh-tekuri/jsonschema/v6 v6.0.3 // indirect
 	github.com/shopspring/decimal v1.4.0 // indirect
 	github.com/spf13/cast v1.7.0 // indirect
 	github.com/theory/jsonpath v0.12.3 // indirect
