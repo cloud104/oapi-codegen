@@ -226,6 +226,13 @@ func (c *rawClient) getLegacyImplicit(ctx context.Context, reqEditors ...Request
 // getLegacyPassword performs an authenticated GET /legacy/password (the `GetLegacyPassword` operationId) request.
 func (c *rawClient) getLegacyPassword(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	editors := append(slices.Clone(reqEditors), func(ctx context.Context, req *http.Request) error {
+		if c.OAuth2Password.TokenSource != nil {
+			token, err := c.OAuth2Password.TokenSource.Token()
+			if err != nil {
+				return fmt.Errorf("get authentication token for GET /legacy/password: %w", err)
+			}
+			token.SetAuthHeader(req)
+		}
 		return nil
 	})
 
@@ -286,6 +293,13 @@ func (c *rawClient) getPublic(ctx context.Context, reqEditors ...RequestEditorFn
 // getReports performs an authenticated GET /reports (the `GetReports` operationId) request.
 func (c *rawClient) getReports(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	editors := append(slices.Clone(reqEditors), func(ctx context.Context, req *http.Request) error {
+		if c.OAuth2ClientCredentials.TokenSource != nil {
+			token, err := c.OAuth2ClientCredentials.TokenSource.Token()
+			if err != nil {
+				return fmt.Errorf("get authentication token for GET /reports: %w", err)
+			}
+			token.SetAuthHeader(req)
+		}
 		return nil
 	})
 
@@ -312,6 +326,13 @@ func (c *rawClient) unauthenticatedGetReports(ctx context.Context, reqEditors ..
 // getServices performs an authenticated GET /services (the `GetServices` operationId) request.
 func (c *rawClient) getServices(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	editors := append(slices.Clone(reqEditors), func(ctx context.Context, req *http.Request) error {
+		if c.OAuth2ClientCredentials.TokenSource != nil {
+			token, err := c.OAuth2ClientCredentials.TokenSource.Token()
+			if err != nil {
+				return fmt.Errorf("get authentication token for GET /services: %w", err)
+			}
+			token.SetAuthHeader(req)
+		}
 		return nil
 	})
 

@@ -291,6 +291,17 @@ func (c *rawClient) {{$unexportedOpid}}{{.Suffix}}(ctx context.Context{{.ArgsDec
         }
         {{ end -}}
 
+        {{ range $oauth := $oauth2AuthSchemes -}}
+        {{- $name := goPascalCase $oauth.Name -}}
+        if c.{{ $name }}.TokenSource != nil {
+            token, err := c.{{ $name }}.TokenSource.Token()
+            if err != nil {
+                return fmt.Errorf("get authentication token for {{ printf "%s %s" $parent.Method $parent.Path }}: %w", err)
+            }
+            token.SetAuthHeader(req)
+        }
+        {{ end -}}
+
 		return nil
 	})
 
