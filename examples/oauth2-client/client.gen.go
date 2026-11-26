@@ -81,7 +81,11 @@ func WithDriverOAuth(clientID, clientSecret, username, password string, issuer .
 				TokenURL: "https://identity.voltgrid.example/oauth2/token",
 			},
 			Scopes: []string{
+				"charging:read",
 				"charging:start",
+				"charging:stop",
+				"profile:read",
+				"stations:read",
 			},
 		}
 
@@ -122,7 +126,12 @@ func WithPartnerOAuth(clientID, clientSecret string, issuer ...string) ClientOpt
 			ClientSecret: clientSecret,
 			TokenURL:     "https://identity.voltgrid.example/oauth2/token",
 			Scopes: []string{
+				"fleet:billing:read",
+				"fleet:charging:read",
 				"fleet:charging:start",
+				"fleet:charging:stop",
+				"fleet:vehicles:read",
+				"stations:read",
 			},
 		}
 
@@ -308,6 +317,15 @@ func (c *rawClient) getCurrentDriver(ctx context.Context, reqEditors ...RequestE
 			token.SetAuthHeader(req)
 		}
 
+		if c.PartnerOAuth.TokenSource != nil {
+			token, err := c.PartnerOAuth.TokenSource.Token()
+			if err != nil {
+				return fmt.Errorf("get authentication token for GET /drivers/me: %w", err)
+			}
+
+			token.SetAuthHeader(req)
+		}
+
 		return nil
 	})
 
@@ -335,6 +353,15 @@ func (c *rawClient) unauthenticatedGetCurrentDriver(ctx context.Context, reqEdit
 
 func (c *rawClient) listFleetInvoices(ctx context.Context, fleetID FleetID, params *ListFleetInvoicesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	editors := append(slices.Clone(reqEditors), func(ctx context.Context, req *http.Request) error {
+		if c.DriverOAuth.TokenSource != nil {
+			token, err := c.DriverOAuth.TokenSource.Token()
+			if err != nil {
+				return fmt.Errorf("get authentication token for GET /fleets/{fleetId}/invoices: %w", err)
+			}
+
+			token.SetAuthHeader(req)
+		}
+
 		if c.PartnerOAuth.TokenSource != nil {
 			token, err := c.PartnerOAuth.TokenSource.Token()
 			if err != nil {
@@ -371,6 +398,15 @@ func (c *rawClient) unauthenticatedListFleetInvoices(ctx context.Context, fleetI
 
 func (c *rawClient) listFleetVehicles(ctx context.Context, fleetID FleetID, params *ListFleetVehiclesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	editors := append(slices.Clone(reqEditors), func(ctx context.Context, req *http.Request) error {
+		if c.DriverOAuth.TokenSource != nil {
+			token, err := c.DriverOAuth.TokenSource.Token()
+			if err != nil {
+				return fmt.Errorf("get authentication token for GET /fleets/{fleetId}/vehicles: %w", err)
+			}
+
+			token.SetAuthHeader(req)
+		}
+
 		if c.PartnerOAuth.TokenSource != nil {
 			token, err := c.PartnerOAuth.TokenSource.Token()
 			if err != nil {
@@ -406,6 +442,32 @@ func (c *rawClient) unauthenticatedListFleetVehicles(ctx context.Context, fleetI
 }
 
 func (c *rawClient) getHealth(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	editors := append(slices.Clone(reqEditors), func(ctx context.Context, req *http.Request) error {
+		if c.DriverOAuth.TokenSource != nil {
+			token, err := c.DriverOAuth.TokenSource.Token()
+			if err != nil {
+				return fmt.Errorf("get authentication token for GET /health: %w", err)
+			}
+
+			token.SetAuthHeader(req)
+		}
+
+		if c.PartnerOAuth.TokenSource != nil {
+			token, err := c.PartnerOAuth.TokenSource.Token()
+			if err != nil {
+				return fmt.Errorf("get authentication token for GET /health: %w", err)
+			}
+
+			token.SetAuthHeader(req)
+		}
+
+		return nil
+	})
+
+	return c.unauthenticatedGetHealth(ctx, editors...)
+}
+
+func (c *rawClient) unauthenticatedGetHealth(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := newGetHealthRequest(c.Server)
 	if err != nil {
 		return nil, fmt.Errorf("create GET /health request: %w", err)
@@ -425,6 +487,32 @@ func (c *rawClient) getHealth(ctx context.Context, reqEditors ...RequestEditorFn
 }
 
 func (c *rawClient) searchChargingStations(ctx context.Context, params *SearchChargingStationsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	editors := append(slices.Clone(reqEditors), func(ctx context.Context, req *http.Request) error {
+		if c.DriverOAuth.TokenSource != nil {
+			token, err := c.DriverOAuth.TokenSource.Token()
+			if err != nil {
+				return fmt.Errorf("get authentication token for GET /stations: %w", err)
+			}
+
+			token.SetAuthHeader(req)
+		}
+
+		if c.PartnerOAuth.TokenSource != nil {
+			token, err := c.PartnerOAuth.TokenSource.Token()
+			if err != nil {
+				return fmt.Errorf("get authentication token for GET /stations: %w", err)
+			}
+
+			token.SetAuthHeader(req)
+		}
+
+		return nil
+	})
+
+	return c.unauthenticatedSearchChargingStations(ctx, params, editors...)
+}
+
+func (c *rawClient) unauthenticatedSearchChargingStations(ctx context.Context, params *SearchChargingStationsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := newSearchChargingStationsRequest(c.Server, params)
 	if err != nil {
 		return nil, fmt.Errorf("create GET /stations request: %w", err)

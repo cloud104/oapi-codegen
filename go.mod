@@ -13,6 +13,7 @@ require (
 	github.com/oapi-codegen/oapi-codegen/v2 v2.9.0
 	github.com/oapi-codegen/runtime v1.9.1
 	github.com/pb33f/libopenapi v0.44.0
+	github.com/samber/lo v1.53.0
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.3
 	go.yaml.in/yaml/v4 v4.0.0
 	golang.org/x/oauth2 v0.38.0
