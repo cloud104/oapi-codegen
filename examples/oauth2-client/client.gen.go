@@ -126,9 +126,7 @@ func WithOAuth2Password(clientID, clientSecret, username, password string) Clien
 			},
 		}
 
-		token, err := config.PasswordCredentialsToken(
-			context.Background(), username, password,
-		)
+		token, err := config.PasswordCredentialsToken(context.Background(), username, password)
 		if err != nil {
 			return fmt.Errorf("authenticate: %w", err)
 		}
