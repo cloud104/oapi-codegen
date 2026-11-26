@@ -1,0 +1,397 @@
+// StrictHandlerFunc and StrictMiddlewareFunc are type aliases rather than
+// distinct named types, so middleware written against one generated package
+// can be shared with every other generated package using the same framework.
+type StrictHandlerFunc = func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error)
+type StrictMiddlewareFunc = func(f StrictHandlerFunc, operationID string) StrictHandlerFunc
+
+type StrictHTTPServerOptions struct {
+    RequestErrorHandlerFunc  func(w http.ResponseWriter, r *http.Request, err error)
+    ResponseErrorHandlerFunc func(w http.ResponseWriter, r *http.Request, err error)
+    SchemaRegistry           SchemaRegistry
+}
+
+func NewStrictHandler(ssi StrictServerInterface, middlewares []StrictMiddlewareFunc) (ServerInterface, error) {
+	registry, err := NewDefaultSchemaRegistry()
+	if err != nil {
+		return nil, err
+	}
+    return &strictHandler{ssi: ssi, middlewares: middlewares, options: StrictHTTPServerOptions {
+        RequestErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
+            http.Error(w, err.Error(), http.StatusBadRequest)
+        },
+        ResponseErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
+            http.Error(w, err.Error(), http.StatusInternalServerError)
+        },
+        SchemaRegistry: registry,
+    }}, nil
+}
+
+func NewStrictHandlerWithOptions(ssi StrictServerInterface, middlewares []StrictMiddlewareFunc, options StrictHTTPServerOptions) (ServerInterface, error) {
+    if options.RequestErrorHandlerFunc == nil {
+        options.RequestErrorHandlerFunc = func(w http.ResponseWriter, r *http.Request, err error) {
+            http.Error(w, err.Error(), http.StatusBadRequest)
+        }
+    }
+    if options.ResponseErrorHandlerFunc == nil {
+        options.ResponseErrorHandlerFunc = func(w http.ResponseWriter, r *http.Request, err error) {
+            http.Error(w, err.Error(), http.StatusInternalServerError)
+        }
+    }
+	if options.SchemaRegistry == nil {
+		registry, err := NewDefaultSchemaRegistry()
+		if err != nil {
+			return nil, err
+		}
+		options.SchemaRegistry = registry
+	}
+    return &strictHandler{ssi: ssi, middlewares: middlewares, options: options}, nil
+}
+
+type strictHandler struct {
+    ssi StrictServerInterface
+    middlewares []StrictMiddlewareFunc
+    options StrictHTTPServerOptions
+}
+
+{{range .}}
+    {{$opid := .OperationId}}
+    {{if not .IsAlias}}
+    // {{$opid}} operation middleware
+    func (sh *strictHandler) {{.OperationId}}(w http.ResponseWriter, r *http.Request{{genParamArgs .PathParams}}{{if .RequiresParamObject}}, params {{.OperationId}}Params{{end}}) {
+        var request {{$opid | ucFirst}}RequestObject
+
+        {{range .PathParams -}}
+            request.{{.GoName}} = {{.GoVariableName}}
+        {{end -}}
+
+        {{if .RequiresParamObject -}}
+            request.Params = params
+        {{end -}}
+
+        {{ if .HasMaskedRequestContentTypes -}}
+            request.ContentType = r.Header.Get("Content-Type")
+        {{end -}}
+
+        {{$multipleBodies := gt (len .Bodies) 1 -}}
+        {{range .Bodies -}}
+            {{if $multipleBodies}}if strings.HasPrefix(r.Header.Get("Content-Type"), {{.ContentType | toGoString}}) { {{end}}
+                {{if .IsJSON }}
+                    if err := sh.validateJSONBody({{$opid | quote}}, r); err != nil {
+                        sh.options.RequestErrorHandlerFunc(w, r, err)
+                        return
+                    }
+                    var body {{$opid}}{{.NameTag}}RequestBody
+                    if err := runtime.BindJSONBody(r, &body); err != nil {
+                        {{if not .Required -}}
+                        if !errors.Is(err, io.EOF) {
+                            sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+                            return
+                        }
+                        {{else -}}
+                        sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+                        return
+                        {{end -}}
+                    } {{if not .Required -}} else { {{end}}
+                    request.{{if $multipleBodies}}{{.NameTag}}{{end}}Body = &body
+                    {{if not .Required -}} } {{end}}
+                {{else if .IsFormdata -}}
+                    if err := r.ParseForm(); err != nil {
+                        sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode formdata: %w", err))
+                        return
+                    }
+                    var body {{$opid}}{{.NameTag}}RequestBody
+                    if err := runtime.BindForm(&body, r.Form, nil, nil); err != nil {
+                        sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't bind formdata: %w", err))
+                        return
+                    }
+                    request.{{if $multipleBodies}}{{.NameTag}}{{end}}Body = &body
+                {{else if .IsMultipart -}}
+                    {{if eq .ContentType "multipart/form-data" -}}
+                    if reader, err := r.MultipartReader(); err != nil {
+                        sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode multipart body: %w", err))
+                        return
+                    } else {
+                        request.{{if $multipleBodies}}{{.NameTag}}{{end}}Body = reader
+                    }
+                    {{else -}}
+                    if _, params, err := mime.ParseMediaType(r.Header.Get("Content-Type")); err != nil {
+                        sh.options.RequestErrorHandlerFunc(w, r, err)
+                        return
+                    } else if boundary := params["boundary"]; boundary == "" {
+                        sh.options.RequestErrorHandlerFunc(w, r, http.ErrMissingBoundary)
+                        return
+                    } else {
+                        request.{{if $multipleBodies}}{{.NameTag}}{{end}}Body = multipart.NewReader(r.Body, boundary)
+                    }
+                    {{end -}}
+                {{else if .IsText -}}
+                    data, err := io.ReadAll(r.Body)
+                    if err != nil {
+                        sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't read body: %w", err))
+                        return
+                    }
+                    {{if not .Required -}}
+                    if len(data) > 0 {
+                    {{end -}}
+                    body := {{$opid}}{{.NameTag}}RequestBody(data)
+                    request.{{if $multipleBodies}}{{.NameTag}}{{end}}Body = &body
+                    {{if not .Required -}}
+                    }
+                    {{end -}}
+                {{else -}}
+                    request.{{if $multipleBodies}}{{.NameTag}}{{end}}Body = r.Body
+                {{end}}{{/* if .IsJSON */ -}}
+            {{if $multipleBodies}}}{{end}}
+        {{end}}{{/* range .Bodies */}}
+
+        handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+            return sh.ssi.{{.OperationId}}(ctx, request.({{$opid | ucFirst}}RequestObject))
+        }
+        for _, middleware := range sh.middlewares {
+            handler = middleware(handler, "{{.OperationId}}")
+        }
+
+        response, err := handler(r.Context(), w, r, request)
+
+        if err != nil {
+            sh.options.ResponseErrorHandlerFunc(w, r, err)
+        } else if validResponse, ok := response.({{$opid | ucFirst}}ResponseObject); ok {
+            if err := validResponse.Visit{{$opid}}Response(w); err != nil {
+                sh.options.ResponseErrorHandlerFunc(w, r, err)
+            }
+        } else if response != nil {
+            sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+        }
+    }
+    {{end}}
+{{end}}
+
+func (sh *strictHandler) validateJSONBody(operationID string, r *http.Request) error {
+	registry := sh.options.SchemaRegistry
+	if registry == nil {
+		return nil
+	}
+
+	validator, ok := registry.Validator(operationID)
+	if !ok {
+		return nil
+	}
+
+	if r == nil || r.Body == nil {
+		return validator.Validate(bytes.NewReader(nil))
+	}
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		return err
+	}
+
+	// Restore the request body for subsequent handlers.
+	r.Body.Close()
+	r.Body = io.NopCloser(bytes.NewReader(body))
+
+	return validator.Validate(bytes.NewReader(body))
+}
+
+{{- range . }}
+  {{- if not .IsAlias }}
+    {{- $body := jsonRequestBody . }}
+    {{- if $body }}
+      {{- $bodyType := $body.TypeDef .OperationId }}
+      {{- $schema := jsonRequestSchema . }}
+
+// {{$bodyType.TypeName}}Schema defines the JSON schema used to validate {{$bodyType.TypeName}} request bodies.
+const {{$bodyType.TypeName}}Schema = `{{toPrettyJson $schema}}`
+
+    {{- end }}
+  {{- end }}
+{{- end }}
+
+// SchemaRegistry manages registered JSON schemas.
+type SchemaRegistry interface {
+	Register(name, source string) error
+	Validator(name string) (SchemaValidator, bool)
+}
+
+// SchemaValidator validates JSON data against a schema.
+type SchemaValidator interface {
+	Validate(data io.Reader) error
+}
+
+// InMemorySchemaRegistry manages registered JSON schemas.
+type InMemorySchemaRegistry struct {
+	compiler *jsonschema.Compiler
+	schemas  map[string]*jsonschema.Schema
+}
+
+// NewInMemorySchemaRegistry creates an empty registry with format validation enabled.
+func NewInMemorySchemaRegistry() *InMemorySchemaRegistry {
+	compiler := jsonschema.NewCompiler()
+	compiler.AssertFormat()
+
+	return &InMemorySchemaRegistry{
+		compiler: compiler,
+		schemas:  make(map[string]*jsonschema.Schema),
+	}
+}
+
+// NewDefaultSchemaRegistry creates an in-memory registry with predefined JSON schemas.
+func NewDefaultSchemaRegistry() (*InMemorySchemaRegistry, error) {
+    registry := NewInMemorySchemaRegistry()
+
+    schemas := map[string]string{
+    {{- range $op := .}}
+        {{- if not $op.IsAlias}}
+            {{- with jsonRequestBody $op}}
+                {{- $bodyType := .TypeDef $op.OperationId}}
+        {{$op.OperationId | quote}}: {{$bodyType.TypeName}}Schema,
+            {{- end}}
+        {{- end}}
+    {{- end}}
+    }
+    for name, schema := range schemas {
+        if err := registry.Register(name, schema); err != nil {
+            return nil, err
+        }
+    }
+
+    return registry, nil
+}
+
+// Register parses, compiles, and stores a JSON schema under the given name.
+func (r *InMemorySchemaRegistry) Register(operationID, source string) error {
+	doc, err := jsonschema.UnmarshalJSON(strings.NewReader(source))
+	if err != nil {
+		return fmt.Errorf("parse JSON schema %q: invalid JSON document: %w", operationID, err)
+	}
+
+	if err := r.compiler.AddResource(operationID, doc); err != nil {
+		return fmt.Errorf("register JSON schema %q: unable to add resource: %w", operationID, err)
+	}
+
+	schema, err := r.compiler.Compile(operationID)
+	if err != nil {
+		return fmt.Errorf("compile JSON schema %q: invalid definitions or unresolved references: %w", operationID, err)
+	}
+
+	r.schemas[operationID] = schema
+	return nil
+}
+
+// SchemaValidator returns a validator for a registered schema.
+func (r *InMemorySchemaRegistry) Validator(operationID string) (SchemaValidator, bool) {
+	schema, exists := r.schemas[operationID]
+	if !exists {
+		return nil, false
+	}
+
+	return &CompiledSchemaValidator{schema: schema}, true
+}
+
+// CompiledSchemaValidator validates JSON data against a compiled schema.
+type CompiledSchemaValidator struct {
+	schema *jsonschema.Schema
+}
+
+// Validate checks JSON data against the validator's schema.
+func (v *CompiledSchemaValidator) Validate(data io.Reader) error {
+	value, err := jsonschema.UnmarshalJSON(data)
+	if err != nil {
+		return fmt.Errorf("invalid JSON: %w", err)
+	}
+
+	if err := v.schema.Validate(value); err != nil {
+		validationErr, ok := errors.AsType[*jsonschema.ValidationError](err)
+		if !ok {
+			return fmt.Errorf("invalid JSON: %w", err)
+		}
+
+        message := v.formatErrorMessage(validationErr)
+
+        return errors.New(message)
+	}
+
+	return nil
+}
+
+// formatErrorMessage converts validation errors into human-readable messages.
+func (v *CompiledSchemaValidator) formatErrorMessage(err *jsonschema.ValidationError) (result string) {
+	defer func() {
+		result = strings.TrimSpace(result)
+	}()
+
+	// Recursively format nested validation errors.
+	if len(err.Causes) > 0 {
+		messages := make([]string, 0, len(err.Causes))
+
+		for _, cause := range err.Causes {
+            message := v.formatErrorMessage(cause)
+			messages = append(messages, message)
+		}
+
+		return strings.Join(messages, "; ")
+	}
+
+	// Identify the field where validation failed.
+	field := strings.Join(err.InstanceLocation, ".")
+
+	// Generate a message based on the validation error type.
+	switch rule := err.ErrorKind.(type) {
+	case *kind.Required:
+		if len(rule.Missing) == 1 {
+			return fmt.Sprintf("%s %s is required", field, rule.Missing[0])
+		}
+		return fmt.Sprintf("%s missing required fields %s", field, strings.Join(rule.Missing, ", "))
+
+	case *kind.Type:
+		if len(rule.Want) == 1 {
+			return fmt.Sprintf("%s must be %s (got %s)", field, rule.Want[0], rule.Got)
+		}
+		return fmt.Sprintf("%s must be one of %s (got %s)", field, strings.Join(rule.Want, ", "), rule.Got)
+
+	case *kind.MinLength:
+		if rule.Want == 1 {
+			return fmt.Sprintf("%s cannot be empty", field)
+		}
+		return fmt.Sprintf("%s must contain at least %d characters", field, rule.Want)
+
+	case *kind.MaxLength:
+		if rule.Want == 1 {
+			return fmt.Sprintf("%s must be a single character", field)
+		}
+		return fmt.Sprintf("%s must contain no more than %d characters", field, rule.Want)
+
+	case *kind.Minimum:
+		return fmt.Sprintf("%s must be at least %s", field, rule.Want.FloatString(2))
+
+	case *kind.Maximum:
+		return fmt.Sprintf("%s must not exceed %s", field, rule.Want.FloatString(2))
+
+	case *kind.Pattern:
+		return fmt.Sprintf("%s does not match the required pattern", field)
+
+	case *kind.Format:
+		return fmt.Sprintf("%s must be a valid %s", field, rule.Want)
+
+	case *kind.Enum:
+		values := make([]string, 0, len(rule.Want))
+
+		for _, value := range rule.Want {
+			values = append(values, fmt.Sprint(value))
+		}
+
+		if len(values) == 1 {
+			return fmt.Sprintf("%s must be %s", field, values[0])
+		}
+		return fmt.Sprintf("%s must be one of %s", field, strings.Join(values, ", "))
+
+	default:
+		// Use the library's localized message for other error types.
+		if err.ErrorKind != nil {
+			printer := message.NewPrinter(language.English)
+			return fmt.Sprintf("%s %s", field, err.ErrorKind.LocalizedString(printer))
+		}
+
+		return fmt.Sprintf("%s is invalid", field)
+	}
+}
