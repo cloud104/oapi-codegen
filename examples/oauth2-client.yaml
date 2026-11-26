@@ -1,0 +1,178 @@
+openapi: "3.2.1"
+
+info:
+  title: OAuth2 Example API
+  version: "1.0.0"
+  description: API demonstrating OAuth 2.0 authentication flows.
+
+servers:
+  - url: https://api.example.com/v1
+
+security:
+  - OAuth2AuthorizationCode:
+      - read
+
+paths:
+  /public:
+    get:
+      summary: Public endpoint without authentication
+      security: [ ]
+      responses:
+        "200":
+          description: Successful response
+
+  /users:
+    get:
+      summary: List users
+      operationId: listUsers
+      security:
+        - OAuth2AuthorizationCode:
+            - read
+      responses:
+        "200":
+          description: Users retrieved successfully
+        "401":
+          description: Unauthorized
+        "403":
+          description: Insufficient permissions
+
+    post:
+      summary: Create a user
+      operationId: createUser
+      security:
+        - OAuth2AuthorizationCode:
+            - write
+      responses:
+        "201":
+          description: User created
+        "401":
+          description: Unauthorized
+
+  /services:
+    get:
+      summary: Machine-to-machine endpoint
+      security:
+        - OAuth2ClientCredentials:
+            - services:read
+      responses:
+        "200":
+          description: Services retrieved successfully
+
+  /devices:
+    get:
+      summary: Device authentication endpoint
+      security:
+        - OAuth2DeviceAuthorization:
+            - devices:read
+      responses:
+        "200":
+          description: Devices retrieved successfully
+
+  /legacy/password:
+    get:
+      summary: Legacy password authentication
+      deprecated: true
+      security:
+        - OAuth2Password:
+            - read
+      responses:
+        "200":
+          description: Successful response
+
+  /legacy/implicit:
+    get:
+      summary: Legacy implicit authentication
+      deprecated: true
+      security:
+        - OAuth2Implicit:
+            - read
+      responses:
+        "200":
+          description: Successful response
+
+  /reports:
+    get:
+      summary: Accept multiple authentication flows
+      security:
+        - OAuth2AuthorizationCode:
+            - reports:read
+        - OAuth2ClientCredentials:
+            - reports:read
+      responses:
+        "200":
+          description: Reports retrieved successfully
+
+  /optional-auth:
+    get:
+      summary: Optional authentication
+      security:
+        - { }
+        - OAuth2AuthorizationCode:
+            - read
+      responses:
+        "200":
+          description: Successful response
+
+components:
+  securitySchemes:
+
+    OAuth2AuthorizationCode:
+      type: oauth2
+      description: Authorization Code flow with PKCE (S256).
+      oauth2MetadataUrl: https://auth.example.com/.well-known/oauth-authorization-server
+      flows:
+        authorizationCode:
+          authorizationUrl: https://auth.example.com/oauth2/authorize
+          tokenUrl: https://auth.example.com/oauth2/token
+          refreshUrl: https://auth.example.com/oauth2/token
+          scopes:
+            read: Read resources
+            write: Modify resources
+            reports:read: Read reports
+            admin: Administrative access
+
+    OAuth2ClientCredentials:
+      type: oauth2
+      description: Machine-to-machine authentication.
+      flows:
+        clientCredentials:
+          tokenUrl: https://auth.example.com/oauth2/token
+          scopes:
+            services:read: Read services
+            services:write: Modify services
+            reports:read: Read reports
+
+    OAuth2DeviceAuthorization:
+      type: oauth2
+      description: Authentication for CLI tools, TVs and IoT devices.
+      flows:
+        deviceAuthorization:
+          deviceAuthorizationUrl: https://auth.example.com/oauth2/device/code
+          tokenUrl: https://auth.example.com/oauth2/token
+          refreshUrl: https://auth.example.com/oauth2/token
+          scopes:
+            devices:read: Read devices
+            devices:write: Modify devices
+
+    OAuth2Password:
+      type: oauth2
+      description: Legacy Resource Owner Password Credentials flow.
+      deprecated: true
+      flows:
+        password:
+          tokenUrl: https://auth.example.com/oauth2/token
+          refreshUrl: https://auth.example.com/oauth2/token
+          scopes:
+            read: Read resources
+            write: Modify resources
+
+    OAuth2Implicit:
+      type: oauth2
+      description: Legacy implicit flow.
+      deprecated: true
+      flows:
+        implicit:
+          authorizationUrl: https://auth.example.com/oauth2/authorize
+          scopes:
+            read: Read resources
+            write: Modify resources
