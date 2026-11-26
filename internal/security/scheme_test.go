@@ -154,9 +154,9 @@ func TestSchemesForOperations(t *testing.T) {
 			},
 		},
 		{
-			name: "merge global and operation security",
+			name: "operation security overrides global security",
 			global: openapi3.SecurityRequirements{
-				{"BearerAuth": {}},
+				{"BearerAuth": {"read"}},
 				{"BasicAuth": {}},
 			},
 			operations: func(_ []codegen.OperationDefinition) []codegen.OperationDefinition {
@@ -165,7 +165,7 @@ func TestSchemesForOperations(t *testing.T) {
 						Spec: &openapi3.Operation{
 							Security: &openapi3.SecurityRequirements{
 								{"ApiKeyAuth": {}},
-								{"BearerAuth": {}},
+								{"BearerAuth": {"write"}},
 							},
 						},
 					},
@@ -173,8 +173,10 @@ func TestSchemesForOperations(t *testing.T) {
 			},
 			want: []codegen.SecurityDefinition{
 				{ProviderName: "ApiKeyAuth"},
-				{ProviderName: "BasicAuth"},
-				{ProviderName: "BearerAuth"},
+				{
+					ProviderName: "BearerAuth",
+					Scopes:       []string{"write"},
+				},
 			},
 		},
 	}
