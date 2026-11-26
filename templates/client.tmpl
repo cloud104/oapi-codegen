@@ -64,7 +64,11 @@ type rawClient struct {
 
     {{ range $oauth := $globalOAuth2AuthSchemes }}
     {{- $name := goPascalCase $oauth.Name }}
-    // {{ $name }} authenticates requests using OAuth 2.0 Password Grant.
+    {{- if eq $oauth.Flow "clientCredentials" }}
+    // {{ $name }} authenticates requests using the OAuth 2.0 Client Credentials Grant.
+    {{- else if eq $oauth.Flow "password" }}
+    // {{ $name }} authenticates requests using the OAuth 2.0 Resource Owner Password Credentials Grant.
+    {{- end }}
     {{ $name }} struct {
         TokenSource  oauth2.TokenSource
     }

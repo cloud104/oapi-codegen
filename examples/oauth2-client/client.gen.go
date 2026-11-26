@@ -42,12 +42,12 @@ type rawClient struct {
 	// the network.
 	RequestEditors []RequestEditorFn
 
-	// OAuth2ClientCredentials authenticates requests using OAuth 2.0 Password Grant.
+	// OAuth2ClientCredentials authenticates requests using the OAuth 2.0 Client Credentials Grant.
 	OAuth2ClientCredentials struct {
 		TokenSource oauth2.TokenSource
 	}
 
-	// OAuth2Password authenticates requests using OAuth 2.0 Password Grant.
+	// OAuth2Password authenticates requests using the OAuth 2.0 Resource Owner Password Credentials Grant.
 	OAuth2Password struct {
 		TokenSource oauth2.TokenSource
 	}
