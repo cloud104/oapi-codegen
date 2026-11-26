@@ -4,6 +4,7 @@ go 1.27.4
 
 require (
 	github.com/Masterminds/sprig/v3 v3.3.0
+	github.com/coreos/go-oidc/v3 v3.21.0
 	github.com/dustin/go-humanize v1.1.0
 	github.com/ettle/strcase v0.2.0
 	github.com/getkin/kin-openapi v0.153.0
@@ -12,7 +13,6 @@ require (
 	github.com/oapi-codegen/oapi-codegen/v2 v2.9.0
 	github.com/pb33f/jsonschema/v6 v6.0.3
 	github.com/pb33f/libopenapi v0.44.0
-	github.com/samber/lo v1.53.0
 	go.yaml.in/yaml/v4 v4.0.0
 	golang.org/x/oauth2 v0.38.0
 	golang.org/x/text v0.44.0
@@ -24,7 +24,7 @@ require (
 	github.com/Masterminds/semver/v3 v3.3.0 // indirect
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
 	github.com/buger/jsonparser v1.1.2 // indirect
-	github.com/coreos/go-oidc/v3 v3.21.0 // indirect
+	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
 	github.com/go-openapi/jsonpointer v1.0.2 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/huandu/xstrings v1.5.0 // indirect
