@@ -7,14 +7,20 @@ type StrictMiddlewareFunc = func(f StrictHandlerFunc, operationID string) Strict
 type StrictHTTPServerOptions struct {
     RequestErrorHandlerFunc  func(w http.ResponseWriter, r *http.Request, err error)
     ResponseErrorHandlerFunc func(w http.ResponseWriter, r *http.Request, err error)
-    SchemaRegistry           SchemaRegistry
+	RequestBodyValidatorRegistry    RequestBodyValidatorRegistry
 }
 
-func NewStrictHandler(ssi StrictServerInterface, middlewares []StrictMiddlewareFunc) (ServerInterface, error) {
-	registry, err := NewDefaultSchemaRegistry()
-	if err != nil {
-		return nil, err
-	}
+// RequestBodyValidatorRegistry provides operation-specific request body validators.
+type RequestBodyValidatorRegistry interface {
+	Validator(operationID string) (RequestBodyValidator, bool)
+}
+
+// RequestBodyValidator validates JSON request bodies.
+type RequestBodyValidator interface {
+	Validate(data io.Reader) error
+}
+
+func NewStrictHandler(ssi StrictServerInterface, middlewares []StrictMiddlewareFunc) ServerInterface {
     return &strictHandler{ssi: ssi, middlewares: middlewares, options: StrictHTTPServerOptions {
         RequestErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
             http.Error(w, err.Error(), http.StatusBadRequest)
@@ -22,11 +28,10 @@ func NewStrictHandler(ssi StrictServerInterface, middlewares []StrictMiddlewareF
         ResponseErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
             http.Error(w, err.Error(), http.StatusInternalServerError)
         },
-        SchemaRegistry: registry,
-    }}, nil
+    }}
 }
 
-func NewStrictHandlerWithOptions(ssi StrictServerInterface, middlewares []StrictMiddlewareFunc, options StrictHTTPServerOptions) (ServerInterface, error) {
+func NewStrictHandlerWithOptions(ssi StrictServerInterface, middlewares []StrictMiddlewareFunc, options StrictHTTPServerOptions) ServerInterface {
     if options.RequestErrorHandlerFunc == nil {
         options.RequestErrorHandlerFunc = func(w http.ResponseWriter, r *http.Request, err error) {
             http.Error(w, err.Error(), http.StatusBadRequest)
@@ -37,14 +42,7 @@ func NewStrictHandlerWithOptions(ssi StrictServerInterface, middlewares []Strict
             http.Error(w, err.Error(), http.StatusInternalServerError)
         }
     }
-	if options.SchemaRegistry == nil {
-		registry, err := NewDefaultSchemaRegistry()
-		if err != nil {
-			return nil, err
-		}
-		options.SchemaRegistry = registry
-	}
-    return &strictHandler{ssi: ssi, middlewares: middlewares, options: options}, nil
+    return &strictHandler{ssi: ssi, middlewares: middlewares, options: options}
 }
 
 type strictHandler struct {
@@ -80,6 +78,7 @@ type strictHandler struct {
                         sh.options.RequestErrorHandlerFunc(w, r, err)
                         return
                     }
+
                     var body {{$opid}}{{.NameTag}}RequestBody
                     if err := runtime.BindJSONBody(r, &body); err != nil {
                         {{if not .Required -}}
@@ -167,7 +166,7 @@ type strictHandler struct {
 {{end}}
 
 func (sh *strictHandler) validateJSONBody(operationID string, r *http.Request) error {
-	registry := sh.options.SchemaRegistry
+    registry := sh.options.RequestBodyValidatorRegistry
 	if registry == nil {
 		return nil
 	}
@@ -193,6 +192,7 @@ func (sh *strictHandler) validateJSONBody(operationID string, r *http.Request) e
 	return validator.Validate(bytes.NewReader(body))
 }
 
+{{ if isJSONSchemaCompatible }}
 {{- range . }}
   {{- if not .IsAlias }}
     {{- $body := jsonRequestBody . }}
@@ -207,37 +207,26 @@ const {{$bodyType.TypeName}}Schema = `{{toPrettyJson $schema}}`
   {{- end }}
 {{- end }}
 
-// SchemaRegistry manages registered JSON schemas.
-type SchemaRegistry interface {
-	Register(name, source string) error
-	Validator(name string) (SchemaValidator, bool)
-}
-
-// SchemaValidator validates JSON data against a schema.
-type SchemaValidator interface {
-	Validate(data io.Reader) error
-}
-
-// InMemorySchemaRegistry manages registered JSON schemas.
-type InMemorySchemaRegistry struct {
+// JSONSchemaRegistry manages registered JSON schemas.
+type JSONSchemaRegistry struct {
 	compiler *jsonschema.Compiler
 	schemas  map[string]*jsonschema.Schema
 }
 
-// NewInMemorySchemaRegistry creates an empty registry with format validation enabled.
-func NewInMemorySchemaRegistry() *InMemorySchemaRegistry {
+// NewJSONSchemaRegistry creates an empty registry with format validation enabled.
+func NewJSONSchemaRegistry() *JSONSchemaRegistry {
 	compiler := jsonschema.NewCompiler()
 	compiler.AssertFormat()
 
-	return &InMemorySchemaRegistry{
+	return &JSONSchemaRegistry{
 		compiler: compiler,
 		schemas:  make(map[string]*jsonschema.Schema),
 	}
 }
 
-// NewDefaultSchemaRegistry creates an in-memory registry with predefined JSON schemas.
-func NewDefaultSchemaRegistry() (*InMemorySchemaRegistry, error) {
-    registry := NewInMemorySchemaRegistry()
+// NewDefaultJSONSchemaRegistry creates an in-memory registry with predefined JSON schemas.
+func NewDefaultJSONSchemaRegistry() (*JSONSchemaRegistry, error) {
+    registry := NewJSONSchemaRegistry()
 
     schemas := map[string]string{
     {{- range $op := .}}
@@ -259,7 +248,7 @@ func NewDefaultSchemaRegistry() (*InMemorySchemaRegistry, error) {
 }
 
 // Register parses, compiles, and stores a JSON schema under the given name.
-func (r *InMemorySchemaRegistry) Register(operationID, source string) error {
+func (r *JSONSchemaRegistry) Register(operationID, source string) error {
 	doc, err := jsonschema.UnmarshalJSON(strings.NewReader(source))
 	if err != nil {
 		return fmt.Errorf("parse JSON schema %q: invalid JSON document: %w", operationID, err)
@@ -278,44 +267,64 @@ func (r *InMemorySchemaRegistry) Register(operationID, source string) error {
 	return nil
 }
 
-// SchemaValidator returns a validator for a registered schema.
-func (r *InMemorySchemaRegistry) Validator(operationID string) (SchemaValidator, bool) {
+// Validator returns a validator for a registered schema.
+func (r *JSONSchemaRegistry) Validator(operationID string) (RequestBodyValidator, bool) {
 	schema, exists := r.schemas[operationID]
 	if !exists {
 		return nil, false
 	}
 
-	return &CompiledSchemaValidator{schema: schema}, true
+	return &JSONSchemaValidator{schema: schema}, true
 }
 
-// CompiledSchemaValidator validates JSON data against a compiled schema.
-type CompiledSchemaValidator struct {
+// JSONSchemaValidator validates JSON data against a compiled schema.
+type JSONSchemaValidator struct {
 	schema *jsonschema.Schema
 }
 
 // Validate checks JSON data against the validator's schema.
-func (v *CompiledSchemaValidator) Validate(data io.Reader) error {
-	value, err := jsonschema.UnmarshalJSON(data)
-	if err != nil {
-		return fmt.Errorf("invalid JSON: %w", err)
-	}
+func (v *JSONSchemaValidator) Validate(data io.Reader) error {
+    value, err := jsonschema.UnmarshalJSON(data)
+    if err != nil {
+        return &InvalidJSONError{Err: err}
+    }
 
-	if err := v.schema.Validate(value); err != nil {
-		validationErr, ok := errors.AsType[*jsonschema.ValidationError](err)
-		if !ok {
-			return fmt.Errorf("invalid JSON: %w", err)
-		}
+    if err := v.schema.Validate(value); err != nil {
+        return &JSONSchemaValidationError{Err: err}
+    }
 
-        message := v.formatErrorMessage(validationErr)
-
-        return errors.New(message)
-	}
-
-	return nil
+    return nil
 }
 
-// formatErrorMessage converts validation errors into human-readable messages.
-func (v *CompiledSchemaValidator) formatErrorMessage(err *jsonschema.ValidationError) (result string) {
+type InvalidJSONError struct {
+    Err error
+}
+
+func (e *InvalidJSONError) Error() string {
+    return fmt.Sprintf("Invalid JSON: %s", e.Err.Error())
+}
+
+func (e *InvalidJSONError) Unwrap() error {
+    return e.Err
+}
+
+type JSONSchemaValidationError struct {
+    Err error
+}
+
+func (e *JSONSchemaValidationError) Error() string {
+    if validationErr, ok := errors.AsType[*jsonschema.ValidationError](e.Err); ok {
+        return e.formatErrorMessage(validationErr)
+    }
+
+    return fmt.Sprintf("JSON schema validation failed: %s", e.Err.Error())
+}
+
+func (e *JSONSchemaValidationError) Unwrap() error {
+    return e.Err
+}
+
+func (e *JSONSchemaValidationError) formatErrorMessage(err *jsonschema.ValidationError) (result string) {
 	defer func() {
 		result = strings.TrimSpace(result)
 	}()
@@ -325,7 +334,7 @@ func (v *CompiledSchemaValidator) formatErrorMessage(err *jsonschema.ValidationE
 		messages := make([]string, 0, len(err.Causes))
 
 		for _, cause := range err.Causes {
-            message := v.formatErrorMessage(cause)
+			message := e.formatErrorMessage(cause)
 			messages = append(messages, message)
 		}
 
@@ -395,3 +404,4 @@ func (v *CompiledSchemaValidator) formatErrorMessage(err *jsonschema.ValidationE
 		return fmt.Sprintf("%s is invalid", field)
 	}
 }
+{{end}}
