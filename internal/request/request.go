@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	semver "github.com/Masterminds/semver/v3"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/oapi-codegen/oapi-codegen/v2/pkg/codegen"
 
@@ -64,8 +65,34 @@ func FindJSONSchema(op *codegen.OperationDefinition) *openapi3.Schema {
 			continue
 		}
 
-		return body.Schema.OAPISchema
+		schema := body.Schema.OAPISchema
+		schema.SchemaDialect = jsonSchemaDialect()
+
+		return schema
 	}
 
 	return &openapi3.Schema{}
+}
+
+func jsonSchemaDialect() string {
+	v, err := codegenstate.Version()
+	if err != nil {
+		panic(err)
+	}
+
+	openapi31 := semver.MustParse("3.1.0")
+
+	switch {
+	case v.LessThan(openapi31):
+		panic(fmt.Errorf("OpenAPI version %s is not fully compatible with JSON Schema", v))
+
+	case v.GreaterThanEqual(openapi31):
+		return "https://json-schema.org/draft/2020-12/schema"
+
+	// Add future OpenAPI version ranges and their corresponding
+	// JSON Schema dialects here.
+
+	default:
+		panic(fmt.Errorf("unsupported OpenAPI version: %s", v))
+	}
 }
