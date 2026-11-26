@@ -12,6 +12,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/coreos/go-oidc/v3/oidc"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
 )
@@ -97,8 +98,10 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 	}
 }
 
-func WithOAuth2ClientCredentials(clientID, clientSecret string) ClientOption {
+func WithOAuth2ClientCredentials(clientID, clientSecret string, issuer ...string) ClientOption {
 	return func(c *rawClient) error {
+		ctx := context.Background()
+
 		config := &clientcredentials.Config{
 			ClientID:     clientID,
 			ClientSecret: clientSecret,
@@ -108,13 +111,34 @@ func WithOAuth2ClientCredentials(clientID, clientSecret string) ClientOption {
 			},
 		}
 
-		c.OAuth2ClientCredentials.TokenSource = config.TokenSource(context.Background())
+		if len(issuer) > 1 {
+			return fmt.Errorf("expected at most one issuer")
+		}
+
+		if len(issuer) == 1 && issuer[0] != "" {
+			provider, err := oidc.NewProvider(ctx, issuer[0])
+			if err != nil {
+				return fmt.Errorf("discover OIDC provider: %w", err)
+			}
+
+			endpoint := provider.Endpoint()
+			if endpoint.TokenURL == "" {
+				return fmt.Errorf("OIDC provider has no token endpoint")
+			}
+
+			config.TokenURL = endpoint.TokenURL
+			config.AuthStyle = endpoint.AuthStyle
+		}
+
+		c.OAuth2ClientCredentials.TokenSource = config.TokenSource(ctx)
 		return nil
 	}
 }
 
-func WithOAuth2Password(clientID, clientSecret, username, password string) ClientOption {
+func WithOAuth2Password(clientID, clientSecret, username, password string, issuer ...string) ClientOption {
 	return func(c *rawClient) error {
+		ctx := context.Background()
+
 		config := &oauth2.Config{
 			ClientID:     clientID,
 			ClientSecret: clientSecret,
@@ -126,12 +150,30 @@ func WithOAuth2Password(clientID, clientSecret, username, password string) Clien
 			},
 		}
 
-		token, err := config.PasswordCredentialsToken(context.Background(), username, password)
+		if len(issuer) > 1 {
+			return fmt.Errorf("expected at most one issuer")
+		}
+
+		if len(issuer) == 1 && issuer[0] != "" {
+			provider, err := oidc.NewProvider(ctx, issuer[0])
+			if err != nil {
+				return fmt.Errorf("discover OIDC provider: %w", err)
+			}
+
+			endpoint := provider.Endpoint()
+			if endpoint.TokenURL == "" {
+				return fmt.Errorf("OIDC provider has no token endpoint")
+			}
+
+			config.Endpoint = endpoint
+		}
+
+		token, err := config.PasswordCredentialsToken(ctx, username, password)
 		if err != nil {
 			return fmt.Errorf("authenticate: %w", err)
 		}
 
-		c.OAuth2Password.TokenSource = config.TokenSource(context.Background(), token)
+		c.OAuth2Password.TokenSource = config.TokenSource(ctx, token)
 		return nil
 	}
 }
