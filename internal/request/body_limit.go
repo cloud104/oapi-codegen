@@ -48,14 +48,6 @@ func FindBodyLimit(op codegen.OperationDefinition) *BodyLimit {
 	return limit
 }
 
-func (l *BodyLimit) Bytes() int64 {
-	return l.bytes
-}
-
-func (l *BodyLimit) String() string {
-	return humanize.IBytes(uint64(l.bytes))
-}
-
 func defaultBodyLimit() *BodyLimit {
 	return &BodyLimit{bytes: defaultMaxBodySize}
 }
@@ -83,4 +75,12 @@ func parseBodyLimit(s string) (*BodyLimit, error) {
 	}
 
 	return newBodyLimitFromUint(n)
+}
+
+func (l *BodyLimit) Bytes() int64 {
+	return l.bytes
+}
+
+func (l *BodyLimit) String() string {
+	return humanize.IBytes(uint64(l.bytes))
 }

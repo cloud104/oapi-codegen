@@ -35,7 +35,7 @@ func TestSchemesForOperations(t *testing.T) {
 	}
 
 	// Act
-	schemes := SchemesForOperations(operations)
+	schemes := schemesForOperations(operations)
 
 	// Assert
 	if len(schemes) != 4 {

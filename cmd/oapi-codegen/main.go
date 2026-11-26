@@ -30,14 +30,6 @@ import (
 	"github.com/oapi-codegen/oapi-codegen/v2/pkg/util"
 )
 
-func errExit(format string, args ...any) {
-	if !strings.HasSuffix(format, "\n") {
-		format = format + "\n"
-	}
-	_, _ = fmt.Fprintf(os.Stderr, format, args...)
-	os.Exit(1)
-}
-
 var (
 	flagOutputFile     string
 	flagConfigFile     string
@@ -60,30 +52,6 @@ var (
 	flagResponseTypeSuffix  string
 	flagAliasTypes          bool
 )
-
-type configuration struct {
-	codegen.Configuration `yaml:",inline"`
-
-	// OutputFile is the filename to output.
-	OutputFile string `yaml:"output,omitempty"`
-}
-
-// oldConfiguration is deprecated. Please add no more flags here. It is here
-// for backwards compatibility, and it will be removed in the future.
-type oldConfiguration struct {
-	PackageName         string                       `yaml:"package"`
-	GenerateTargets     []string                     `yaml:"generate"`
-	OutputFile          string                       `yaml:"output"`
-	IncludeTags         []string                     `yaml:"include-tags"`
-	ExcludeTags         []string                     `yaml:"exclude-tags"`
-	IncludeOperationIDs []string                     `yaml:"include-operation-ids"`
-	ExcludeOperationIDs []string                     `yaml:"exclude-operation-ids"`
-	TemplatesDir        string                       `yaml:"templates"`
-	ImportMapping       map[string]string            `yaml:"import-mapping"`
-	ExcludeSchemas      []string                     `yaml:"exclude-schemas"`
-	ResponseTypeSuffix  string                       `yaml:"response-type-suffix"`
-	Compatibility       codegen.CompatibilityOptions `yaml:"compatibility"`
-}
 
 // noVCSVersionOverride allows overriding the version of the application for cases where no Version Control System (VCS) is available when building, for instance when using a Nix derivation.
 // See documentation for how to use it in examples/no-vcs-version-override/README.md
@@ -353,6 +321,108 @@ func main() {
 	}
 }
 
+type configuration struct {
+	codegen.Configuration `yaml:",inline"`
+
+	// OutputFile is the filename to output.
+	OutputFile string `yaml:"output,omitempty"`
+}
+
+func newConfigFromOldConfig(c oldConfiguration) (configuration, error) {
+	// Take flags into account.
+	cfg := updateOldConfigFromFlags(c)
+
+	// Now, copy over field by field, translating flags and old values as
+	// necessary.
+	opts := codegen.Configuration{
+		PackageName: cfg.PackageName,
+	}
+	opts.OutputOptions.ResponseTypeSuffix = flagResponseTypeSuffix
+
+	if err := generationTargets(&opts, cfg.GenerateTargets); err != nil {
+		return configuration{}, fmt.Errorf("generation targets: %w", err)
+	}
+
+	opts.OutputOptions.IncludeTags = cfg.IncludeTags
+	opts.OutputOptions.ExcludeTags = cfg.ExcludeTags
+	opts.OutputOptions.ExcludeSchemas = cfg.ExcludeSchemas
+
+	templates, err := loadTemplateOverrides(cfg.TemplatesDir)
+	if err != nil {
+		return configuration{}, fmt.Errorf("loading template overrides: %w", err)
+	}
+	opts.OutputOptions.UserTemplates = templates
+
+	opts.ImportMapping = cfg.ImportMapping
+
+	opts.Compatibility = cfg.Compatibility
+
+	return configuration{
+		Configuration: opts,
+		OutputFile:    cfg.OutputFile,
+	}, nil
+}
+
+// oldConfiguration is deprecated. Please add no more flags here. It is here
+// for backwards compatibility, and it will be removed in the future.
+type oldConfiguration struct {
+	PackageName         string                       `yaml:"package"`
+	GenerateTargets     []string                     `yaml:"generate"`
+	OutputFile          string                       `yaml:"output"`
+	IncludeTags         []string                     `yaml:"include-tags"`
+	ExcludeTags         []string                     `yaml:"exclude-tags"`
+	IncludeOperationIDs []string                     `yaml:"include-operation-ids"`
+	ExcludeOperationIDs []string                     `yaml:"exclude-operation-ids"`
+	TemplatesDir        string                       `yaml:"templates"`
+	ImportMapping       map[string]string            `yaml:"import-mapping"`
+	ExcludeSchemas      []string                     `yaml:"exclude-schemas"`
+	ResponseTypeSuffix  string                       `yaml:"response-type-suffix"`
+	Compatibility       codegen.CompatibilityOptions `yaml:"compatibility"`
+}
+
+// updateOldConfigFromFlags parses the flags and the config file. Anything which is
+// a zerovalue in the configuration file will be replaced with the flag
+// value, this means that the config file overrides flag values.
+func updateOldConfigFromFlags(cfg oldConfiguration) oldConfiguration {
+	if cfg.PackageName == "" {
+		cfg.PackageName = flagPackageName
+	}
+	if cfg.GenerateTargets == nil {
+		cfg.GenerateTargets = util.ParseCommandLineList(flagGenerate)
+	}
+	if cfg.IncludeTags == nil {
+		cfg.IncludeTags = util.ParseCommandLineList(flagIncludeTags)
+	}
+	if cfg.ExcludeTags == nil {
+		cfg.ExcludeTags = util.ParseCommandLineList(flagExcludeTags)
+	}
+	if cfg.TemplatesDir == "" {
+		cfg.TemplatesDir = flagTemplatesDir
+	}
+	if cfg.ImportMapping == nil && flagImportMapping != "" {
+		var err error
+		cfg.ImportMapping, err = util.ParseCommandlineMap(flagImportMapping)
+		if err != nil {
+			errExit("error parsing import-mapping: %s\n", err)
+		}
+	}
+	if cfg.ExcludeSchemas == nil {
+		cfg.ExcludeSchemas = util.ParseCommandLineList(flagExcludeSchemas)
+	}
+	if cfg.OutputFile == "" {
+		cfg.OutputFile = flagOutputFile
+	}
+	return cfg
+}
+
+func errExit(format string, args ...any) {
+	if !strings.HasSuffix(format, "\n") {
+		format = format + "\n"
+	}
+	_, _ = fmt.Fprintf(os.Stderr, format, args...)
+	os.Exit(1)
+}
+
 func loadTemplateOverrides(templatesDir string) (map[string]string, error) {
 	templates := make(map[string]string)
 
@@ -483,41 +553,6 @@ func updateConfigFromFlags(cfg *configuration) error {
 	return nil
 }
 
-// updateOldConfigFromFlags parses the flags and the config file. Anything which is
-// a zerovalue in the configuration file will be replaced with the flag
-// value, this means that the config file overrides flag values.
-func updateOldConfigFromFlags(cfg oldConfiguration) oldConfiguration {
-	if cfg.PackageName == "" {
-		cfg.PackageName = flagPackageName
-	}
-	if cfg.GenerateTargets == nil {
-		cfg.GenerateTargets = util.ParseCommandLineList(flagGenerate)
-	}
-	if cfg.IncludeTags == nil {
-		cfg.IncludeTags = util.ParseCommandLineList(flagIncludeTags)
-	}
-	if cfg.ExcludeTags == nil {
-		cfg.ExcludeTags = util.ParseCommandLineList(flagExcludeTags)
-	}
-	if cfg.TemplatesDir == "" {
-		cfg.TemplatesDir = flagTemplatesDir
-	}
-	if cfg.ImportMapping == nil && flagImportMapping != "" {
-		var err error
-		cfg.ImportMapping, err = util.ParseCommandlineMap(flagImportMapping)
-		if err != nil {
-			errExit("error parsing import-mapping: %s\n", err)
-		}
-	}
-	if cfg.ExcludeSchemas == nil {
-		cfg.ExcludeSchemas = util.ParseCommandLineList(flagExcludeSchemas)
-	}
-	if cfg.OutputFile == "" {
-		cfg.OutputFile = flagOutputFile
-	}
-	return cfg
-}
-
 // generationTargets sets cfg options based on the generation targets.
 func generationTargets(cfg *codegen.Configuration, targets []string) error {
 	opts := codegen.GenerateOptions{} // Blank to start with.
@@ -560,39 +595,4 @@ func generationTargets(cfg *codegen.Configuration, targets []string) error {
 	cfg.Generate = opts
 
 	return nil
-}
-
-func newConfigFromOldConfig(c oldConfiguration) (configuration, error) {
-	// Take flags into account.
-	cfg := updateOldConfigFromFlags(c)
-
-	// Now, copy over field by field, translating flags and old values as
-	// necessary.
-	opts := codegen.Configuration{
-		PackageName: cfg.PackageName,
-	}
-	opts.OutputOptions.ResponseTypeSuffix = flagResponseTypeSuffix
-
-	if err := generationTargets(&opts, cfg.GenerateTargets); err != nil {
-		return configuration{}, fmt.Errorf("generation targets: %w", err)
-	}
-
-	opts.OutputOptions.IncludeTags = cfg.IncludeTags
-	opts.OutputOptions.ExcludeTags = cfg.ExcludeTags
-	opts.OutputOptions.ExcludeSchemas = cfg.ExcludeSchemas
-
-	templates, err := loadTemplateOverrides(cfg.TemplatesDir)
-	if err != nil {
-		return configuration{}, fmt.Errorf("loading template overrides: %w", err)
-	}
-	opts.OutputOptions.UserTemplates = templates
-
-	opts.ImportMapping = cfg.ImportMapping
-
-	opts.Compatibility = cfg.Compatibility
-
-	return configuration{
-		Configuration: opts,
-		OutputFile:    cfg.OutputFile,
-	}, nil
 }

@@ -10,6 +10,17 @@ import (
 	"github.com/oapi-codegen/oapi-codegen/v2/pkg/codegen"
 )
 
+var (
+	structRE = regexp.MustCompile(`(?s)^\s*struct\s*\{.*\}\s*$`)
+	mapRE    = regexp.MustCompile(`^\s*map\s*\[.*\].*$`)
+)
+
+type ResponseGroup struct {
+	Type        string
+	Method      string
+	Fields      []string
+	StatusCodes statusCodes
+}
 type statusCodes []string
 
 func (codes statusCodes) String() string {
@@ -22,18 +33,6 @@ func (codes statusCodes) String() string {
 		return strings.Join(codes[:len(codes)-1], ", ") + " or " + codes[len(codes)-1]
 	}
 }
-
-type ResponseGroup struct {
-	Type        string
-	Method      string
-	Fields      []string
-	StatusCodes statusCodes
-}
-
-var (
-	structRE = regexp.MustCompile(`(?s)^\s*struct\s*\{.*\}\s*$`)
-	mapRE    = regexp.MustCompile(`^\s*map\s*\[.*\].*$`)
-)
 
 func GroupResponses(defs []codegen.ResponseTypeDefinition) []*ResponseGroup {
 	byType := make(map[string]*ResponseGroup)

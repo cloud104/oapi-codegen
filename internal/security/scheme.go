@@ -15,7 +15,23 @@ type OperationScheme struct {
 	Scheme     *openapi3.SecurityScheme
 }
 
-func SchemesForOperations(ops []codegen.OperationDefinition) []*OperationScheme {
+func describeSecurityDefinition(op codegen.OperationDefinition) []codegen.SecurityDefinition {
+	if op.Spec == nil || op.Spec.Security == nil {
+		return nil
+	}
+	outDefs := make([]codegen.SecurityDefinition, 0)
+
+	for _, sr := range *op.Spec.Security {
+		for _, k := range codegen.SortedMapKeys(sr) {
+			v := sr[k]
+			outDefs = append(outDefs, codegen.SecurityDefinition{ProviderName: k, Scopes: v})
+		}
+	}
+
+	return outDefs
+}
+
+func schemesForOperations(ops []codegen.OperationDefinition) []*OperationScheme {
 	components, ok := codegenstate.Components()
 	if !ok {
 		return nil
@@ -45,20 +61,4 @@ func SchemesForOperations(ops []codegen.OperationDefinition) []*OperationScheme 
 	})
 
 	return schemes
-}
-
-func describeSecurityDefinition(op codegen.OperationDefinition) []codegen.SecurityDefinition {
-	if op.Spec == nil || op.Spec.Security == nil {
-		return nil
-	}
-	outDefs := make([]codegen.SecurityDefinition, 0)
-
-	for _, sr := range *op.Spec.Security {
-		for _, k := range codegen.SortedMapKeys(sr) {
-			v := sr[k]
-			outDefs = append(outDefs, codegen.SecurityDefinition{ProviderName: k, Scopes: v})
-		}
-	}
-
-	return outDefs
 }

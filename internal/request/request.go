@@ -32,21 +32,6 @@ func FindJSONBody(op *codegen.OperationDefinition) *codegen.RequestBodyDefinitio
 	return body
 }
 
-func GenerateJSONBodyArgument(op *codegen.OperationDefinition) string {
-	body := FindJSONBody(op)
-	if body == nil {
-		return ""
-	}
-
-	typeName := body.TypeDef(op.OperationId).TypeName
-
-	if body.Required {
-		return fmt.Sprintf(", body %s", typeName)
-	}
-
-	return fmt.Sprintf(", body *%s", typeName)
-}
-
 func FindJSONSchema(op *codegen.OperationDefinition) *openapi3.Schema {
 	operations, err := codegenstate.Operations()
 	if err != nil {
@@ -68,4 +53,19 @@ func FindJSONSchema(op *codegen.OperationDefinition) *openapi3.Schema {
 	}
 
 	return &openapi3.Schema{}
+}
+
+func GenerateJSONBodyArgument(op *codegen.OperationDefinition) string {
+	body := FindJSONBody(op)
+	if body == nil {
+		return ""
+	}
+
+	typeName := body.TypeDef(op.OperationId).TypeName
+
+	if body.Required {
+		return fmt.Sprintf(", body %s", typeName)
+	}
+
+	return fmt.Sprintf(", body *%s", typeName)
 }

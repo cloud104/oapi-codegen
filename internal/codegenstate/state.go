@@ -7,6 +7,9 @@ import (
 	"github.com/oapi-codegen/oapi-codegen/v2/pkg/codegen"
 )
 
+//go:linkname globalState github.com/oapi-codegen/oapi-codegen/v2/pkg/codegen.globalState
+var globalState globalStateLayout
+
 // Mirrors the prefix of codegen.globalState up to initialismsMap.
 // This is intentionally coupled to oapi-codegen's internal implementation.
 type globalStateLayout struct {
@@ -16,6 +19,3 @@ type globalStateLayout struct {
 	importMapping  map[string]struct{ Name, Path string } //nolint:unused // Required to preserve the memory layout of codegen.globalState.
 	initialismsMap map[string]string
 }
-
-//go:linkname globalState github.com/oapi-codegen/oapi-codegen/v2/pkg/codegen.globalState
-var globalState globalStateLayout

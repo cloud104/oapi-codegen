@@ -8,9 +8,6 @@ import (
 	"github.com/ettle/strcase"
 )
 
-//go:linkname defaultSplitFn github.com/ettle/strcase.defaultSplitFn
-func defaultSplitFn(prev, curr, next rune) strcase.SplitAction
-
 // initialismSplitter implements a strcase.SplitFn that detects initialism boundaries.
 type initialismSplitter struct {
 	initialisms map[string]bool
@@ -19,6 +16,23 @@ type initialismSplitter struct {
 
 func newInitialismSplitter(initialisms map[string]bool) *initialismSplitter {
 	return &initialismSplitter{initialisms: initialisms}
+}
+
+func (s *initialismSplitter) isBoundary(prev, curr rune) bool {
+	// Require uppercase letters and a known initialism.
+	if !unicode.IsUpper(prev) || !unicode.IsUpper(curr) || !s.initialisms[s.word] {
+		return false
+	}
+
+	// Check for longer matching initialisms.
+	prefix := s.word + string(curr)
+	for name := range s.initialisms {
+		if strings.HasPrefix(name, prefix) {
+			return false
+		}
+	}
+
+	return true
 }
 
 func (s *initialismSplitter) split(prev, curr, next rune) strcase.SplitAction {
@@ -47,19 +61,5 @@ func (s *initialismSplitter) split(prev, curr, next rune) strcase.SplitAction {
 	return action
 }
 
-func (s *initialismSplitter) isBoundary(prev, curr rune) bool {
-	// Require uppercase letters and a known initialism.
-	if !unicode.IsUpper(prev) || !unicode.IsUpper(curr) || !s.initialisms[s.word] {
-		return false
-	}
-
-	// Check for longer matching initialisms.
-	prefix := s.word + string(curr)
-	for name := range s.initialisms {
-		if strings.HasPrefix(name, prefix) {
-			return false
-		}
-	}
-
-	return true
-}
+//go:linkname defaultSplitFn github.com/ettle/strcase.defaultSplitFn
+func defaultSplitFn(prev, curr, next rune) strcase.SplitAction

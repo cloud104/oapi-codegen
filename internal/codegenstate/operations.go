@@ -46,6 +46,43 @@ func Operations() ([]codegen.OperationDefinition, error) {
 	return operations, operationsErr
 }
 
+func clearContentDescriptions(content openapi3.Content, visited map[*openapi3.Schema]bool) {
+	for _, media := range content {
+		if media != nil {
+			clearSchemaDescriptions(media.Schema, visited)
+		}
+	}
+}
+
+func clearContentExamples(content openapi3.Content, visited map[*openapi3.Schema]bool) {
+	for _, media := range content {
+		if media == nil {
+			continue
+		}
+
+		media.Example = nil
+
+		for _, exampleRef := range media.Examples {
+			clearExampleRef(exampleRef)
+		}
+
+		media.Examples = nil
+
+		clearSchemaExamples(media.Schema, visited)
+	}
+}
+
+func clearContentExtensions(content openapi3.Content, visited map[*openapi3.Schema]bool) {
+	for _, media := range content {
+		if media == nil {
+			continue
+		}
+
+		media.Extensions = nil
+		clearSchemaExtensions(media.Schema, visited)
+	}
+}
+
 func clearDescriptions(spec *openapi3.T) {
 	visited := make(map[*openapi3.Schema]bool)
 
@@ -106,52 +143,65 @@ func clearDescriptions(spec *openapi3.T) {
 	}
 }
 
-func clearSchemaDescriptions(ref *openapi3.SchemaRef, visited map[*openapi3.Schema]bool) {
-	if ref == nil || ref.Value == nil || visited[ref.Value] {
+func clearExampleRef(ref *openapi3.ExampleRef) {
+	if ref == nil || ref.Value == nil {
 		return
 	}
 
-	schema := ref.Value
-	visited[schema] = true
+	ref.Value.Value = nil
+	ref.Value.ExternalValue = ""
+}
 
-	schema.Description = ""
-	for _, property := range schema.Properties {
-		clearSchemaDescriptions(property, visited)
-	}
+func clearExamples(spec *openapi3.T) {
+	visited := make(map[*openapi3.Schema]bool)
 
-	for _, refs := range [][]*openapi3.SchemaRef{
-		schema.AllOf,
-		schema.AnyOf,
-		schema.OneOf,
-	} {
-		for _, ref := range refs {
-			clearSchemaDescriptions(ref, visited)
+	if spec.Components != nil {
+		for _, ref := range spec.Components.Schemas {
+			clearSchemaExamples(ref, visited)
+		}
+
+		for _, paramRef := range spec.Components.Parameters {
+			clearParameterExample(paramRef, visited)
+		}
+
+		for _, headerRef := range spec.Components.Headers {
+			clearHeaderExamples(headerRef, visited)
+		}
+
+		for _, bodyRef := range spec.Components.RequestBodies {
+			clearRequestBodyExamples(bodyRef, visited)
+		}
+
+		for _, responseRef := range spec.Components.Responses {
+			clearResponseExamples(responseRef, visited)
+		}
+
+		for _, exampleRef := range spec.Components.Examples {
+			clearExampleRef(exampleRef)
 		}
 	}
 
-	clearSchemaDescriptions(schema.Items, visited)
-	clearSchemaDescriptions(schema.Not, visited)
-	clearSchemaDescriptions(schema.AdditionalProperties.Schema, visited)
-}
-
-func clearContentDescriptions(content openapi3.Content, visited map[*openapi3.Schema]bool) {
-	for _, media := range content {
-		if media != nil {
-			clearSchemaDescriptions(media.Schema, visited)
-		}
-	}
-}
-
-func clearParameterDescriptions(parameters openapi3.Parameters, visited map[*openapi3.Schema]bool) {
-	for _, paramRef := range parameters {
-		if paramRef == nil || paramRef.Value == nil {
+	for _, path := range spec.Paths.Map() {
+		if path == nil {
 			continue
 		}
 
-		param := paramRef.Value
-		param.Description = ""
-		clearSchemaDescriptions(param.Schema, visited)
-		clearContentDescriptions(param.Content, visited)
+		clearParameterExamples(path.Parameters, visited)
+
+		for _, operation := range path.Operations() {
+			if operation == nil {
+				continue
+			}
+
+			clearParameterExamples(operation.Parameters, visited)
+			clearRequestBodyExamples(operation.RequestBody, visited)
+
+			if operation.Responses != nil {
+				for _, responseRef := range operation.Responses.Map() {
+					clearResponseExamples(responseRef, visited)
+				}
+			}
+		}
 	}
 }
 
@@ -228,47 +278,58 @@ func clearExtensions(spec *openapi3.T) {
 	}
 }
 
-func clearSchemaExtensions(ref *openapi3.SchemaRef, visited map[*openapi3.Schema]bool) {
-	if ref == nil {
+func clearHeaderExamples(headerRef *openapi3.HeaderRef, visited map[*openapi3.Schema]bool) {
+	if headerRef == nil || headerRef.Value == nil {
 		return
 	}
 
-	ref.Extensions = nil
-	if ref.Value == nil || visited[ref.Value] {
-		return
+	header := headerRef.Value
+	header.Example = nil
+
+	for _, exampleRef := range header.Examples {
+		clearExampleRef(exampleRef)
 	}
 
-	schema := ref.Value
-	visited[schema] = true
+	header.Examples = nil
 
-	schema.Extensions = nil
-	for _, property := range schema.Properties {
-		clearSchemaExtensions(property, visited)
-	}
-
-	for _, refs := range [][]*openapi3.SchemaRef{
-		schema.AllOf,
-		schema.AnyOf,
-		schema.OneOf,
-	} {
-		for _, nested := range refs {
-			clearSchemaExtensions(nested, visited)
-		}
-	}
-
-	clearSchemaExtensions(schema.Items, visited)
-	clearSchemaExtensions(schema.Not, visited)
-	clearSchemaExtensions(schema.AdditionalProperties.Schema, visited)
+	clearSchemaExamples(header.Schema, visited)
+	clearContentExamples(header.Content, visited)
 }
 
-func clearContentExtensions(content openapi3.Content, visited map[*openapi3.Schema]bool) {
-	for _, media := range content {
-		if media == nil {
+func clearParameterDescriptions(parameters openapi3.Parameters, visited map[*openapi3.Schema]bool) {
+	for _, paramRef := range parameters {
+		if paramRef == nil || paramRef.Value == nil {
 			continue
 		}
 
-		media.Extensions = nil
-		clearSchemaExtensions(media.Schema, visited)
+		param := paramRef.Value
+		param.Description = ""
+		clearSchemaDescriptions(param.Schema, visited)
+		clearContentDescriptions(param.Content, visited)
+	}
+}
+
+func clearParameterExample(paramRef *openapi3.ParameterRef, visited map[*openapi3.Schema]bool) {
+	if paramRef == nil || paramRef.Value == nil {
+		return
+	}
+
+	param := paramRef.Value
+	param.Example = nil
+
+	for _, exampleRef := range param.Examples {
+		clearExampleRef(exampleRef)
+	}
+
+	param.Examples = nil
+
+	clearSchemaExamples(param.Schema, visited)
+	clearContentExamples(param.Content, visited)
+}
+
+func clearParameterExamples(parameters openapi3.Parameters, visited map[*openapi3.Schema]bool) {
+	for _, paramRef := range parameters {
+		clearParameterExample(paramRef, visited)
 	}
 }
 
@@ -290,57 +351,54 @@ func clearParameterExtensions(parameters openapi3.Parameters, visited map[*opena
 	}
 }
 
-func clearExamples(spec *openapi3.T) {
-	visited := make(map[*openapi3.Schema]bool)
+func clearRequestBodyExamples(bodyRef *openapi3.RequestBodyRef, visited map[*openapi3.Schema]bool) {
+	if bodyRef == nil || bodyRef.Value == nil {
+		return
+	}
 
-	if spec.Components != nil {
-		for _, ref := range spec.Components.Schemas {
-			clearSchemaExamples(ref, visited)
-		}
+	clearContentExamples(bodyRef.Value.Content, visited)
+}
 
-		for _, paramRef := range spec.Components.Parameters {
-			clearParameterExample(paramRef, visited)
-		}
+func clearResponseExamples(responseRef *openapi3.ResponseRef, visited map[*openapi3.Schema]bool) {
+	if responseRef == nil || responseRef.Value == nil {
+		return
+	}
 
-		for _, headerRef := range spec.Components.Headers {
-			clearHeaderExamples(headerRef, visited)
-		}
+	response := responseRef.Value
 
-		for _, bodyRef := range spec.Components.RequestBodies {
-			clearRequestBodyExamples(bodyRef, visited)
-		}
+	for _, headerRef := range response.Headers {
+		clearHeaderExamples(headerRef, visited)
+	}
 
-		for _, responseRef := range spec.Components.Responses {
-			clearResponseExamples(responseRef, visited)
-		}
+	clearContentExamples(response.Content, visited)
+}
 
-		for _, exampleRef := range spec.Components.Examples {
-			clearExampleRef(exampleRef)
+func clearSchemaDescriptions(ref *openapi3.SchemaRef, visited map[*openapi3.Schema]bool) {
+	if ref == nil || ref.Value == nil || visited[ref.Value] {
+		return
+	}
+
+	schema := ref.Value
+	visited[schema] = true
+
+	schema.Description = ""
+	for _, property := range schema.Properties {
+		clearSchemaDescriptions(property, visited)
+	}
+
+	for _, refs := range [][]*openapi3.SchemaRef{
+		schema.AllOf,
+		schema.AnyOf,
+		schema.OneOf,
+	} {
+		for _, ref := range refs {
+			clearSchemaDescriptions(ref, visited)
 		}
 	}
 
-	for _, path := range spec.Paths.Map() {
-		if path == nil {
-			continue
-		}
-
-		clearParameterExamples(path.Parameters, visited)
-
-		for _, operation := range path.Operations() {
-			if operation == nil {
-				continue
-			}
-
-			clearParameterExamples(operation.Parameters, visited)
-			clearRequestBodyExamples(operation.RequestBody, visited)
-
-			if operation.Responses != nil {
-				for _, responseRef := range operation.Responses.Map() {
-					clearResponseExamples(responseRef, visited)
-				}
-			}
-		}
-	}
+	clearSchemaDescriptions(schema.Items, visited)
+	clearSchemaDescriptions(schema.Not, visited)
+	clearSchemaDescriptions(schema.AdditionalProperties.Schema, visited)
 }
 
 func clearSchemaExamples(ref *openapi3.SchemaRef, visited map[*openapi3.Schema]bool) {
@@ -380,93 +438,35 @@ func clearSchemaExamples(ref *openapi3.SchemaRef, visited map[*openapi3.Schema]b
 	clearSchemaExamples(schema.AdditionalProperties.Schema, visited)
 }
 
-func clearExampleRef(ref *openapi3.ExampleRef) {
-	if ref == nil || ref.Value == nil {
+func clearSchemaExtensions(ref *openapi3.SchemaRef, visited map[*openapi3.Schema]bool) {
+	if ref == nil {
 		return
 	}
 
-	ref.Value.Value = nil
-	ref.Value.ExternalValue = ""
-}
+	ref.Extensions = nil
+	if ref.Value == nil || visited[ref.Value] {
+		return
+	}
 
-func clearContentExamples(content openapi3.Content, visited map[*openapi3.Schema]bool) {
-	for _, media := range content {
-		if media == nil {
-			continue
+	schema := ref.Value
+	visited[schema] = true
+
+	schema.Extensions = nil
+	for _, property := range schema.Properties {
+		clearSchemaExtensions(property, visited)
+	}
+
+	for _, refs := range [][]*openapi3.SchemaRef{
+		schema.AllOf,
+		schema.AnyOf,
+		schema.OneOf,
+	} {
+		for _, nested := range refs {
+			clearSchemaExtensions(nested, visited)
 		}
-
-		media.Example = nil
-
-		for _, exampleRef := range media.Examples {
-			clearExampleRef(exampleRef)
-		}
-
-		media.Examples = nil
-
-		clearSchemaExamples(media.Schema, visited)
-	}
-}
-
-func clearParameterExample(paramRef *openapi3.ParameterRef, visited map[*openapi3.Schema]bool) {
-	if paramRef == nil || paramRef.Value == nil {
-		return
 	}
 
-	param := paramRef.Value
-	param.Example = nil
-
-	for _, exampleRef := range param.Examples {
-		clearExampleRef(exampleRef)
-	}
-
-	param.Examples = nil
-
-	clearSchemaExamples(param.Schema, visited)
-	clearContentExamples(param.Content, visited)
-}
-
-func clearParameterExamples(parameters openapi3.Parameters, visited map[*openapi3.Schema]bool) {
-	for _, paramRef := range parameters {
-		clearParameterExample(paramRef, visited)
-	}
-}
-
-func clearHeaderExamples(headerRef *openapi3.HeaderRef, visited map[*openapi3.Schema]bool) {
-	if headerRef == nil || headerRef.Value == nil {
-		return
-	}
-
-	header := headerRef.Value
-	header.Example = nil
-
-	for _, exampleRef := range header.Examples {
-		clearExampleRef(exampleRef)
-	}
-
-	header.Examples = nil
-
-	clearSchemaExamples(header.Schema, visited)
-	clearContentExamples(header.Content, visited)
-}
-
-func clearRequestBodyExamples(bodyRef *openapi3.RequestBodyRef, visited map[*openapi3.Schema]bool) {
-	if bodyRef == nil || bodyRef.Value == nil {
-		return
-	}
-
-	clearContentExamples(bodyRef.Value.Content, visited)
-}
-
-func clearResponseExamples(responseRef *openapi3.ResponseRef, visited map[*openapi3.Schema]bool) {
-	if responseRef == nil || responseRef.Value == nil {
-		return
-	}
-
-	response := responseRef.Value
-
-	for _, headerRef := range response.Headers {
-		clearHeaderExamples(headerRef, visited)
-	}
-
-	clearContentExamples(response.Content, visited)
+	clearSchemaExtensions(schema.Items, visited)
+	clearSchemaExtensions(schema.Not, visited)
+	clearSchemaExtensions(schema.AdditionalProperties.Schema, visited)
 }

@@ -1,9 +1,5 @@
 package security
 
-import (
-	"github.com/oapi-codegen/oapi-codegen/v2/pkg/codegen"
-)
-
 type APIKeyConfig struct {
 	Name        string
 	Description string
@@ -12,27 +8,12 @@ type APIKeyConfig struct {
 	Scopes      []string
 }
 
-func APIKeyForOperation(op *codegen.OperationDefinition) []*APIKeyConfig {
-	return APIKeyForOperations([]codegen.OperationDefinition{*op})
-}
-
-func APIKeyForOperations(ops []codegen.OperationDefinition) []*APIKeyConfig {
-	var configs []*APIKeyConfig
-
-	for _, auth := range SchemesForOperations(ops) {
-		scheme := auth.Scheme
-		if scheme.Type != "apiKey" {
-			continue
-		}
-
-		configs = append(configs, &APIKeyConfig{
-			Name:        auth.Definition.ProviderName,
-			Description: scheme.Description,
-			KeyName:     scheme.Name,
-			In:          scheme.In,
-			Scopes:      auth.Definition.Scopes,
-		})
-	}
-
-	return configs
+func (s *Security) addAPIKey(auth *OperationScheme) {
+	s.APIKey = append(s.APIKey, &APIKeyConfig{
+		Name:        auth.Definition.ProviderName,
+		Description: auth.Scheme.Description,
+		KeyName:     auth.Scheme.Name,
+		In:          auth.Scheme.In,
+		Scopes:      auth.Definition.Scopes,
+	})
 }
