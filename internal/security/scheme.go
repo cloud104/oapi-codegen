@@ -40,6 +40,7 @@ func schemesForOperations(ops []codegen.OperationDefinition) []*OperationScheme 
 
 	scopesByProvider := make(map[string][]string)
 
+	// Collect operation-level security requirements.
 	for _, op := range ops {
 		for _, def := range describeSecurityDefinition(op) {
 			provider := def.ProviderName
@@ -47,6 +48,7 @@ func schemesForOperations(ops []codegen.OperationDefinition) []*OperationScheme 
 		}
 	}
 
+	// Merge global security requirements.
 	if security, ok := codegenstate.Security(); ok {
 		for _, req := range security {
 			for name, scopes := range req {
@@ -55,6 +57,7 @@ func schemesForOperations(ops []codegen.OperationDefinition) []*OperationScheme 
 		}
 	}
 
+	// Resolve security schemes and deduplicate scopes.
 	var schemes []*OperationScheme
 	for name, scopes := range scopesByProvider {
 		ref := components.SecuritySchemes[name]
@@ -72,6 +75,7 @@ func schemesForOperations(ops []codegen.OperationDefinition) []*OperationScheme 
 		})
 	}
 
+	// Ensure deterministic output.
 	slices.SortFunc(schemes, func(a, b *OperationScheme) int {
 		return cmp.Compare(a.Definition.ProviderName, b.Definition.ProviderName)
 	})
