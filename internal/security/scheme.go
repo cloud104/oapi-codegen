@@ -19,6 +19,7 @@ func describeSecurityDefinition(op codegen.OperationDefinition) []codegen.Securi
 	if op.Spec == nil || op.Spec.Security == nil {
 		return nil
 	}
+
 	outDefs := make([]codegen.SecurityDefinition, 0)
 
 	for _, sr := range *op.Spec.Security {
@@ -37,23 +38,38 @@ func schemesForOperations(ops []codegen.OperationDefinition) []*OperationScheme 
 		return nil
 	}
 
-	seen := make(map[string]bool)
-
-	var schemes []*OperationScheme
+	scopesByProvider := make(map[string][]string)
 
 	for _, op := range ops {
 		for _, def := range describeSecurityDefinition(op) {
-			name := def.ProviderName
-
-			ref := components.SecuritySchemes[name]
-			if seen[name] || ref == nil || ref.Value == nil {
-				continue
-			}
-
-			seen[name] = true
-
-			schemes = append(schemes, &OperationScheme{def, ref.Value})
+			provider := def.ProviderName
+			scopesByProvider[provider] = append(scopesByProvider[provider], def.Scopes...)
 		}
+	}
+
+	if security, ok := codegenstate.Security(); ok {
+		for _, req := range security {
+			for name, scopes := range req {
+				scopesByProvider[name] = append(scopesByProvider[name], scopes...)
+			}
+		}
+	}
+
+	var schemes []*OperationScheme
+	for name, scopes := range scopesByProvider {
+		ref := components.SecuritySchemes[name]
+		if ref == nil || ref.Value == nil {
+			continue
+		}
+
+		slices.Sort(scopes)
+		schemes = append(schemes, &OperationScheme{
+			Definition: codegen.SecurityDefinition{
+				ProviderName: name,
+				Scopes:       slices.Compact(scopes),
+			},
+			Scheme: ref.Value,
+		})
 	}
 
 	slices.SortFunc(schemes, func(a, b *OperationScheme) int {
