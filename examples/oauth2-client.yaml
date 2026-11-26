@@ -107,7 +107,7 @@ paths:
       summary: Optional authentication
       security:
         - { }
-        - OAuth2AuthorizationCode:
+        - OAuth2ClientCredentials:
             - read
       responses:
         "200":

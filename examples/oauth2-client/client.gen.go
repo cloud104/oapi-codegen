@@ -104,7 +104,7 @@ func WithOAuth2ClientCredentials(clientID, clientSecret string) ClientOption {
 			ClientSecret: clientSecret,
 			TokenURL:     "https://auth.example.com/oauth2/token",
 			Scopes: []string{
-				"reports:read",
+				"read",
 			},
 		}
 
@@ -256,8 +256,24 @@ func (c *rawClient) unauthenticatedGetLegacyPassword(ctx context.Context, reqEdi
 	return resp, nil
 }
 
-// getOptionalAuth performs a GET /optional-auth (the `GetOptionalAuth` operationId) request.
+// getOptionalAuth performs an authenticated GET /optional-auth (the `GetOptionalAuth` operationId) request.
 func (c *rawClient) getOptionalAuth(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	editors := append(slices.Clone(reqEditors), func(ctx context.Context, req *http.Request) error {
+		if c.OAuth2ClientCredentials.TokenSource != nil {
+			token, err := c.OAuth2ClientCredentials.TokenSource.Token()
+			if err != nil {
+				return fmt.Errorf("get authentication token for GET /optional-auth: %w", err)
+			}
+			token.SetAuthHeader(req)
+		}
+		return nil
+	})
+
+	return c.unauthenticatedGetOptionalAuth(ctx, editors...)
+}
+
+// unauthenticatedGetOptionalAuth performs a GET /optional-auth (the `GetOptionalAuth` operationId) request without authentication.
+func (c *rawClient) unauthenticatedGetOptionalAuth(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := newGetOptionalAuthRequest(c.Server)
 	if err != nil {
 		return nil, fmt.Errorf("create GET /optional-auth request: %w", err)

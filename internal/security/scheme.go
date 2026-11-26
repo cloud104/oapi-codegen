@@ -26,7 +26,7 @@ func SchemesForOperations(ops []codegen.OperationDefinition) []*OperationScheme 
 	var schemes []*OperationScheme
 
 	for _, op := range ops {
-		for _, def := range op.SecurityDefinitions {
+		for _, def := range describeSecurityDefinition(op) {
 			name := def.ProviderName
 
 			ref := components.SecuritySchemes[name]
@@ -45,4 +45,20 @@ func SchemesForOperations(ops []codegen.OperationDefinition) []*OperationScheme 
 	})
 
 	return schemes
+}
+
+func describeSecurityDefinition(op codegen.OperationDefinition) []codegen.SecurityDefinition {
+	if op.Spec == nil || op.Spec.Security == nil {
+		return nil
+	}
+	outDefs := make([]codegen.SecurityDefinition, 0)
+
+	for _, sr := range *op.Spec.Security {
+		for _, k := range codegen.SortedMapKeys(sr) {
+			v := sr[k]
+			outDefs = append(outDefs, codegen.SecurityDefinition{ProviderName: k, Scopes: v})
+		}
+	}
+
+	return outDefs
 }
