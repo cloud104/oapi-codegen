@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"slices"
 	"strings"
 
 	"golang.org/x/oauth2"
@@ -135,6 +136,14 @@ func (c *rawClient) getLegacyImplicit(ctx context.Context, reqEditors ...Request
 }
 
 func (c *rawClient) getLegacyPassword(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	editors := append(slices.Clone(reqEditors), func(ctx context.Context, req *http.Request) error {
+		return nil
+	})
+
+	return c.unauthenticatedGetLegacyPassword(ctx, editors...)
+}
+
+func (c *rawClient) unauthenticatedGetLegacyPassword(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := newGetLegacyPasswordRequest(c.Server)
 	if err != nil {
 		return nil, fmt.Errorf("create GET /legacy/password request: %w", err)

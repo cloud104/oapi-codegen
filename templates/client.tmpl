@@ -210,7 +210,8 @@ type rawClientInterface interface {
 {{- $basicAuthSchemes := basicAuth . -}}
 {{- $bearerAuthSchemes := bearerAuth . -}}
 {{- $apiKeyAuthSchemes := apiKeyAuth . -}}
-{{- $hasAuth := or $basicAuthSchemes $bearerAuthSchemes $apiKeyAuthSchemes -}}
+{{- $oauth2AuthSchemes := oauth2Auth . -}}
+{{- $hasAuth := or $basicAuthSchemes $bearerAuthSchemes $apiKeyAuthSchemes $oauth2AuthSchemes -}}
 {{- $shouldRetry := gt (len $bearerAuthSchemes) 0 -}}
 {{range .ClientMethodVariants}}
 {{if ne .Suffix "WithBody"}}
