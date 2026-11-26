@@ -7,6 +7,7 @@ import (
 type OAuth2Config struct {
 	Name        string
 	Description string
+	Flow        string
 	Scopes      []string
 	TokenURL    string
 }
@@ -20,19 +21,31 @@ func OAuth2ForOperations(ops []codegen.OperationDefinition) []*OAuth2Config {
 
 	for _, security := range SchemesForOperations(ops) {
 		if security.Scheme.Type != "oauth2" ||
-			security.Scheme.Flows == nil ||
-			security.Scheme.Flows.Password == nil {
+			security.Scheme.Flows == nil {
 			continue
 		}
 
-		flow := security.Scheme.Flows.Password
+		flows := security.Scheme.Flows
 
-		configs = append(configs, &OAuth2Config{
-			Name:        security.Definition.ProviderName,
-			Description: security.Scheme.Description,
-			Scopes:      security.Definition.Scopes,
-			TokenURL:    flow.TokenURL,
-		})
+		if flow := flows.ClientCredentials; flow != nil {
+			configs = append(configs, &OAuth2Config{
+				Name:        security.Definition.ProviderName,
+				Description: security.Scheme.Description,
+				Flow:        "clientCredentials",
+				Scopes:      security.Definition.Scopes,
+				TokenURL:    flow.TokenURL,
+			})
+		}
+
+		if flow := flows.Password; flow != nil {
+			configs = append(configs, &OAuth2Config{
+				Name:        security.Definition.ProviderName,
+				Description: security.Scheme.Description,
+				Flow:        "password",
+				Scopes:      security.Definition.Scopes,
+				TokenURL:    flow.TokenURL,
+			})
+		}
 	}
 
 	return configs

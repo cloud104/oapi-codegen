@@ -168,23 +168,57 @@ func With{{ $name }}(apiKey string) ClientOption {
 
 {{ range $oauth := $globalOAuth2AuthSchemes }}
 {{- $name := goPascalCase $oauth.Name }}
+
+{{- if eq $oauth.Flow "clientCredentials" }}
+
+func With{{ $name }}(clientID, clientSecret string) ClientOption {
+    return func(c *rawClient) error {
+        config := &clientcredentials.Config{
+            ClientID:     clientID,
+            ClientSecret: clientSecret,
+            TokenURL:     {{ $oauth.TokenURL | quote }},
+            Scopes: []string{
+                {{- range $scope := $oauth.Scopes }}
+                {{ $scope | quote }},
+                {{- end }}
+            },
+        }
+
+        c.{{ $name }}.TokenSource = config.TokenSource(context.Background())
+        return nil
+    }
+}
+
+{{- else if eq $oauth.Flow "password" }}
+
 func With{{ $name }}(clientID, clientSecret, username, password string) ClientOption {
-	return func(c *rawClient) error {
+    return func(c *rawClient) error {
         config := &oauth2.Config{
             ClientID:     clientID,
             ClientSecret: clientSecret,
             Endpoint: oauth2.Endpoint{
                 TokenURL: {{ $oauth.TokenURL | quote }},
             },
+            Scopes: []string{
+                {{- range $scope := $oauth.Scopes }}
+                {{ $scope | quote }},
+                {{- end }}
+            },
         }
-        token, err := config.PasswordCredentialsToken(context.TODO(), username, password)
+
+        token, err := config.PasswordCredentialsToken(
+            context.Background(), username, password,
+        )
         if err != nil {
             return fmt.Errorf("authenticate: %w", err)
         }
-		c.{{ $name }}.TokenSource = config.TokenSource(context.TODO(), token)
-		return nil
-	}
+
+        c.{{ $name }}.TokenSource = config.TokenSource(context.Background(), token)
+        return nil
+    }
 }
+
+{{- end }}
 {{ end }}
 
 // The interface specification for the client above.
