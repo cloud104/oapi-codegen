@@ -37,19 +37,47 @@ func TestSingular(t *testing.T) {
 		{"fish", "fish"},
 		{"equipment", "equipment"},
 
-		// Registered initialisms.
+		// Uppercase initialisms.
 		{"TKS", "TKS"},
 		{"AWS", "AWS"},
 		{"DNS", "DNS"},
 		{"API", "API"},
 		{"URL", "URL"},
 
-		// Plural initialisms.
-		{"APIs", "API"},
-		{"URLs", "URL"},
+		// Lowercase initialisms.
+		{"tks", "tks"},
+		{"aws", "aws"},
+		{"dns", "dns"},
+		{"api", "api"},
+		{"url", "url"},
+
+		// Mixed-case initialisms.
+		{"Tks", "Tks"},
+		{"Aws", "Aws"},
+		{"Dns", "Dns"},
+		{"Api", "Api"},
+		{"Url", "Url"},
+
+		// Uppercase initialisms with a plural suffix.
 		{"TKSs", "TKS"},
 		{"AWSs", "AWS"},
 		{"DNSs", "DNS"},
+		{"APIs", "API"},
+		{"URLs", "URL"},
+
+		// Lowercase plural initialisms.
+		{"tkss", "tks"},
+		{"awss", "aws"},
+		{"dnss", "dns"},
+		{"apis", "api"},
+		{"urls", "url"},
+
+		// Mixed-case plural initialisms.
+		{"Tkss", "Tks"},
+		{"Awss", "Aws"},
+		{"Dnss", "Dns"},
+		{"Apis", "Api"},
+		{"Urls", "Url"},
 
 		// PascalCase.
 		{"Users", "User"},
@@ -66,8 +94,7 @@ func TestSingular(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
 			if got := Singular(tt.input); got != tt.want {
-				t.Errorf("Singular(%q) = %q; want %q",
-					tt.input, got, tt.want)
+				t.Errorf("Singular(%q) = %q; want %q", tt.input, got, tt.want)
 			}
 		})
 	}
@@ -105,19 +132,47 @@ func TestPlural(t *testing.T) {
 		{"fish", "fish"},
 		{"equipment", "equipment"},
 
-		// Registered initialisms.
+		// Uppercase initialisms.
 		{"TKS", "TKS"},
 		{"AWS", "AWS"},
 		{"DNS", "DNS"},
 		{"API", "API"},
 		{"URL", "URL"},
 
-		// Already plural initialisms.
-		{"APIs", "APIs"},
-		{"URLs", "URLs"},
+		// Lowercase initialisms.
+		{"tks", "tks"},
+		{"aws", "aws"},
+		{"dns", "dns"},
+		{"api", "api"},
+		{"url", "url"},
+
+		// Mixed-case initialisms.
+		{"Tks", "Tks"},
+		{"Aws", "Aws"},
+		{"Dns", "Dns"},
+		{"Api", "Api"},
+		{"Url", "Url"},
+
+		// Uppercase initialisms with an existing plural suffix.
 		{"TKSs", "TKSs"},
 		{"AWSs", "AWSs"},
 		{"DNSs", "DNSs"},
+		{"APIs", "APIs"},
+		{"URLs", "URLs"},
+
+		// Already plural lowercase initialisms.
+		{"tkss", "tkss"},
+		{"awss", "awss"},
+		{"dnss", "dnss"},
+		{"apis", "apis"},
+		{"urls", "urls"},
+
+		// Already plural mixed-case initialisms.
+		{"Tkss", "Tkss"},
+		{"Awss", "Awss"},
+		{"Dnss", "Dnss"},
+		{"Apis", "Apis"},
+		{"Urls", "Urls"},
 
 		// PascalCase.
 		{"User", "Users"},
@@ -134,8 +189,7 @@ func TestPlural(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
 			if got := Plural(tt.input); got != tt.want {
-				t.Errorf("Plural(%q) = %q; want %q",
-					tt.input, got, tt.want)
+				t.Errorf("Plural(%q) = %q; want %q", tt.input, got, tt.want)
 			}
 		})
 	}
@@ -187,5 +241,12 @@ components:
 	_, err = codegen.Generate(spec, config)
 	if err != nil {
 		t.Fatalf("failed to generate code: %v", err)
+	}
+
+	// Ensure that additional initialisms were successfully registered.
+	for _, initialism := range config.OutputOptions.AdditionalInitialisms {
+		if !isInitialism(initialism) {
+			t.Fatalf("initialism %q was not registered", initialism)
+		}
 	}
 }
