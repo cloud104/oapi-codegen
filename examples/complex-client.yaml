@@ -137,6 +137,30 @@ paths:
         '415':
           $ref: '#/components/responses/UnsupportedMediaType'
 
+  /beers/export:
+    get:
+      summary: Download beers as a file
+      operationId: exportBeers
+      responses:
+        '200':
+          description: File downloaded successfully
+          headers:
+            Content-Disposition:
+              description: Instructs the client to download the response as a file
+              required: true
+              schema:
+                type: string
+              example: 'attachment; filename="beers.yaml"'
+
+          content:
+            application/yaml:
+              schema:
+                type: string
+                format: binary
+
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
   /beers/{beerId}:
     parameters:
       - name: beerId

@@ -2,7 +2,8 @@ package response
 
 import (
 	"cmp"
-	"regexp"
+	"go/ast"
+	"go/parser"
 	"slices"
 	"strings"
 
@@ -25,35 +26,32 @@ func (codes statusCodes) String() string {
 
 type ResponseGroup struct {
 	Type        string
-	Method      string
+	GoName      string
 	Fields      []string
 	StatusCodes statusCodes
 }
-
-var (
-	structRE = regexp.MustCompile(`(?s)^\s*struct\s*\{.*\}\s*$`)
-	mapRE    = regexp.MustCompile(`^\s*map\s*\[.*\].*$`)
-)
 
 func GroupResponses(defs []codegen.ResponseTypeDefinition) []*ResponseGroup {
 	byType := make(map[string]*ResponseGroup)
 
 	for _, def := range defs {
 		typ := def.Schema.TypeDecl()
-		if structRE.MatchString(typ) || mapRE.MatchString(typ) {
+
+		if isAnonymousCompositeType(typ) {
 			continue
 		}
 
 		group := byType[typ]
 		if group == nil {
-			name := typ
+			name := baseTypeName(typ)
 			if def.Schema.ArrayType != nil {
-				name = inflection.Plural(def.Schema.ArrayType.TypeDecl())
+				singular := baseTypeName(def.Schema.ArrayType.TypeDecl())
+				name = inflection.Plural(singular)
 			}
 
 			group = &ResponseGroup{
 				Type:   typ,
-				Method: "Get" + name,
+				GoName: name,
 			}
 			byType[typ] = group
 		}
@@ -83,4 +81,52 @@ func GroupResponses(defs []codegen.ResponseTypeDefinition) []*ResponseGroup {
 	})
 
 	return groups
+}
+
+func isAnonymousCompositeType(typ string) bool {
+	expr, err := parser.ParseExpr(typ)
+	if err != nil {
+		return false
+	}
+
+	// Unwrap pointers and slices/arrays.
+	for {
+		switch t := expr.(type) {
+		case *ast.StarExpr:
+			expr = t.X
+		case *ast.ArrayType:
+			expr = t.Elt
+		default:
+			switch expr.(type) {
+			case *ast.StructType, *ast.MapType, *ast.InterfaceType:
+				return true
+			default:
+				return false
+			}
+		}
+	}
+}
+
+func baseTypeName(typ string) string {
+	expr, err := parser.ParseExpr(typ)
+	if err != nil {
+		return typ
+	}
+
+	for {
+		switch t := expr.(type) {
+		case *ast.StarExpr:
+			expr = t.X
+		case *ast.ArrayType:
+			expr = t.Elt
+		case *ast.ParenExpr:
+			expr = t.X
+		case *ast.SelectorExpr:
+			return t.Sel.Name
+		case *ast.Ident:
+			return t.Name
+		default:
+			return typ
+		}
+	}
 }
