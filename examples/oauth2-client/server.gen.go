@@ -1516,7 +1516,39 @@ func (sh *strictHandler) validateJSONBody(operationID string, r *http.Request) e
 }
 
 // StartChargingSessionJSONRequestBodySchema defines the JSON schema used to validate StartChargingSessionJSONRequestBody request bodies.
-const StartChargingSessionJSONRequestBodySchema = `{}`
+const StartChargingSessionJSONRequestBodySchema = `{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "dependentRequired": {
+    "costCenter": [
+      "fleetId"
+    ]
+  },
+  "properties": {
+    "connectorId": {
+      "type": "string"
+    },
+    "costCenter": {
+      "maxLength": 64,
+      "type": "string"
+    },
+    "fleetId": {
+      "type": "string"
+    },
+    "stationId": {
+      "type": "string"
+    },
+    "vehicleId": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "stationId",
+    "connectorId",
+    "vehicleId"
+  ],
+  "type": "object"
+}`
 
 // JSONSchemaRegistry manages registered JSON schemas.
 type JSONSchemaRegistry struct {

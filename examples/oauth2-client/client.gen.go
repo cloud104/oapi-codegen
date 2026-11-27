@@ -978,16 +978,28 @@ func WithBaseURL(baseURL string) ClientOption {
 	}
 }
 
-// ClientInterface aggregates all domain-specific client interfaces.
+// ClientInterface defines a unified interface for accessing
+// domain-specific clients. It provides a single entry point for all
+// supported domain operations.
 type ClientInterface interface {
+
+	// Billing returns the client for invoices and energy consumption.
 	Billing() BillingClient
+
+	// Charging returns the client for charging session lifecycle.
 	Charging() ChargingClient
+
+	// Driver returns the client for driver accounts and personal information.
 	Driver() DriverClient
+
+	// Fleet returns the client for corporate fleet management.
 	Fleet() FleetClient
+
+	// Station returns the client for charging station discovery and availability.
 	Station() StationClient
 }
 
-// BillingClient is the interface specification for the Billing client.
+// BillingClient defines the interface for invoices and energy consumption.
 type BillingClient interface {
 
 	// ListFleetInvoices Retrieve corporate monthly invoices
@@ -996,7 +1008,7 @@ type BillingClient interface {
 	ListFleetInvoices(ctx context.Context, fleetID FleetID, params *ListFleetInvoicesParams, reqEditors ...RequestEditorFn) (*ListFleetInvoicesResponse, error)
 }
 
-// ChargingClient is the interface specification for the Charging client.
+// ChargingClient defines the interface for charging session lifecycle.
 type ChargingClient interface {
 
 	// StartChargingSession Start an EV charging session
@@ -1024,7 +1036,7 @@ type ChargingClient interface {
 	StopChargingSession(ctx context.Context, sessionID SessionID, params *StopChargingSessionParams, reqEditors ...RequestEditorFn) (*StopChargingSessionResponse, error)
 }
 
-// DriverClient is the interface specification for the Drivers client.
+// DriverClient defines the interface for driver accounts and personal information.
 type DriverClient interface {
 
 	// GetCurrentDriver Retrieve the authenticated driver profile
@@ -1033,7 +1045,7 @@ type DriverClient interface {
 	GetCurrentDriver(ctx context.Context, reqEditors ...RequestEditorFn) (*GetCurrentDriverResponse, error)
 }
 
-// FleetClient is the interface specification for the Fleets client.
+// FleetClient defines the interface for corporate fleet management.
 type FleetClient interface {
 
 	// ListFleetVehicles List registered corporate fleet vehicles
@@ -1042,7 +1054,7 @@ type FleetClient interface {
 	ListFleetVehicles(ctx context.Context, fleetID FleetID, params *ListFleetVehiclesParams, reqEditors ...RequestEditorFn) (*ListFleetVehiclesResponse, error)
 }
 
-// StationClient is the interface specification for the Stations client.
+// StationClient defines the interface for charging station discovery and availability.
 type StationClient interface {
 
 	// SearchChargingStations Discover nearby charging stations

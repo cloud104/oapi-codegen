@@ -35,12 +35,16 @@ func init() {
 		if err != nil {
 			panic(err)
 		}
-		for _, tag := range spec.Tags {
-			if tag != nil && tag.Name == name {
-				return strings.TrimSpace(tag.Description)
-			}
+		if spec == nil {
+			return ""
 		}
-		return ""
+
+		tag := spec.Tags.Get(name)
+		if tag == nil {
+			return ""
+		}
+
+		return strings.TrimSpace(tag.Description)
 	}
 
 	// OpenAPI version and schema compatibility

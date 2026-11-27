@@ -38,17 +38,54 @@ func WithBaseURL(baseURL string) ClientOption {
 
 {{- $tags = sortAlpha (uniq $tags) }}
 
-// {{ $clientTypeName }}Interface aggregates all domain-specific client interfaces.
+// {{ $clientTypeName }}Interface defines a unified interface for accessing
+// domain-specific clients. It provides a single entry point for all
+// supported domain operations.
 type {{ $clientTypeName }}Interface interface {
     {{- range $tag := $tags }}
     {{- $name := goPascalCase (singular $tag) }}
+    {{- $description := trim (tagDescription $tag) }}
+
+    {{- if $description }}
+    {{- $description = printf "%s." (trimSuffix "." (untitle $description)) }}
+
+    {{- range $i, $line := splitList "\n" $description }}
+    {{- if eq $i 0 }}
+
+    // {{ $name }} returns the client for {{ trim $line }}
+    {{- else if trim $line }}
+    // {{ trim $line }}
+    {{- else }}
+    //
+    {{- end }}
+    {{- end }}
+    {{- else }}
+
+    // {{ $name }} returns the client for {{ $tag }} operations.
+    {{- end }}
     {{ $name }}() {{ $name }}Client
     {{- end }}
 }
 {{- range $tag := $tags }}
 {{- $interfaceName := printf "%sClient" (goPascalCase (singular $tag)) }}
+    {{- $description := trim (tagDescription $tag) }}
 
-// {{ $interfaceName }} is the interface specification for the {{ $tag }} client.
+    {{- if $description }}
+        {{- $description = printf "%s." (trimSuffix "." (untitle $description)) }}
+        {{- range $i, $line := splitList "\n" $description }}
+            {{- if eq $i 0 }}
+
+                // {{ $interfaceName }} defines the interface for {{ trim $line }}
+            {{- else if trim $line }}
+                // {{ trim $line }}
+            {{- else }}
+                //
+            {{- end }}
+        {{- end }}
+    {{- else }}
+
+        // {{ $interfaceName }} defines the interface for performing {{ $tag }} operations.
+    {{- end }}
 type {{ $interfaceName }} interface {
     {{- range $operations }}
     {{- if has $tag .Spec.Tags }}
