@@ -978,10 +978,10 @@ func WithBaseURL(baseURL string) ClientOption {
 	}
 }
 
-// ClientInterface defines a unified interface for accessing
+// ClientSet defines a unified interface for accessing
 // domain-specific clients. It provides a single entry point for all
 // supported domain operations.
-type ClientInterface interface {
+type ClientSet interface {
 
 	// Billing returns the client for invoices and energy consumption.
 	Billing() BillingClient

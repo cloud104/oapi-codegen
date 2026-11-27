@@ -38,10 +38,10 @@ func WithBaseURL(baseURL string) ClientOption {
 
 {{- $tags = sortAlpha (uniq $tags) }}
 
-// {{ $clientTypeName }}Interface defines a unified interface for accessing
+// ClientSet defines a unified interface for accessing
 // domain-specific clients. It provides a single entry point for all
 // supported domain operations.
-type {{ $clientTypeName }}Interface interface {
+type ClientSet interface {
     {{- range $tag := $tags }}
     {{- $name := goPascalCase (singular $tag) }}
     {{- $description := trim (tagDescription $tag) }}
