@@ -57,7 +57,19 @@ type rawClient struct {
 		// APIKey is the API key included in authenticated requests.
 		APIKey string
 	}
-	{{ end -}}
+    {{ end }}
+
+    {{ range $oauth := $security.OAuth2 }}
+    {{- $name := goPascalCase $oauth.Name }}
+    {{- if eq $oauth.Flow "clientCredentials" }}
+    // {{ $name }} authenticates requests using the OAuth 2.0 Client Credentials Grant.
+    {{- else if eq $oauth.Flow "password" }}
+    // {{ $name }} authenticates requests using the OAuth 2.0 Resource Owner Password Credentials Grant.
+    {{- end }}
+    {{ $name }} struct {
+        TokenSource  oauth2.TokenSource
+    }
+    {{ end }}
 }
 
 {{- if $security.HasBearer }}
@@ -154,6 +166,103 @@ func With{{ $name }}(apiKey string) ClientOption {
 	}
 }
 {{ end }}
+{{ range $oauth := $security.OAuth2 }}
+{{- $name := goPascalCase $oauth.Name }}
+
+{{- if eq $oauth.Flow "clientCredentials" }}
+
+// With{{ $name }} configures OAuth2 client credentials authentication.
+// An optional oidcIssuerURL enables OIDC discovery, overriding the OpenAPI token endpoint.
+func With{{ $name }}(clientID, clientSecret string, oidcIssuerURL ...string) ClientOption {
+    return func(c *rawClient) error {
+        ctx := context.Background()
+
+        config := &clientcredentials.Config{
+            ClientID:     clientID,
+            ClientSecret: clientSecret,
+            TokenURL:     {{ $oauth.TokenURL | quote }},
+            Scopes: []string{
+                {{- range $scope := $oauth.Scopes }}
+                {{ $scope | quote }},
+                {{- end }}
+            },
+        }
+
+        if len(oidcIssuerURL) > 1 {
+            return fmt.Errorf("expected at most one OIDC issuer URL")
+        }
+
+        if len(oidcIssuerURL) == 1 && oidcIssuerURL[0] != "" {
+            provider, err := oidc.NewProvider(ctx, oidcIssuerURL[0])
+            if err != nil {
+                return fmt.Errorf("discover OIDC provider: %w", err)
+            }
+
+            endpoint := provider.Endpoint()
+            if endpoint.TokenURL == "" {
+                return fmt.Errorf("OIDC provider has no token endpoint")
+            }
+
+            config.TokenURL = endpoint.TokenURL
+            config.AuthStyle = endpoint.AuthStyle
+        }
+
+        c.{{ $name }}.TokenSource = config.TokenSource(ctx)
+        return nil
+    }
+}
+
+{{- else if eq $oauth.Flow "password" }}
+
+// With{{ $name }} configures OAuth2 password authentication.
+// An optional oidcIssuerURL enables OIDC discovery, overriding the OpenAPI token endpoint.
+func With{{ $name }}(clientID, clientSecret, username, password string, oidcIssuerURL ...string) ClientOption {
+    return func(c *rawClient) error {
+        ctx := context.Background()
+
+        config := &oauth2.Config{
+            ClientID:     clientID,
+            ClientSecret: clientSecret,
+            Endpoint: oauth2.Endpoint{
+                TokenURL: {{ $oauth.TokenURL | quote }},
+            },
+            Scopes: []string{
+                {{- range $scope := $oauth.Scopes }}
+                {{ $scope | quote }},
+                {{- end }}
+            },
+        }
+
+        if len(oidcIssuerURL) > 1 {
+            return fmt.Errorf("expected at most one OIDC issuer URL")
+        }
+
+        if len(oidcIssuerURL) == 1 && oidcIssuerURL[0] != "" {
+            provider, err := oidc.NewProvider(ctx, oidcIssuerURL[0])
+            if err != nil {
+                return fmt.Errorf("discover OIDC provider: %w", err)
+            }
+
+            endpoint := provider.Endpoint()
+            if endpoint.TokenURL == "" {
+                return fmt.Errorf("OIDC provider has no token endpoint")
+            }
+
+            config.Endpoint = endpoint
+        }
+
+        token, err := config.PasswordCredentialsToken(ctx, username, password)
+        if err != nil {
+            return fmt.Errorf("authenticate: %w", err)
+        }
+
+        c.{{ $name }}.TokenSource = config.TokenSource(ctx, token)
+        return nil
+    }
+}
+
+{{- end }}
+{{ end }}
 
 // The interface specification for the client above.
 type rawClientInterface interface {
@@ -216,6 +325,16 @@ func (c *rawClient) {{$unexportedOpid}}{{.Suffix}}(ctx context.Context{{.ArgsDec
             })
             {{ end -}}
         {{ end -}}
+
+        {{ range $oauth := $security.OAuth2 -}}
+        {{- $name := goPascalCase $oauth.Name -}}
+        case c.{{$name}}.TokenSource != nil:
+            token, err := c.{{ $name }}.TokenSource.Token()
+            if err != nil {
+                return fmt.Errorf("get authentication token for {{ printf "%s %s" $parent.Method $parent.Path }}: %w", err)
+            }
+            token.SetAuthHeader(req)
+        {{end -}}
         }
 
 		return nil

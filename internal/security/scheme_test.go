@@ -23,6 +23,7 @@ func TestSchemesForOperations(t *testing.T) {
 				{ProviderName: "BasicAuth"},
 				{ProviderName: "BearerAuth"},
 				{ProviderName: "JWTAuth"},
+				{ProviderName: "OAuth2Auth", Scopes: []string{"read"}},
 			},
 		},
 		{
@@ -75,6 +76,7 @@ func TestSchemesForOperations(t *testing.T) {
 				{ProviderName: "BasicAuth"},
 				{ProviderName: "BearerAuth"},
 				{ProviderName: "JWTAuth"},
+				{ProviderName: "OAuth2Auth", Scopes: []string{"read"}},
 			},
 		},
 		{

@@ -97,7 +97,8 @@ func TestForOperation(t *testing.T) {
 				t.Errorf("expected HasSecurity() to be %t", hasSecurity)
 			}
 
-			if got := len(s.APIKey) + len(s.Basic) + len(s.Bearer); got != len(op.SecurityDefinitions) {
+			got := len(s.APIKey) + len(s.Basic) + len(s.Bearer) + len(s.OAuth2)
+			if got != len(op.SecurityDefinitions) {
 				t.Errorf("expected %d security schemes, got %d",
 					len(op.SecurityDefinitions), got)
 			}

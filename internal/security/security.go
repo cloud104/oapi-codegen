@@ -10,6 +10,7 @@ type Security struct {
 	APIKey []*APIKey
 	Basic  []*Basic
 	Bearer []*Bearer
+	OAuth2 []*OAuth2
 }
 
 func ForOperation(op codegen.OperationDefinition) *Security {
@@ -31,6 +32,9 @@ func ForOperations(ops []codegen.OperationDefinition) *Security {
 			case "bearer":
 				s.addBearer(auth)
 			}
+
+		case "oauth2":
+			s.addOAuth2(auth)
 		}
 	}
 
@@ -49,8 +53,13 @@ func (s *Security) HasBearer() bool {
 	return len(s.Bearer) > 0
 }
 
+func (s *Security) HasOAuth2() bool {
+	return len(s.OAuth2) > 0
+}
+
 func (s *Security) HasSecurity() bool {
 	return s.HasAPIKey() ||
 		s.HasBasic() ||
-		s.HasBearer()
+		s.HasBearer() ||
+		s.HasOAuth2()
 }

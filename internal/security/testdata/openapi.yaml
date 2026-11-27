@@ -12,6 +12,7 @@ paths:
         - BasicAuth: [ ]
         - BearerAuth: [ ]
         - JWTAuth: [ ]
+        - OAuth2Auth: [ read ]
       responses:
         "200":
           description: OK
@@ -64,3 +65,12 @@ components:
       description: JWT authentication
       scheme: bearer
       bearerFormat: JWT
+
+    OAuth2Auth:
+      type: oauth2
+      description: OAuth2 authentication
+      flows:
+        clientCredentials:
+          tokenUrl: https://example.com/oauth/token
+          scopes:
+            read: Read access
