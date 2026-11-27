@@ -101,6 +101,11 @@ func TestGenerate(t *testing.T) {
 							AdditionalInitialisms: []string{"ID", "IBU"},
 							NameNormalizer:        "ToCamelCaseWithInitialisms",
 						},
+						AdditionalImports: []codegen.AdditionalImport{
+							{Package: "github.com/coreos/go-oidc/v3/oidc"},
+							{Package: "github.com/santhosh-tekuri/jsonschema/v6"},
+							{Package: "github.com/santhosh-tekuri/jsonschema/v6/kind"},
+						},
 					})
 
 					// Assert
