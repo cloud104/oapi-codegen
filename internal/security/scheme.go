@@ -16,13 +16,19 @@ type OperationScheme struct {
 }
 
 func describeSecurityDefinition(op codegen.OperationDefinition) []codegen.SecurityDefinition {
-	if op.Spec == nil || op.Spec.Security == nil {
+	if op.Spec == nil {
 		return nil
+	}
+
+	// Use global security unless overridden by the operation.
+	security, _ := codegenstate.Security()
+	if op.Spec.Security != nil {
+		security = *op.Spec.Security
 	}
 
 	outDefs := make([]codegen.SecurityDefinition, 0)
 
-	for _, sr := range *op.Spec.Security {
+	for _, sr := range security {
 		for _, k := range codegen.SortedMapKeys(sr) {
 			v := sr[k]
 			outDefs = append(outDefs, codegen.SecurityDefinition{ProviderName: k, Scopes: v})
@@ -40,20 +46,11 @@ func schemesForOperations(ops []codegen.OperationDefinition) []*OperationScheme 
 
 	scopesByProvider := make(map[string][]string)
 
-	// Collect operation-level security requirements.
+	// Aggregate scopes by security provider.
 	for _, op := range ops {
 		for _, def := range describeSecurityDefinition(op) {
 			provider := def.ProviderName
 			scopesByProvider[provider] = append(scopesByProvider[provider], def.Scopes...)
-		}
-	}
-
-	// Merge global security requirements.
-	if security, ok := codegenstate.Security(); ok {
-		for _, req := range security {
-			for name, scopes := range req {
-				scopesByProvider[name] = append(scopesByProvider[name], scopes...)
-			}
 		}
 	}
 
@@ -75,7 +72,7 @@ func schemesForOperations(ops []codegen.OperationDefinition) []*OperationScheme 
 		})
 	}
 
-	// Ensure deterministic output.
+	// Ensure deterministic ordering.
 	slices.SortFunc(schemes, func(a, b *OperationScheme) int {
 		return cmp.Compare(a.Definition.ProviderName, b.Definition.ProviderName)
 	})
