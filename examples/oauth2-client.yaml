@@ -1,0 +1,753 @@
+openapi: 3.2.1
+
+info:
+  title: VoltGrid Energy Platform API
+  version: 2.4.0
+  summary: Electric vehicle charging and fleet management platform
+  description: |
+    VoltGrid connects EV drivers, charging stations, corporate
+    fleets and energy management platforms through a unified API.
+
+    ## Authentication
+
+    - Password: Legacy VoltGrid driver applications.
+    - Client Credentials: Trusted B2B and backend integrations.
+
+    All monetary amounts are expressed in minor currency units.
+    All timestamps are expressed in UTC.
+
+  contact:
+    name: VoltGrid Developer Experience
+    email: developers@voltgrid.example
+    url: https://developers.voltgrid.example
+
+  license:
+    name: Proprietary
+
+servers:
+  - url: https://api.voltgrid.example/v2
+    description: Production
+
+  - url: https://sandbox-api.voltgrid.example/v2
+    description: Sandbox
+
+tags:
+  - name: Stations
+    description: Charging station discovery and availability
+  - name: Drivers
+    description: Driver accounts and personal information
+  - name: Charging
+    description: Charging session lifecycle
+  - name: Fleets
+    description: Corporate fleet management
+  - name: Billing
+    description: Invoices and energy consumption
+
+security:
+  - DriverOAuth:
+      - stations:read
+  - PartnerOAuth:
+      - stations:read
+
+paths:
+  /stations:
+    get:
+      tags: [ Stations ]
+      summary: Discover nearby charging stations
+      operationId: searchChargingStations
+      description: |
+        Returns charging stations within the specified radius,
+        including real-time connector availability.
+
+        Accessible to both drivers and integration partners.
+
+      parameters:
+        - name: latitude
+          in: query
+          required: true
+          schema:
+            type: number
+            minimum: -90
+            maximum: 90
+          example: -22.0174
+
+        - name: longitude
+          in: query
+          required: true
+          schema:
+            type: number
+            minimum: -180
+            maximum: 180
+          example: -47.8868
+
+        - name: radiusKm
+          in: query
+          schema:
+            type: number
+            exclusiveMinimum: 0
+            maximum: 100
+            default: 10
+
+        - name: availableOnly
+          in: query
+          schema:
+            type: boolean
+            default: true
+
+      responses:
+        '200':
+          description: Charging stations found
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ items, total ]
+                properties:
+                  total:
+                    type: integer
+                    minimum: 0
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Station'
+              example:
+                total: 1
+                items:
+                  - id: stn_sp_00482
+                    name: VoltGrid São Carlos Hub
+                    latitude: -22.0174
+                    longitude: -47.8868
+                    availableConnectors: 4
+                    totalConnectors: 6
+                    maxPowerKw: 150
+                    pricePerKwhMinor: 189
+                    currency: BRL
+
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /drivers/me:
+    get:
+      tags: [ Drivers ]
+      summary: Retrieve the authenticated driver profile
+      operationId: getCurrentDriver
+
+      security:
+        - DriverOAuth:
+            - profile:read
+
+      responses:
+        '200':
+          description: Authenticated driver profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Driver'
+              example:
+                id: drv_8f92a1
+                fullName: Alex Morgan
+                email: alex@example.com
+                membership: premium
+                walletBalanceMinor: 25000
+                currency: BRL
+
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /charging-sessions:
+    post:
+      tags: [ Charging ]
+      summary: Start an EV charging session
+      operationId: startChargingSession
+      description: |
+        Drivers may start sessions for themselves.
+        Fleet partners may start sessions for authorized
+        vehicles belonging to their fleet.
+
+        Reusing an idempotency key with the same payload
+        returns the original operation result.
+
+      security:
+        - DriverOAuth:
+            - charging:start
+        - PartnerOAuth:
+            - fleet:charging:start
+
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartSessionRequest'
+            examples:
+              personalVehicle:
+                summary: Personal charging session
+                value:
+                  stationId: stn_sp_00482
+                  connectorId: conn_003
+                  vehicleId: veh_19a2f0
+
+              corporateVehicle:
+                summary: Corporate fleet charging session
+                value:
+                  stationId: stn_sp_00482
+                  connectorId: conn_004
+                  vehicleId: veh_fleet_038
+                  fleetId: flt_logistics_001
+                  costCenter: DELIVERY-SOUTH
+
+      responses:
+        '201':
+          description: Charging session created
+          headers:
+            Location:
+              description: URI of the created charging session
+              schema:
+                type: string
+                format: uri-reference
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChargingSession'
+
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: Connector unavailable or conflicting request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+              example:
+                type: https://voltgrid.example/problems/connector-in-use
+                title: Connector unavailable
+                status: 409
+                detail: The selected connector is already occupied.
+                code: CONNECTOR_IN_USE
+
+  /charging-sessions/{sessionId}:
+    parameters:
+      - $ref: '#/components/parameters/SessionId'
+
+    get:
+      tags: [ Charging ]
+      summary: Retrieve live charging session details
+      operationId: getChargingSession
+
+      security:
+        - DriverOAuth:
+            - charging:read
+        - PartnerOAuth:
+            - fleet:charging:read
+
+      responses:
+        '200':
+          description: Current charging session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChargingSession'
+              example:
+                id: ses_20261126_a91f
+                stationId: stn_sp_00482
+                connectorId: conn_003
+                vehicleId: veh_19a2f0
+                status: charging
+                startedAt: '2026-11-26T18:30:00Z'
+                endedAt: null
+                energyDeliveredKwh: 24.8
+                currentPowerKw: 87.5
+                batteryPercentage: 72
+                costMinor: 4687
+                currency: BRL
+
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /charging-sessions/{sessionId}/stop:
+    post:
+      tags: [ Charging ]
+      summary: Request termination of a charging session
+      operationId: stopChargingSession
+
+      security:
+        - DriverOAuth:
+            - charging:stop
+        - PartnerOAuth:
+            - fleet:charging:stop
+
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+
+      responses:
+        '202':
+          description: Stop request accepted for processing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChargingSession'
+
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /fleets/{fleetId}/vehicles:
+    get:
+      tags: [ Fleets ]
+      summary: List registered corporate fleet vehicles
+      operationId: listFleetVehicles
+
+      security:
+        - PartnerOAuth:
+            - fleet:vehicles:read
+
+      parameters:
+        - $ref: '#/components/parameters/FleetId'
+
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+
+        - name: cursor
+          in: query
+          description: Opaque pagination cursor
+          schema:
+            type: string
+
+      responses:
+        '200':
+          description: Paginated fleet vehicles
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ items, nextCursor ]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Vehicle'
+                  nextCursor:
+                    type: [ string, 'null' ]
+
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /fleets/{fleetId}/invoices:
+    get:
+      tags: [ Billing ]
+      summary: Retrieve corporate monthly invoices
+      operationId: listFleetInvoices
+
+      security:
+        - PartnerOAuth:
+            - fleet:billing:read
+
+      parameters:
+        - $ref: '#/components/parameters/FleetId'
+
+        - name: billingPeriod
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: '^\d{4}-(0[1-9]|1[0-2])$'
+          example: '2026-11'
+
+      responses:
+        '200':
+          description: Fleet invoices for the billing period
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Invoice'
+
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /health:
+    get:
+      summary: Platform health check
+      operationId: getHealth
+      security: [ ]
+
+      responses:
+        '200':
+          description: Platform is operational
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ status ]
+                properties:
+                  status:
+                    type: string
+                    const: operational
+
+components:
+  securitySchemes:
+    DriverOAuth:
+      type: oauth2
+      description: |
+        Legacy resource owner password credentials grant.
+
+        Restricted to approved legacy clients.
+        Not available to third-party applications.
+
+      flows:
+        password:
+          tokenUrl: https://identity.voltgrid.example/oauth2/token
+          refreshUrl: https://identity.voltgrid.example/oauth2/token
+          scopes:
+            profile:read: Read the authenticated driver profile
+            stations:read: Discover charging stations
+            charging:start: Start personal charging sessions
+            charging:stop: Stop personal charging sessions
+            charging:read: Read personal charging sessions
+
+    PartnerOAuth:
+      type: oauth2
+      description: |
+        Machine-to-machine authentication for approved
+        fleet operators and enterprise integrations.
+
+        Access is restricted to the partner's assigned fleets.
+
+      flows:
+        clientCredentials:
+          tokenUrl: https://identity.voltgrid.example/oauth2/token
+          scopes:
+            stations:read: Discover charging stations
+            fleet:vehicles:read: List authorized fleet vehicles
+            fleet:charging:start: Start fleet charging sessions
+            fleet:charging:stop: Stop fleet charging sessions
+            fleet:charging:read: Read fleet charging sessions
+            fleet:billing:read: Retrieve corporate invoices
+
+  parameters:
+    SessionId:
+      name: sessionId
+      in: path
+      required: true
+      schema:
+        type: string
+      example: ses_20261126_a91f
+
+    FleetId:
+      name: fleetId
+      in: path
+      required: true
+      schema:
+        type: string
+      example: flt_logistics_001
+
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: Unique identifier for safe request retries
+      schema:
+        type: string
+        format: uuid
+      example: 550e8400-e29b-41d4-a716-446655440000
+
+  schemas:
+    Station:
+      type: object
+      required:
+        - id
+        - name
+        - latitude
+        - longitude
+        - availableConnectors
+        - totalConnectors
+        - maxPowerKw
+        - pricePerKwhMinor
+        - currency
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        latitude:
+          type: number
+        longitude:
+          type: number
+        availableConnectors:
+          type: integer
+          minimum: 0
+        totalConnectors:
+          type: integer
+          minimum: 1
+        maxPowerKw:
+          type: number
+          exclusiveMinimum: 0
+        pricePerKwhMinor:
+          type: integer
+          minimum: 0
+        currency:
+          $ref: '#/components/schemas/Currency'
+
+    Driver:
+      type: object
+      required: [ id, fullName, email, membership ]
+      properties:
+        id:
+          type: string
+        fullName:
+          type: string
+        email:
+          type: string
+          format: email
+        membership:
+          type: string
+          enum: [ standard, premium, corporate ]
+        walletBalanceMinor:
+          type: integer
+        currency:
+          $ref: '#/components/schemas/Currency'
+
+    Vehicle:
+      type: object
+      required: [ id, manufacturer, model, licensePlate ]
+      properties:
+        id:
+          type: string
+        manufacturer:
+          type: string
+          example: Volvo
+        model:
+          type: string
+          example: EX30
+        licensePlate:
+          type: string
+          example: ABC1D23
+        batteryCapacityKwh:
+          type: number
+          exclusiveMinimum: 0
+          example: 69
+        status:
+          type: string
+          enum: [ active, maintenance, inactive ]
+
+    StartSessionRequest:
+      type: object
+      additionalProperties: false
+      required: [ stationId, connectorId, vehicleId ]
+      properties:
+        stationId:
+          type: string
+        connectorId:
+          type: string
+        vehicleId:
+          type: string
+        fleetId:
+          type: string
+          description: Required for fleet partner requests
+        costCenter:
+          type: string
+          maxLength: 64
+      dependentRequired:
+        costCenter: [ fleetId ]
+
+    ChargingSession:
+      type: object
+      required:
+        - id
+        - stationId
+        - connectorId
+        - vehicleId
+        - status
+        - startedAt
+        - energyDeliveredKwh
+        - costMinor
+        - currency
+      properties:
+        id:
+          type: string
+        stationId:
+          type: string
+        connectorId:
+          type: string
+        vehicleId:
+          type: string
+        status:
+          type: string
+          enum:
+            - initializing
+            - charging
+            - suspended
+            - stopping
+            - completed
+            - failed
+        startedAt:
+          type: string
+          format: date-time
+        endedAt:
+          type: [ string, 'null' ]
+          format: date-time
+        energyDeliveredKwh:
+          type: number
+          minimum: 0
+        currentPowerKw:
+          type: number
+          minimum: 0
+        batteryPercentage:
+          type: integer
+          minimum: 0
+          maximum: 100
+        costMinor:
+          type: integer
+          minimum: 0
+        currency:
+          $ref: '#/components/schemas/Currency'
+
+    Invoice:
+      type: object
+      required:
+        - id
+        - billingPeriod
+        - totalMinor
+        - currency
+        - status
+      properties:
+        id:
+          type: string
+          example: inv_202611_00218
+        billingPeriod:
+          type: string
+          example: '2026-11'
+        chargingSessions:
+          type: integer
+          minimum: 0
+          example: 842
+        energyConsumedKwh:
+          type: number
+          minimum: 0
+          example: 18420.5
+        totalMinor:
+          type: integer
+          minimum: 0
+          example: 3481475
+        currency:
+          $ref: '#/components/schemas/Currency'
+        status:
+          type: string
+          enum: [ draft, issued, paid, overdue, void ]
+        dueDate:
+          type: string
+          format: date
+        downloadUrl:
+          type: string
+          format: uri
+
+    Currency:
+      type: string
+      description: ISO 4217 currency code
+      pattern: '^[A-Z]{3}$'
+      example: BRL
+
+    Problem:
+      type: object
+      description: RFC 9457 Problem Details response
+      required: [ type, title, status ]
+      properties:
+        type:
+          type: string
+          format: uri-reference
+        title:
+          type: string
+        status:
+          type: integer
+          minimum: 400
+          maximum: 599
+        detail:
+          type: string
+        instance:
+          type: string
+          format: uri-reference
+        code:
+          type: string
+        traceId:
+          type: string
+
+  responses:
+    BadRequest:
+      description: Invalid request parameters or payload
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+
+    Unauthorized:
+      description: Missing, expired or invalid access token
+      headers:
+        WWW-Authenticate:
+          schema:
+            type: string
+          example: 'Bearer realm="voltgrid"'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+
+    Forbidden:
+      description: Insufficient permissions or resource ownership
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+
+    NotFound:
+      description: Requested resource does not exist
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+
+    RateLimited:
+      description: API request quota exceeded
+      headers:
+        Retry-After:
+          description: Seconds until the next permitted request
+          schema:
+            type: integer
+            minimum: 0
+          example: 60
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'

@@ -105,6 +105,8 @@ func TestGenerate(t *testing.T) {
 							{Package: "github.com/coreos/go-oidc/v3/oidc"},
 							{Package: "github.com/santhosh-tekuri/jsonschema/v6"},
 							{Package: "github.com/santhosh-tekuri/jsonschema/v6/kind"},
+							{Package: "golang.org/x/oauth2"},
+							{Package: "golang.org/x/oauth2/clientcredentials"},
 						},
 					})
 
