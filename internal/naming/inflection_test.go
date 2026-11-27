@@ -58,3 +58,65 @@ func TestSingular(t *testing.T) {
 		})
 	}
 }
+
+// Add to internal/naming/inflection_test.go
+func TestPlural(t *testing.T) {
+	tests := []struct {
+		input string
+		want  string
+	}{
+		// Regular nouns.
+		{"user", "users"},
+		{"book", "books"},
+		{"category", "categories"},
+		{"box", "boxes"},
+		{"status", "statuses"},
+
+		// Irregular nouns.
+		{"person", "people"},
+		{"child", "children"},
+		{"man", "men"},
+		{"mouse", "mice"},
+
+		// Already plural.
+		{"users", "users"},
+		{"people", "people"},
+		{"children", "children"},
+
+		// Uncountable nouns.
+		{"sheep", "sheep"},
+		{"fish", "fish"},
+		{"equipment", "equipment"},
+
+		// Initialisms.
+		{"TKS", "TKS"},
+		{"AWS", "AWS"},
+		{"DNS", "DNS"},
+		{"API", "API"},
+		{"URL", "URL"},
+
+		// Already plural initialisms.
+		{"APIs", "APIs"},
+		{"URLs", "URLs"},
+
+		// PascalCase.
+		{"User", "Users"},
+		{"Category", "Categories"},
+
+		// All uppercase nouns are intentionally preserved.
+		{"USER", "USER"},
+		{"USERS", "USERS"},
+
+		// Empty input.
+		{"", ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			if got := Plural(tt.input); got != tt.want {
+				t.Errorf("Plural(%q) = %q; want %q",
+					tt.input, got, tt.want)
+			}
+		})
+	}
+}
