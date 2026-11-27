@@ -29,6 +29,9 @@ func init() {
 		}
 	}
 
+	// OpenAPI version and schema compatibility
+	codegen.TemplateFunctions["isJSONSchemaCompatible"] = codegenstate.IsJSONSchemaCompatible
+
 	// Naming
 	initialisms := codegenstate.Initialisms()
 	caser := naming.NewCaser(initialisms)
