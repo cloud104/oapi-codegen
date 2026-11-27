@@ -1,6 +1,4 @@
-{{- $globalBasicAuthSchemes := basicAuthFromList . -}}
-{{- $globalBearerAuthSchemes := bearerAuthFromList . -}}
-{{- $globalApiKeyAuthSchemes := apiKeyAuthFromList . -}}
+{{- $security := securityForOperations . -}}
 
 // RequestEditorFn is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
@@ -28,7 +26,7 @@ type rawClient struct {
 	// the network.
 	RequestEditors []RequestEditorFn
 
-	{{ range $basic := $globalBasicAuthSchemes }}
+	{{ range $basic := $security.Basic }}
     {{- $name := goPascalCase $basic.Name -}}
 	// {{ $name }} uses a username and password to authenticate requests
 	// with HTTP Basic Authentication when configured.
@@ -41,17 +39,17 @@ type rawClient struct {
 	}
     {{ end }}
 
-    {{ range $bearer := $globalBearerAuthSchemes }}
+    {{ range $bearer := $security.Bearer }}
     {{- $name := goPascalCase $bearer.Name -}}
 	// {{ $name }} uses a token provider to authenticate requests with
 	// an Authorization: Bearer <token> header when configured.
 	{{ $name }} struct {
 		// Provider supplies bearer tokens and handles token invalidation.
-		Provider TokenProvider
+		Provider BearerTokenProvider
 	}
     {{ end }}
 
-    {{ range $apiKey := $globalApiKeyAuthSchemes }}
+    {{ range $apiKey := $security.APIKey }}
     {{- $name := goPascalCase $apiKey.Name -}}
 	// {{ $name }} uses a static API key to authenticate requests
 	// when configured.
@@ -59,23 +57,35 @@ type rawClient struct {
 		// APIKey is the API key included in authenticated requests.
 		APIKey string
 	}
-	{{ end -}}
+    {{ end }}
+
+    {{ range $oauth := $security.OAuth2 }}
+    {{- $name := goPascalCase $oauth.Name }}
+    {{- if eq $oauth.Flow "clientCredentials" }}
+    // {{ $name }} authenticates requests using the OAuth 2.0 Client Credentials Grant.
+    {{- else if eq $oauth.Flow "password" }}
+    // {{ $name }} authenticates requests using the OAuth 2.0 Resource Owner Password Credentials Grant.
+    {{- end }}
+    {{ $name }} struct {
+        TokenSource  oauth2.TokenSource
+    }
+    {{ end }}
 }
 
-{{- if $globalBearerAuthSchemes }}
-// TokenProvider provides bearer tokens used to authenticate API requests.
+{{- if $security.HasBearer }}
+// BearerTokenProvider provides bearer tokens used to authenticate API requests.
 //
 // Implementations may cache tokens and reuse them for their validity period.
-// GetToken should return a valid token, obtaining or refreshing one when
-// necessary. InvalidateToken signals that the currently cached token should
-// no longer be used, allowing a subsequent call to GetToken to obtain a new
+// Token should return a valid token, obtaining or refreshing one when
+// necessary. Invalidate signals that the currently cached token should
+// no longer be used, allowing a subsequent call to Token to obtain a new
 // token.
-type TokenProvider interface {
-	// GetToken returns a valid bearer token for authenticating an API request.
-	GetToken(ctx context.Context) (string, error)
+type BearerTokenProvider interface {
+	// Token returns a valid bearer token for authenticating an API request.
+	Token(ctx context.Context) (string, error)
 
-	// InvalidateToken invalidates the currently cached token, if any.
-	InvalidateToken(ctx context.Context) error
+	// Invalidate invalidates the currently cached token, if any.
+	Invalidate(ctx context.Context) error
 }
 {{- end }}
 
@@ -123,7 +133,7 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 	}
 }
 
-{{ range $basic := $globalBasicAuthSchemes }}
+{{ range $basic := $security.Basic }}
 {{- $name := goPascalCase $basic.Name -}}
 // With{{ $name }} configures HTTP Basic Authentication.
 func With{{ goPascalCase $basic.Name }}(username, password string) ClientOption {
@@ -135,10 +145,10 @@ func With{{ goPascalCase $basic.Name }}(username, password string) ClientOption 
 }
 {{ end }}
 
-{{ range $bearer := $globalBearerAuthSchemes }}
+{{ range $bearer := $security.Bearer }}
 {{- $name := goPascalCase $bearer.Name -}}
 // With{{ $name }} configures bearer-token authentication using the supplied token provider.
-func With{{ $name }}(provider TokenProvider) ClientOption {
+func With{{ $name }}(provider BearerTokenProvider) ClientOption {
 	return func(c *rawClient) error {
 		c.{{ $name }}.Provider = provider
 		return nil
@@ -146,7 +156,7 @@ func With{{ $name }}(provider TokenProvider) ClientOption {
 }
 {{ end }}
 
-{{ range $apiKey := $globalApiKeyAuthSchemes }}
+{{ range $apiKey := $security.APIKey }}
 {{- $name := goPascalCase $apiKey.Name -}}
 // With{{ $name }} configures authentication using a static API key.
 func With{{ $name }}(apiKey string) ClientOption {
@@ -155,6 +165,103 @@ func With{{ $name }}(apiKey string) ClientOption {
 		return nil
 	}
 }
+{{ end }}
+{{ range $oauth := $security.OAuth2 }}
+{{- $name := goPascalCase $oauth.Name }}
+
+{{- if eq $oauth.Flow "clientCredentials" }}
+
+// With{{ $name }} configures OAuth2 client credentials authentication.
+// An optional oidcIssuerURL enables OIDC discovery, overriding the OpenAPI token endpoint.
+func With{{ $name }}(clientID, clientSecret string, oidcIssuerURL ...string) ClientOption {
+    return func(c *rawClient) error {
+        ctx := context.Background()
+
+        config := &clientcredentials.Config{
+            ClientID:     clientID,
+            ClientSecret: clientSecret,
+            TokenURL:     {{ $oauth.TokenURL | quote }},
+            Scopes: []string{
+                {{- range $scope := $oauth.Scopes }}
+                {{ $scope | quote }},
+                {{- end }}
+            },
+        }
+
+        if len(oidcIssuerURL) > 1 {
+            return fmt.Errorf("expected at most one OIDC issuer URL")
+        }
+
+        if len(oidcIssuerURL) == 1 && oidcIssuerURL[0] != "" {
+            provider, err := oidc.NewProvider(ctx, oidcIssuerURL[0])
+            if err != nil {
+                return fmt.Errorf("discover OIDC provider: %w", err)
+            }
+
+            endpoint := provider.Endpoint()
+            if endpoint.TokenURL == "" {
+                return fmt.Errorf("OIDC provider has no token endpoint")
+            }
+
+            config.TokenURL = endpoint.TokenURL
+            config.AuthStyle = endpoint.AuthStyle
+        }
+
+        c.{{ $name }}.TokenSource = config.TokenSource(ctx)
+        return nil
+    }
+}
+
+{{- else if eq $oauth.Flow "password" }}
+
+// With{{ $name }} configures OAuth2 password authentication.
+// An optional oidcIssuerURL enables OIDC discovery, overriding the OpenAPI token endpoint.
+func With{{ $name }}(clientID, clientSecret, username, password string, oidcIssuerURL ...string) ClientOption {
+    return func(c *rawClient) error {
+        ctx := context.Background()
+
+        config := &oauth2.Config{
+            ClientID:     clientID,
+            ClientSecret: clientSecret,
+            Endpoint: oauth2.Endpoint{
+                TokenURL: {{ $oauth.TokenURL | quote }},
+            },
+            Scopes: []string{
+                {{- range $scope := $oauth.Scopes }}
+                {{ $scope | quote }},
+                {{- end }}
+            },
+        }
+
+        if len(oidcIssuerURL) > 1 {
+            return fmt.Errorf("expected at most one OIDC issuer URL")
+        }
+
+        if len(oidcIssuerURL) == 1 && oidcIssuerURL[0] != "" {
+            provider, err := oidc.NewProvider(ctx, oidcIssuerURL[0])
+            if err != nil {
+                return fmt.Errorf("discover OIDC provider: %w", err)
+            }
+
+            endpoint := provider.Endpoint()
+            if endpoint.TokenURL == "" {
+                return fmt.Errorf("OIDC provider has no token endpoint")
+            }
+
+            config.Endpoint = endpoint
+        }
+
+        token, err := config.PasswordCredentialsToken(ctx, username, password)
+        if err != nil {
+            return fmt.Errorf("authenticate: %w", err)
+        }
+
+        c.{{ $name }}.TokenSource = config.TokenSource(ctx, token)
+        return nil
+    }
+}
+
+{{- end }}
 {{ end }}
 
 // The interface specification for the client above.
@@ -177,38 +284,34 @@ type rawClientInterface interface {
 {{$opid := .OperationId -}}
 {{$unexportedOpid := goCamelCase .OperationId -}}
 {{$parent := . -}}
-{{- $basicAuthSchemes := basicAuth . -}}
-{{- $bearerAuthSchemes := bearerAuth . -}}
-{{- $apiKeyAuthSchemes := apiKeyAuth . -}}
-{{- $hasAuth := or $basicAuthSchemes $bearerAuthSchemes $apiKeyAuthSchemes -}}
-{{- $shouldRetry := gt (len $bearerAuthSchemes) 0 -}}
+{{- $security := securityForOperation . -}}
+{{- $shouldRetry := $security.HasBearer -}}
 {{range .ClientMethodVariants}}
 {{if ne .Suffix "WithBody"}}
-{{if $hasAuth -}}
+{{if $security.HasSecurity -}}
 // {{$unexportedOpid}}{{.Suffix}} performs an authenticated {{$parent.Method}} {{$parent.Path}} (the `{{$opid}}` operationId) request.
 func (c *rawClient) {{$unexportedOpid}}{{.Suffix}}(ctx context.Context{{.ArgsDecl}}, reqEditors... RequestEditorFn) (*http.Response, error) {
 	editors := append(slices.Clone(reqEditors), func(ctx context.Context, req *http.Request) error {
-        {{ range $basic := $basicAuthSchemes -}}
+        switch {
+        {{ range $basic := $security.Basic -}}
         {{- $name := goPascalCase $basic.Name -}}
-        if c.{{ $name }}.Username != "" && c.{{ $name }}.Password != "" {
+        case c.{{ $name }}.Username != "" && c.{{ $name }}.Password != "":
             req.SetBasicAuth(c.{{ $name }}.Username, c.{{ $name }}.Password)
-        }
         {{ end -}}
 
-        {{ range $bearer := $bearerAuthSchemes -}}
+        {{ range $bearer := $security.Bearer -}}
         {{- $name := goPascalCase $bearer.Name -}}
-        if c.{{ $name }}.Provider != nil {
-            token, err := c.{{ $name }}.Provider.GetToken(ctx)
+        case c.{{ $name }}.Provider != nil:
+            token, err := c.{{ $name }}.Provider.Token(ctx)
             if err != nil {
                 return fmt.Errorf("get authentication token for {{ printf "%s %s" $parent.Method $parent.Path }}: %w", err)
             }
             req.Header.Set("Authorization", "Bearer "+token)
-        }
         {{ end -}}
 
-        {{ range $apiKey := $apiKeyAuthSchemes -}}
+        {{ range $apiKey := $security.APIKey -}}
         {{- $name := goPascalCase $apiKey.Name -}}
-        if c.{{ $name }}.APIKey != "" {
+        case c.{{ $name }}.APIKey != "":
             {{ if eq $apiKey.In "header" -}}
             req.Header.Set("{{$apiKey.KeyName}}", c.{{ $name }}.APIKey)
             {{ else if eq $apiKey.In "query" -}}
@@ -221,8 +324,18 @@ func (c *rawClient) {{$unexportedOpid}}{{.Suffix}}(ctx context.Context{{.ArgsDec
                 Value: c.{{ $name }}.APIKey,
             })
             {{ end -}}
-        }
         {{ end -}}
+
+        {{ range $oauth := $security.OAuth2 -}}
+        {{- $name := goPascalCase $oauth.Name -}}
+        case c.{{$name}}.TokenSource != nil:
+            token, err := c.{{ $name }}.TokenSource.Token()
+            if err != nil {
+                return fmt.Errorf("get authentication token for {{ printf "%s %s" $parent.Method $parent.Path }}: %w", err)
+            }
+            token.SetAuthHeader(req)
+        {{end -}}
+        }
 
 		return nil
 	})
@@ -239,10 +352,10 @@ func (c *rawClient) {{$unexportedOpid}}{{.Suffix}}(ctx context.Context{{.ArgsDec
 
     _ = rsp.Body.Close()
 
-    {{range $bearer := $bearerAuthSchemes -}}
+    {{range $bearer := $security.Bearer -}}
     {{- $name := goPascalCase $bearer.Name -}}
     if provider := c.{{$name}}.Provider; provider != nil {
-        if err := provider.InvalidateToken(ctx); err != nil {
+        if err := provider.Invalidate(ctx); err != nil {
             return nil, fmt.Errorf("invalidate token after unauthorized {{$parent.Method}} {{$parent.Path}} response: %w", err)
         }
     }
@@ -252,8 +365,8 @@ func (c *rawClient) {{$unexportedOpid}}{{.Suffix}}(ctx context.Context{{.ArgsDec
     return c.unauthenticated{{$opid}}{{.Suffix}}(ctx{{.CallArgs}}, editors...)
 }
 {{end -}}
-// {{if $hasAuth}}unauthenticated{{$opid}}{{else}}{{$unexportedOpid}}{{end}}{{.Suffix}} performs a {{$parent.Method}} {{$parent.Path}} (the `{{$opid}}` operationId) request{{if $hasAuth}} without authentication{{end}}.
-func (c *rawClient) {{if $hasAuth}}unauthenticated{{$opid}}{{else}}{{$unexportedOpid}}{{end}}{{.Suffix}}(ctx context.Context{{.ArgsDecl}}, reqEditors... RequestEditorFn) (*http.Response, error) {
+// {{if $security.HasSecurity}}unauthenticated{{$opid}}{{else}}{{$unexportedOpid}}{{end}}{{.Suffix}} performs a {{$parent.Method}} {{$parent.Path}} (the `{{$opid}}` operationId) request{{if $security.HasSecurity}} without authentication{{end}}.
+func (c *rawClient) {{if $security.HasSecurity}}unauthenticated{{$opid}}{{else}}{{$unexportedOpid}}{{end}}{{.Suffix}}(ctx context.Context{{.ArgsDecl}}, reqEditors... RequestEditorFn) (*http.Response, error) {
     req, err := new{{$opid}}Request{{.Suffix}}(c.Server{{.CallArgs}})
     if err != nil {
         return nil, fmt.Errorf("create {{ printf "%s %s" $parent.Method $parent.Path }} request: %w", err)

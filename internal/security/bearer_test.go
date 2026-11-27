@@ -35,7 +35,7 @@ func TestBearerForOperations(t *testing.T) {
 	}
 
 	// Act
-	configs := BearerForOperations(operations)
+	configs := ForOperations(operations).Bearer
 
 	// Assert
 	if len(configs) != 2 {

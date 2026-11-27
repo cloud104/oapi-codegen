@@ -46,10 +46,6 @@ func init() {
 	codegen.TemplateFunctions["bodyLimit"] = request.FindBodyLimit
 
 	// Security / authentication
-	codegen.TemplateFunctions["basicAuth"] = security.BasicForOperation
-	codegen.TemplateFunctions["basicAuthFromList"] = security.BasicForOperations
-	codegen.TemplateFunctions["bearerAuth"] = security.BearerForOperation
-	codegen.TemplateFunctions["bearerAuthFromList"] = security.BearerForOperations
-	codegen.TemplateFunctions["apiKeyAuth"] = security.APIKeyForOperation
-	codegen.TemplateFunctions["apiKeyAuthFromList"] = security.APIKeyForOperations
+	codegen.TemplateFunctions["securityForOperation"] = security.ForOperation
+	codegen.TemplateFunctions["securityForOperations"] = security.ForOperations
 }

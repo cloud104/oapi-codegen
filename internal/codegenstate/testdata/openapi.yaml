@@ -5,6 +5,9 @@ info:
   version: 1.0.0
   description: Minimal OpenAPI specification for codegenstate tests.
 
+security:
+  - BearerAuth: [ ]
+
 paths:
   /users:
     get:
@@ -41,6 +44,12 @@ paths:
           description: User not found
 
 components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
   schemas:
     User:
       type: object

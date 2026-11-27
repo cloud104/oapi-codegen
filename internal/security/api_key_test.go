@@ -35,7 +35,7 @@ func TestAPIKeyForOperations(t *testing.T) {
 	}
 
 	// Act
-	configs := APIKeyForOperations(operations)
+	configs := ForOperations(operations).APIKey
 
 	// Assert
 	if len(configs) != 1 {
