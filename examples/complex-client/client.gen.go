@@ -660,63 +660,8 @@ func WithBaseURL(baseURL string) ClientOption {
 	}
 }
 
-// ClientInterface is the interface specification for the client with responses above.
+// ClientInterface aggregates all domain-specific client interfaces.
 type ClientInterface interface {
-
-	// ListBeers List all beers
-	//
-	// Corresponds with GET /beers (the `ListBeers` operationId).
-	ListBeers(ctx context.Context, params *ListBeersParams, reqEditors ...RequestEditorFn) (*ListBeersResponse, error)
-
-	// CreateBeer Create a new beer
-	//
-	// Takes a body of the `application/json` content type.
-	//
-	// Corresponds with POST /beers (the `CreateBeer` operationId).
-	CreateBeer(ctx context.Context, body CreateBeerJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateBeerResponse, error)
-
-	// CreateBeerWithFormdataBody Create a new beer
-	//
-	// Takes a body of the `application/x-www-form-urlencoded` content type.
-	//
-	// Corresponds with POST /beers (the `CreateBeer` operationId).
-	CreateBeerWithFormdataBody(ctx context.Context, body CreateBeerFormdataRequestBody, reqEditors ...RequestEditorFn) (*CreateBeerResponse, error)
-
-	// CreateBeerWithTextBody Create a new beer
-	//
-	// Takes a body of the `text/plain` content type.
-	//
-	// Corresponds with POST /beers (the `CreateBeer` operationId).
-	CreateBeerWithTextBody(ctx context.Context, body CreateBeerTextRequestBody, reqEditors ...RequestEditorFn) (*CreateBeerResponse, error)
-
-	// ExportBeers Download beers as a file
-	//
-	// Corresponds with GET /beers/export (the `ExportBeers` operationId).
-	ExportBeers(ctx context.Context, reqEditors ...RequestEditorFn) (*ExportBeersResponse, error)
-
-	// DeleteBeer Delete a beer
-	//
-	// Corresponds with DELETE /beers/{beerId} (the `DeleteBeer` operationId).
-	DeleteBeer(ctx context.Context, beerID int, reqEditors ...RequestEditorFn) (*DeleteBeerResponse, error)
-
-	// GetBeer Get a beer by ID
-	//
-	// Corresponds with GET /beers/{beerId} (the `GetBeer` operationId).
-	GetBeer(ctx context.Context, beerID int, reqEditors ...RequestEditorFn) (*GetBeerResponse, error)
-
-	// UpdateBeer Partially update a beer
-	//
-	// Takes a body of the `application/json` content type.
-	//
-	// Corresponds with PATCH /beers/{beerId} (the `UpdateBeer` operationId).
-	UpdateBeer(ctx context.Context, beerID int, body UpdateBeerJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateBeerResponse, error)
-
-	// ReplaceBeer Replace a beer
-	//
-	// Takes a body of the `application/json` content type.
-	//
-	// Corresponds with PUT /beers/{beerId} (the `ReplaceBeer` operationId).
-	ReplaceBeer(ctx context.Context, beerID int, body ReplaceBeerJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceBeerResponse, error)
 }
 
 // ListBeersResponse200Headers the declared response headers of an HTTP 200 response for ListBeers

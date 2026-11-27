@@ -30,6 +30,19 @@ func init() {
 		}
 	}
 
+	codegen.TemplateFunctions["tagDescription"] = func(name string) string {
+		spec, err := codegenstate.InlineSpec()
+		if err != nil {
+			panic(err)
+		}
+		for _, tag := range spec.Tags {
+			if tag != nil && tag.Name == name {
+				return strings.TrimSpace(tag.Description)
+			}
+		}
+		return ""
+	}
+
 	// OpenAPI version and schema compatibility
 	codegen.TemplateFunctions["isJSONSchemaCompatible"] = codegenstate.IsJSONSchemaCompatible
 

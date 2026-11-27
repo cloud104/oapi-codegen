@@ -978,8 +978,26 @@ func WithBaseURL(baseURL string) ClientOption {
 	}
 }
 
-// ClientInterface is the interface specification for the client with responses above.
+// ClientInterface aggregates all domain-specific client interfaces.
 type ClientInterface interface {
+	Billing() BillingClient
+	Charging() ChargingClient
+	Driver() DriverClient
+	Fleet() FleetClient
+	Station() StationClient
+}
+
+// BillingClient is the interface specification for the Billing client.
+type BillingClient interface {
+
+	// ListFleetInvoices Retrieve corporate monthly invoices
+	//
+	// Corresponds with GET /fleets/{fleetId}/invoices (the `ListFleetInvoices` operationId).
+	ListFleetInvoices(ctx context.Context, fleetID FleetID, params *ListFleetInvoicesParams, reqEditors ...RequestEditorFn) (*ListFleetInvoicesResponse, error)
+}
+
+// ChargingClient is the interface specification for the Charging client.
+type ChargingClient interface {
 
 	// StartChargingSession Start an EV charging session
 	//
@@ -1004,26 +1022,28 @@ type ClientInterface interface {
 	//
 	// Corresponds with POST /charging-sessions/{sessionId}/stop (the `StopChargingSession` operationId).
 	StopChargingSession(ctx context.Context, sessionID SessionID, params *StopChargingSessionParams, reqEditors ...RequestEditorFn) (*StopChargingSessionResponse, error)
+}
+
+// DriverClient is the interface specification for the Drivers client.
+type DriverClient interface {
 
 	// GetCurrentDriver Retrieve the authenticated driver profile
 	//
 	// Corresponds with GET /drivers/me (the `GetCurrentDriver` operationId).
 	GetCurrentDriver(ctx context.Context, reqEditors ...RequestEditorFn) (*GetCurrentDriverResponse, error)
+}
 
-	// ListFleetInvoices Retrieve corporate monthly invoices
-	//
-	// Corresponds with GET /fleets/{fleetId}/invoices (the `ListFleetInvoices` operationId).
-	ListFleetInvoices(ctx context.Context, fleetID FleetID, params *ListFleetInvoicesParams, reqEditors ...RequestEditorFn) (*ListFleetInvoicesResponse, error)
+// FleetClient is the interface specification for the Fleets client.
+type FleetClient interface {
 
 	// ListFleetVehicles List registered corporate fleet vehicles
 	//
 	// Corresponds with GET /fleets/{fleetId}/vehicles (the `ListFleetVehicles` operationId).
 	ListFleetVehicles(ctx context.Context, fleetID FleetID, params *ListFleetVehiclesParams, reqEditors ...RequestEditorFn) (*ListFleetVehiclesResponse, error)
+}
 
-	// GetHealth Platform health check
-	//
-	// Corresponds with GET /health (the `GetHealth` operationId).
-	GetHealth(ctx context.Context, reqEditors ...RequestEditorFn) (*GetHealthResponse, error)
+// StationClient is the interface specification for the Stations client.
+type StationClient interface {
 
 	// SearchChargingStations Discover nearby charging stations
 	//

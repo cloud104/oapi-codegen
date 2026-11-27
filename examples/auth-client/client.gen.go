@@ -330,14 +330,8 @@ func WithBaseURL(baseURL string) ClientOption {
 	}
 }
 
-// ClientInterface is the interface specification for the client with responses above.
+// ClientInterface aggregates all domain-specific client interfaces.
 type ClientInterface interface {
-
-	// Heartbeat performs a GET /heartbeat (the `Heartbeat` operationId) request.
-	Heartbeat(ctx context.Context, reqEditors ...RequestEditorFn) (*HeartbeatResponse, error)
-
-	// Ping performs a GET /ping (the `Ping` operationId) request.
-	Ping(ctx context.Context, reqEditors ...RequestEditorFn) (*PingResponse, error)
 }
 
 type HeartbeatResponse struct {

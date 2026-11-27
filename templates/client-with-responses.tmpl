@@ -27,18 +27,43 @@ func WithBaseURL(baseURL string) ClientOption {
 	}
 }
 
-// {{ $clientTypeName }}Interface is the interface specification for the client with responses above.
+{{- $operations := . -}}
+{{- $tags := list -}}
+
+{{- range $operations -}}
+    {{- range .Spec.Tags -}}
+        {{- $tags = append $tags . -}}
+    {{- end -}}
+{{- end -}}
+
+{{- $tags = sortAlpha (uniq $tags) }}
+
+// {{ $clientTypeName }}Interface aggregates all domain-specific client interfaces.
 type {{ $clientTypeName }}Interface interface {
-{{range . -}}
-{{$opid := .OperationId -}}
-{{range .ClientMethodVariants}}
-{{if ne .Suffix "WithBody"}}
-    {{.InterfaceComment}}
-    {{$opid}}{{.Suffix}}(ctx context.Context{{.ArgsDecl}}, reqEditors... RequestEditorFn) (*{{genResponseTypeName $opid}}, error)
-{{end -}}
-{{end -}}
-{{end -}}{{/* range . $opid := .OperationId */}}
+    {{- range $tag := $tags }}
+    {{- $name := goPascalCase (singular $tag) }}
+    {{ $name }}() {{ $name }}Client
+    {{- end }}
 }
+{{- range $tag := $tags }}
+{{- $interfaceName := printf "%sClient" (goPascalCase (singular $tag)) }}
+
+// {{ $interfaceName }} is the interface specification for the {{ $tag }} client.
+type {{ $interfaceName }} interface {
+    {{- range $operations }}
+    {{- if has $tag .Spec.Tags }}
+    {{- $opid := .OperationId }}
+    {{- range .ClientMethodVariants }}
+    {{- if ne .Suffix "WithBody" }}
+
+    {{ .InterfaceComment }}
+    {{ $opid }}{{ .Suffix }}(ctx context.Context{{ .ArgsDecl }}, reqEditors ...RequestEditorFn) (*{{ genResponseTypeName $opid }}, error)
+    {{- end }}
+    {{- end }}
+    {{- end }}
+    {{- end }}
+}
+{{- end }}
 
 {{range .}}{{$opid := .OperationId}}{{$op := .}}
 {{$responseTypeDefinitions := getResponseTypeDefinitions .}}

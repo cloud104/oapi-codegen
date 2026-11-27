@@ -177,11 +177,8 @@ func WithBaseURL(baseURL string) ClientOption {
 	}
 }
 
-// ClientInterface is the interface specification for the client with responses above.
+// ClientInterface aggregates all domain-specific client interfaces.
 type ClientInterface interface {
-
-	// GetPing performs a GET /ping (the `GetPing` operationId) request.
-	GetPing(ctx context.Context, reqEditors ...RequestEditorFn) (*GetPingResponse, error)
 }
 
 type GetPingResponse struct {
