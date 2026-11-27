@@ -48,9 +48,7 @@ func TestCaser_Camel(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			caser := NewCaser(tt.initialisms)
-
-			if got := caser.Camel(tt.input); got != tt.want {
+			if got := Camel(tt.input); got != tt.want {
 				t.Errorf("Camel(%q) = %q, want %q", tt.input, got, tt.want)
 			}
 		})
@@ -103,9 +101,7 @@ func TestCaser_Pascal(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			caser := NewCaser(tt.initialisms)
-
-			if got := caser.Pascal(tt.input); got != tt.want {
+			if got := Pascal(tt.input); got != tt.want {
 				t.Errorf("Pascal(%q) = %q, want %q", tt.input, got, tt.want)
 			}
 		})

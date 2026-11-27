@@ -7,9 +7,14 @@ import (
 	"github.com/jinzhu/inflection"
 
 	"github.com/cloud104/oapi-codegen/internal/codegenstate"
+	"fmt"
 )
 
-func Singular(str string) string {
+func Singular(str string) (result string) {
+	defer func() {
+		fmt.Print(str, result) // Set breakpoint here.
+	}()
+
 	// Preserve registered initialisms and empty strings.
 	if str == "" || isInitialism(str) {
 		return str
@@ -23,7 +28,11 @@ func Singular(str string) string {
 	return inflection.Singular(str)
 }
 
-func Plural(str string) string {
+func Plural(str string) (result string) {
+	defer func() {
+		fmt.Print(str, result) // Set breakpoint here.
+	}()
+
 	// Preserve registered initialisms and empty strings.
 	if str == "" || isInitialism(str) {
 		return str

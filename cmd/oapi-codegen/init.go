@@ -51,10 +51,8 @@ func init() {
 	codegen.TemplateFunctions["isJSONSchemaCompatible"] = codegenstate.IsJSONSchemaCompatible
 
 	// Naming
-	initialisms := codegenstate.Initialisms()
-	caser := naming.NewCaser(initialisms)
-	codegen.TemplateFunctions["goCamelCase"] = caser.Camel
-	codegen.TemplateFunctions["goPascalCase"] = caser.Pascal
+	codegen.TemplateFunctions["goCamelCase"] = naming.Camel
+	codegen.TemplateFunctions["goPascalCase"] = naming.Pascal
 	codegen.TemplateFunctions["plural"] = naming.Plural
 	codegen.TemplateFunctions["singular"] = naming.Singular
 
