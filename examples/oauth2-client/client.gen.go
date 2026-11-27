@@ -956,9 +956,9 @@ type Client struct {
 	rawClientInterface
 }
 
-// NewClient creates a new Client, which wraps
+// newClient creates a new Client, which wraps
 // Client with return type handling
-func NewClient(server string, opts ...ClientOption) (*Client, error) {
+func newClient(server string, opts ...ClientOption) (*Client, error) {
 	client, err := newRawClient(server, opts...)
 	if err != nil {
 		return nil, err
@@ -1077,7 +1077,7 @@ type clientSet struct {
 // and optional client options. All domain-specific clients share the same
 // underlying Client instance.
 func NewClientSet(server string, opts ...ClientOption) (ClientSet, error) {
-	client, err := NewClient(server, opts...)
+	client, err := newClient(server, opts...)
 	if err != nil {
 		return nil, err
 	}

@@ -5,9 +5,9 @@ type {{ $clientTypeName }} struct {
     rawClientInterface
 }
 
-// New{{ $clientTypeName }} creates a new {{ $clientTypeName }}, which wraps
+// new{{ $clientTypeName }} creates a new {{ $clientTypeName }}, which wraps
 // Client with return type handling
-func New{{ $clientTypeName }}(server string, opts ...ClientOption) (*{{ $clientTypeName }}, error) {
+func new{{ $clientTypeName }}(server string, opts ...ClientOption) (*{{ $clientTypeName }}, error) {
     client, err := newRawClient(server, opts...)
     if err != nil {
         return nil, err
@@ -111,7 +111,7 @@ type clientSet struct {
 // and optional client options. All domain-specific clients share the same
 // underlying {{ $clientTypeName }} instance.
 func NewClientSet(server string, opts ...ClientOption) (ClientSet, error) {
-    client, err := New{{ $clientTypeName }}(server, opts...)
+    client, err := new{{ $clientTypeName }}(server, opts...)
     if err != nil {
         return nil, err
     }
