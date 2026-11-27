@@ -60,6 +60,21 @@ func TestSchemesForOperations(t *testing.T) {
 			},
 		},
 		{
+			name: "anonymous security",
+			operations: func(_ []codegen.OperationDefinition) []codegen.OperationDefinition {
+				return []codegen.OperationDefinition{
+					{
+						Spec: &openapi3.Operation{
+							Security: &openapi3.SecurityRequirements{
+								{},
+							},
+						},
+					},
+				}
+			},
+			want: nil,
+		},
+		{
 			name: "unknown provider",
 			operations: func(_ []codegen.OperationDefinition) []codegen.OperationDefinition {
 				return []codegen.OperationDefinition{
@@ -217,6 +232,105 @@ func TestSchemesForOperations(t *testing.T) {
 			want: nil,
 		},
 		{
+			name: "anonymous operation security overrides global security",
+			global: openapi3.SecurityRequirements{
+				{"BearerAuth": {"read"}},
+				{"BasicAuth": {}},
+			},
+			operations: func(_ []codegen.OperationDefinition) []codegen.OperationDefinition {
+				return []codegen.OperationDefinition{
+					{
+						Spec: &openapi3.Operation{
+							Security: &openapi3.SecurityRequirements{
+								{},
+							},
+						},
+					},
+				}
+			},
+			want: nil,
+		},
+		{
+			name: "optional operation security",
+			operations: func(_ []codegen.OperationDefinition) []codegen.OperationDefinition {
+				return []codegen.OperationDefinition{
+					{
+						Spec: &openapi3.Operation{
+							Security: &openapi3.SecurityRequirements{
+								{},
+								{"BearerAuth": {"read"}},
+							},
+						},
+					},
+				}
+			},
+			want: []codegen.SecurityDefinition{
+				{
+					ProviderName: "BearerAuth",
+					Scopes:       []string{"read"},
+				},
+			},
+		},
+		{
+			name: "optional operation security overrides global security",
+			global: openapi3.SecurityRequirements{
+				{"BearerAuth": {"read"}},
+				{"BasicAuth": {}},
+			},
+			operations: func(_ []codegen.OperationDefinition) []codegen.OperationDefinition {
+				return []codegen.OperationDefinition{
+					{
+						Spec: &openapi3.Operation{
+							Security: &openapi3.SecurityRequirements{
+								{},
+								{"BearerAuth": {"write"}},
+							},
+						},
+					},
+				}
+			},
+			want: []codegen.SecurityDefinition{
+				{
+					ProviderName: "BearerAuth",
+					Scopes:       []string{"write"},
+				},
+			},
+		},
+		{
+			name: "operation inherits optional global security",
+			global: openapi3.SecurityRequirements{
+				{},
+				{"BearerAuth": {"read"}},
+			},
+			operations: func(_ []codegen.OperationDefinition) []codegen.OperationDefinition {
+				return []codegen.OperationDefinition{
+					{
+						Spec: &openapi3.Operation{},
+					},
+				}
+			},
+			want: []codegen.SecurityDefinition{
+				{
+					ProviderName: "BearerAuth",
+					Scopes:       []string{"read"},
+				},
+			},
+		},
+		{
+			name: "operation inherits anonymous global security",
+			global: openapi3.SecurityRequirements{
+				{},
+			},
+			operations: func(_ []codegen.OperationDefinition) []codegen.OperationDefinition {
+				return []codegen.OperationDefinition{
+					{
+						Spec: &openapi3.Operation{},
+					},
+				}
+			},
+			want: nil,
+		},
+		{
 			name: "mixed inherited and overridden security",
 			global: openapi3.SecurityRequirements{
 				{"BearerAuth": {"read"}},
@@ -240,6 +354,13 @@ func TestSchemesForOperations(t *testing.T) {
 							Security: &openapi3.SecurityRequirements{},
 						},
 					},
+					{
+						Spec: &openapi3.Operation{
+							Security: &openapi3.SecurityRequirements{
+								{},
+							},
+						},
+					},
 				}
 			},
 			want: []codegen.SecurityDefinition{
@@ -251,11 +372,33 @@ func TestSchemesForOperations(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "mixed disabled and anonymous security overrides global security",
+			global: openapi3.SecurityRequirements{
+				{"BearerAuth": {"read"}},
+				{"BasicAuth": {}},
+			},
+			operations: func(_ []codegen.OperationDefinition) []codegen.OperationDefinition {
+				return []codegen.OperationDefinition{
+					{
+						Spec: &openapi3.Operation{
+							Security: &openapi3.SecurityRequirements{},
+						},
+					},
+					{
+						Spec: &openapi3.Operation{
+							Security: &openapi3.SecurityRequirements{
+								{},
+							},
+						},
+					},
+				}
+			},
+			want: nil,
+		},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Arrange
 			doc, err := openapi3.NewLoader().LoadFromFile(
 				filepath.Join("testdata", "openapi.yaml"),
 			)
@@ -272,7 +415,6 @@ func TestSchemesForOperations(t *testing.T) {
 					ChiServer: true,
 				},
 			}
-
 			if _, err := codegen.Generate(doc, config); err != nil {
 				t.Fatal(err)
 			}
@@ -286,17 +428,13 @@ func TestSchemesForOperations(t *testing.T) {
 				operations = tt.operations(operations)
 			}
 
-			// Act
 			schemes := schemesForOperations(operations)
-
-			// Assert
 			if len(schemes) != len(tt.want) {
 				t.Fatalf("expected %d security schemes, got %d", len(tt.want), len(schemes))
 			}
 
 			for i, want := range tt.want {
 				got := schemes[i]
-
 				if got == nil {
 					t.Fatalf("expected non-nil scheme at index %d", i)
 				}

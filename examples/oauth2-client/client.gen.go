@@ -71,7 +71,7 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 	}
 }
 
-func WithDriverOAuth(clientID, clientSecret, username, password string, issuer ...string) ClientOption {
+func WithDriverOAuth(clientID, clientSecret, username, password string, oidcIssuerURL ...string) ClientOption {
 	return func(c *rawClient) error {
 		ctx := context.Background()
 		config := &oauth2.Config{
@@ -89,12 +89,12 @@ func WithDriverOAuth(clientID, clientSecret, username, password string, issuer .
 			},
 		}
 
-		if len(issuer) > 1 {
-			return fmt.Errorf("expected at most one issuer")
+		if len(oidcIssuerURL) > 1 {
+			return fmt.Errorf("expected at most one OIDC issuer URL")
 		}
 
-		if len(issuer) == 1 && issuer[0] != "" {
-			provider, err := oidc.NewProvider(ctx, issuer[0])
+		if len(oidcIssuerURL) == 1 && oidcIssuerURL[0] != "" {
+			provider, err := oidc.NewProvider(ctx, oidcIssuerURL[0])
 			if err != nil {
 				return fmt.Errorf("discover OIDC provider: %w", err)
 			}
@@ -118,7 +118,7 @@ func WithDriverOAuth(clientID, clientSecret, username, password string, issuer .
 	}
 }
 
-func WithPartnerOAuth(clientID, clientSecret string, issuer ...string) ClientOption {
+func WithPartnerOAuth(clientID, clientSecret string, oidcIssuerURL ...string) ClientOption {
 	return func(c *rawClient) error {
 		ctx := context.Background()
 		config := &clientcredentials.Config{
@@ -135,12 +135,12 @@ func WithPartnerOAuth(clientID, clientSecret string, issuer ...string) ClientOpt
 			},
 		}
 
-		if len(issuer) > 1 {
-			return fmt.Errorf("expected at most one issuer")
+		if len(oidcIssuerURL) > 1 {
+			return fmt.Errorf("expected at most one OIDC issuer URL")
 		}
 
-		if len(issuer) == 1 && issuer[0] != "" {
-			provider, err := oidc.NewProvider(ctx, issuer[0])
+		if len(oidcIssuerURL) == 1 && oidcIssuerURL[0] != "" {
+			provider, err := oidc.NewProvider(ctx, oidcIssuerURL[0])
 			if err != nil {
 				return fmt.Errorf("discover OIDC provider: %w", err)
 			}

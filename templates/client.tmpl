@@ -171,7 +171,9 @@ func With{{ $name }}(apiKey string) ClientOption {
 
 {{- if eq $oauth.Flow "clientCredentials" }}
 
-func With{{ $name }}(clientID, clientSecret string, issuer ...string) ClientOption {
+// With{{ $name }} configures OAuth2 client credentials authentication.
+// An optional oidcIssuerURL enables OIDC discovery, overriding the OpenAPI token endpoint.
+func With{{ $name }}(clientID, clientSecret string, oidcIssuerURL ...string) ClientOption {
     return func(c *rawClient) error {
         ctx := context.Background()
 
@@ -186,12 +188,12 @@ func With{{ $name }}(clientID, clientSecret string, issuer ...string) ClientOpti
             },
         }
 
-        if len(issuer) > 1 {
-            return fmt.Errorf("expected at most one issuer")
+        if len(oidcIssuerURL) > 1 {
+            return fmt.Errorf("expected at most one OIDC issuer URL")
         }
 
-        if len(issuer) == 1 && issuer[0] != "" {
-            provider, err := oidc.NewProvider(ctx, issuer[0])
+        if len(oidcIssuerURL) == 1 && oidcIssuerURL[0] != "" {
+            provider, err := oidc.NewProvider(ctx, oidcIssuerURL[0])
             if err != nil {
                 return fmt.Errorf("discover OIDC provider: %w", err)
             }
@@ -212,7 +214,9 @@ func With{{ $name }}(clientID, clientSecret string, issuer ...string) ClientOpti
 
 {{- else if eq $oauth.Flow "password" }}
 
-func With{{ $name }}(clientID, clientSecret, username, password string, issuer ...string) ClientOption {
+// With{{ $name }} configures OAuth2 password authentication.
+// An optional oidcIssuerURL enables OIDC discovery, overriding the OpenAPI token endpoint.
+func With{{ $name }}(clientID, clientSecret, username, password string, oidcIssuerURL ...string) ClientOption {
     return func(c *rawClient) error {
         ctx := context.Background()
 
@@ -229,12 +233,12 @@ func With{{ $name }}(clientID, clientSecret, username, password string, issuer .
             },
         }
 
-        if len(issuer) > 1 {
-            return fmt.Errorf("expected at most one issuer")
+        if len(oidcIssuerURL) > 1 {
+            return fmt.Errorf("expected at most one OIDC issuer URL")
         }
 
-        if len(issuer) == 1 && issuer[0] != "" {
-            provider, err := oidc.NewProvider(ctx, issuer[0])
+        if len(oidcIssuerURL) == 1 && oidcIssuerURL[0] != "" {
+            provider, err := oidc.NewProvider(ctx, oidcIssuerURL[0])
             if err != nil {
                 return fmt.Errorf("discover OIDC provider: %w", err)
             }
