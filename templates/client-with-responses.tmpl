@@ -102,6 +102,48 @@ type {{ $interfaceName }} interface {
 }
 {{- end }}
 
+// clientSet implements ClientSet using a shared underlying {{ $clientTypeName }}.
+type clientSet struct {
+    client *{{ $clientTypeName }}
+}
+
+// NewClientSet creates a new ClientSet configured with the given server URL
+// and optional client options. All domain-specific clients share the same
+// underlying {{ $clientTypeName }} instance.
+func NewClientSet(server string, opts ...ClientOption) (ClientSet, error) {
+    client, err := New{{ $clientTypeName }}(server, opts...)
+    if err != nil {
+        return nil, err
+    }
+    return &clientSet{client: client}, nil
+}
+
+{{- range $tag := $tags }}
+{{- $name := goPascalCase (singular $tag) }}
+{{- $interfaceName := printf "%sClient" $name }}
+{{- $description := trim (tagDescription $tag) }}
+
+{{- if $description }}
+{{- $description = printf "%s." (trimSuffix "." (untitle $description)) }}
+{{- range $i, $line := splitList "\n" $description }}
+{{- if eq $i 0 }}
+
+// {{ $name }} returns the client for {{ trim $line }}
+{{- else if trim $line }}
+// {{ trim $line }}
+{{- else }}
+//
+{{- end }}
+{{- end }}
+{{- else }}
+
+// {{ $name }} returns the client for {{ $tag }} operations.
+{{- end }}
+func (c *clientSet) {{ $name }}() {{ $interfaceName }} {
+    return c.client
+}
+{{- end }}
+
 {{range .}}{{$opid := .OperationId}}{{$op := .}}
 {{$responseTypeDefinitions := getResponseTypeDefinitions .}}
 {{$headerResponses := responsesWithHeaders .Responses}}

@@ -1068,6 +1068,47 @@ type StationClient interface {
 	SearchChargingStations(ctx context.Context, params *SearchChargingStationsParams, reqEditors ...RequestEditorFn) (*SearchChargingStationsResponse, error)
 }
 
+// clientSet implements ClientSet using a shared underlying Client.
+type clientSet struct {
+	client *Client
+}
+
+// NewClientSet creates a new ClientSet configured with the given server URL
+// and optional client options. All domain-specific clients share the same
+// underlying Client instance.
+func NewClientSet(server string, opts ...ClientOption) (ClientSet, error) {
+	client, err := NewClient(server, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &clientSet{client: client}, nil
+}
+
+// Billing returns the client for invoices and energy consumption.
+func (c *clientSet) Billing() BillingClient {
+	return c.client
+}
+
+// Charging returns the client for charging session lifecycle.
+func (c *clientSet) Charging() ChargingClient {
+	return c.client
+}
+
+// Driver returns the client for driver accounts and personal information.
+func (c *clientSet) Driver() DriverClient {
+	return c.client
+}
+
+// Fleet returns the client for corporate fleet management.
+func (c *clientSet) Fleet() FleetClient {
+	return c.client
+}
+
+// Station returns the client for charging station discovery and availability.
+func (c *clientSet) Station() StationClient {
+	return c.client
+}
+
 // StartChargingSessionResponse201Headers the declared response headers of an HTTP 201 response for StartChargingSession
 type StartChargingSessionResponse201Headers struct {
 	Location *string
