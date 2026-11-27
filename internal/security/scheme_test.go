@@ -140,7 +140,7 @@ func TestSchemesForOperations(t *testing.T) {
 			},
 		},
 		{
-			name: "global security",
+			name: "global security without operations",
 			global: openapi3.SecurityRequirements{
 				{"BearerAuth": {}},
 				{"BasicAuth": {}},
@@ -148,10 +148,7 @@ func TestSchemesForOperations(t *testing.T) {
 			operations: func(_ []codegen.OperationDefinition) []codegen.OperationDefinition {
 				return nil
 			},
-			want: []codegen.SecurityDefinition{
-				{ProviderName: "BasicAuth"},
-				{ProviderName: "BearerAuth"},
-			},
+			want: nil,
 		},
 		{
 			name: "operation security overrides global security",
@@ -176,6 +173,81 @@ func TestSchemesForOperations(t *testing.T) {
 				{
 					ProviderName: "BearerAuth",
 					Scopes:       []string{"write"},
+				},
+			},
+		},
+		{
+			name: "operation inherits global security",
+			global: openapi3.SecurityRequirements{
+				{"BearerAuth": {"read"}},
+				{"BasicAuth": {}},
+			},
+			operations: func(_ []codegen.OperationDefinition) []codegen.OperationDefinition {
+				return []codegen.OperationDefinition{
+					{
+						Spec: &openapi3.Operation{
+							Security: nil,
+						},
+					},
+				}
+			},
+			want: []codegen.SecurityDefinition{
+				{ProviderName: "BasicAuth"},
+				{
+					ProviderName: "BearerAuth",
+					Scopes:       []string{"read"},
+				},
+			},
+		},
+		{
+			name: "empty operation security overrides global security",
+			global: openapi3.SecurityRequirements{
+				{"BearerAuth": {}},
+				{"BasicAuth": {}},
+			},
+			operations: func(_ []codegen.OperationDefinition) []codegen.OperationDefinition {
+				return []codegen.OperationDefinition{
+					{
+						Spec: &openapi3.Operation{
+							Security: &openapi3.SecurityRequirements{},
+						},
+					},
+				}
+			},
+			want: nil,
+		},
+		{
+			name: "mixed inherited and overridden security",
+			global: openapi3.SecurityRequirements{
+				{"BearerAuth": {"read"}},
+				{"BasicAuth": {}},
+			},
+			operations: func(_ []codegen.OperationDefinition) []codegen.OperationDefinition {
+				return []codegen.OperationDefinition{
+					{
+						Spec: &openapi3.Operation{},
+					},
+					{
+						Spec: &openapi3.Operation{
+							Security: &openapi3.SecurityRequirements{
+								{"ApiKeyAuth": {}},
+								{"BearerAuth": {"write"}},
+							},
+						},
+					},
+					{
+						Spec: &openapi3.Operation{
+							Security: &openapi3.SecurityRequirements{},
+						},
+					},
+				}
+			},
+			want: []codegen.SecurityDefinition{
+				{ProviderName: "ApiKeyAuth"},
+				{ProviderName: "BasicAuth"},
+				{
+					ProviderName: "BearerAuth",
+					Scopes:       []string{"read", "write"},
 				},
 			},
 		},
