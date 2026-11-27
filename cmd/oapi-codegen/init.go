@@ -4,7 +4,6 @@ import (
 	"strings"
 
 	sprig "github.com/Masterminds/sprig/v3"
-	"github.com/jinzhu/inflection"
 	"github.com/oapi-codegen/oapi-codegen/v2/pkg/codegen"
 
 	"github.com/cloud104/oapi-codegen/internal/codegenstate"
@@ -35,6 +34,7 @@ func init() {
 		if err != nil {
 			panic(err)
 		}
+
 		if spec == nil {
 			return ""
 		}
@@ -55,8 +55,8 @@ func init() {
 	caser := naming.NewCaser(initialisms)
 	codegen.TemplateFunctions["goCamelCase"] = caser.Camel
 	codegen.TemplateFunctions["goPascalCase"] = caser.Pascal
-	codegen.TemplateFunctions["plural"] = inflection.Plural
-	codegen.TemplateFunctions["singular"] = inflection.Singular
+	codegen.TemplateFunctions["plural"] = naming.Plural
+	codegen.TemplateFunctions["singular"] = naming.Singular
 
 	// Request / Responses bodies
 	codegen.TemplateFunctions["jsonRequestBody"] = request.FindJSONBody

@@ -1,9 +1,16 @@
-// internal/naming/inflection_test.go
 package naming
 
-import "testing"
+import (
+	"context"
+	"testing"
+
+	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/oapi-codegen/oapi-codegen/v2/pkg/codegen"
+)
 
 func TestSingular(t *testing.T) {
+	configureInitialisms(t)
+
 	tests := []struct {
 		input string
 		want  string
@@ -30,7 +37,7 @@ func TestSingular(t *testing.T) {
 		{"fish", "fish"},
 		{"equipment", "equipment"},
 
-		// Initialisms.
+		// Registered initialisms.
 		{"TKS", "TKS"},
 		{"AWS", "AWS"},
 		{"DNS", "DNS"},
@@ -40,10 +47,17 @@ func TestSingular(t *testing.T) {
 		// Plural initialisms.
 		{"APIs", "API"},
 		{"URLs", "URL"},
+		{"TKSs", "TKS"},
+		{"AWSs", "AWS"},
+		{"DNSs", "DNS"},
 
 		// PascalCase.
 		{"Users", "User"},
 		{"Categories", "Category"},
+
+		// Uppercase nouns that are not registered initialisms.
+		{"USER", "USER"},
+		{"USERS", "USER"},
 
 		// Empty input.
 		{"", ""},
@@ -59,8 +73,9 @@ func TestSingular(t *testing.T) {
 	}
 }
 
-// Add to internal/naming/inflection_test.go
 func TestPlural(t *testing.T) {
+	configureInitialisms(t)
+
 	tests := []struct {
 		input string
 		want  string
@@ -82,13 +97,15 @@ func TestPlural(t *testing.T) {
 		{"users", "users"},
 		{"people", "people"},
 		{"children", "children"},
+		{"men", "men"},
+		{"mice", "mice"},
 
 		// Uncountable nouns.
 		{"sheep", "sheep"},
 		{"fish", "fish"},
 		{"equipment", "equipment"},
 
-		// Initialisms.
+		// Registered initialisms.
 		{"TKS", "TKS"},
 		{"AWS", "AWS"},
 		{"DNS", "DNS"},
@@ -98,13 +115,16 @@ func TestPlural(t *testing.T) {
 		// Already plural initialisms.
 		{"APIs", "APIs"},
 		{"URLs", "URLs"},
+		{"TKSs", "TKSs"},
+		{"AWSs", "AWSs"},
+		{"DNSs", "DNSs"},
 
 		// PascalCase.
 		{"User", "Users"},
 		{"Category", "Categories"},
 
-		// All uppercase nouns are intentionally preserved.
-		{"USER", "USER"},
+		// Uppercase nouns that are not registered initialisms.
+		{"USER", "USERS"},
 		{"USERS", "USERS"},
 
 		// Empty input.
@@ -118,5 +138,54 @@ func TestPlural(t *testing.T) {
 					tt.input, got, tt.want)
 			}
 		})
+	}
+}
+
+func configureInitialisms(t *testing.T) {
+	t.Helper()
+
+	spec, err := openapi3.NewLoader().LoadFromData([]byte(`
+openapi: 3.0.3
+info:
+  title: Test API
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+`))
+	if err != nil {
+		t.Fatalf("failed to load OpenAPI specification: %v", err)
+	}
+
+	if err := spec.Validate(context.Background()); err != nil {
+		t.Fatalf("failed to validate OpenAPI specification: %v", err)
+	}
+
+	config := codegen.Configuration{
+		PackageName: "testapi",
+		Generate: codegen.GenerateOptions{
+			ChiServer: true,
+			Models:    true,
+		},
+		OutputOptions: codegen.OutputOptions{
+			NameNormalizer: "ToCamelCaseWithInitialisms",
+			AdditionalInitialisms: []string{
+				"TKS",
+				"AWS",
+				"DNS",
+				"API",
+				"URL",
+			},
+		},
+	}
+
+	_, err = codegen.Generate(spec, config)
+	if err != nil {
+		t.Fatalf("failed to generate code: %v", err)
 	}
 }
