@@ -32,6 +32,44 @@ paths:
                 type: object
                 additionalProperties: true
 
+  /users/export:
+    get:
+      operationId: exportUsers
+      responses:
+        "200":
+          description: Users exported
+          content:
+            application/yaml:
+              schema:
+                type: string
+                format: binary
+
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+
+  /users/files:
+    get:
+      operationId: listUserFiles
+      responses:
+        "200":
+          description: User files retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                  format: binary
+
+            application/yaml:
+              schema:
+                type: array
+                items:
+                  type: string
+                  format: binary
+
   /users/{id}:
     get:
       operationId: getUser

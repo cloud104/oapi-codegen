@@ -45,52 +45,81 @@ func TestGroupResponses(t *testing.T) {
 		defs = append(defs, responseTypes...)
 	}
 
-	groups := GroupResponses(defs)
-	if len(groups) != 3 {
-		t.Fatalf("expected 3 response groups, got %d", len(groups))
-	}
-
 	expected := []struct {
 		typ    string
-		method string
+		goName string
 		codes  statusCodes
 		fields int
 	}{
 		{
 			typ:    "[]User",
-			method: "GetUsers",
+			goName: "Users",
 			codes:  statusCodes{"200"},
 			fields: 1,
 		},
 		{
 			typ:    "User",
-			method: "GetUser",
+			goName: "User",
 			codes:  statusCodes{"200", "201"},
 			fields: 2,
 		},
 		{
 			typ:    "Error",
-			method: "GetError",
+			goName: "Error",
 			codes:  statusCodes{"404"},
 			fields: 2,
 		},
+		{
+			typ:    "[]openapi_types.File",
+			goName: "Files",
+			codes:  statusCodes{"200"},
+			fields: 2,
+		},
+		{
+			typ:    "openapi_types.File",
+			goName: "File",
+			codes:  statusCodes{"200"},
+			fields: 1,
+		},
 	}
-	for i, want := range expected {
-		got := groups[i]
-		if got.Type != want.typ {
-			t.Errorf("group %d: expected type %q, got %q", i, want.typ, got.Type)
-		}
 
-		if got.GoName != want.method {
-			t.Errorf("group %d: expected method %q, got %q", i, want.method, got.GoName)
-		}
+	groups := GroupResponses(defs)
 
-		if !reflect.DeepEqual(got.StatusCodes, want.codes) {
-			t.Errorf("group %d: expected status codes %v, got %v", i, want.codes, got.StatusCodes)
-		}
+	if len(groups) != len(expected) {
+		t.Fatalf(
+			"expected %d response groups, got %d",
+			len(expected), len(groups),
+		)
+	}
 
-		if len(got.Fields) != want.fields {
-			t.Errorf("group %d: expected %d fields, got %d", i, want.fields, len(got.Fields))
-		}
+	byType := make(map[string]*ResponseGroup, len(groups))
+
+	for _, group := range groups {
+		byType[group.Type] = group
+	}
+
+	for _, want := range expected {
+		t.Run(want.goName, func(t *testing.T) {
+			got, ok := byType[want.typ]
+			if !ok {
+				t.Fatalf("response group %q not found", want.typ)
+			}
+
+			if got.Type != want.typ {
+				t.Errorf("expected type %q, got %q", want.typ, got.Type)
+			}
+
+			if got.GoName != want.goName {
+				t.Errorf("expected GoName %q, got %q", want.goName, got.GoName)
+			}
+
+			if !reflect.DeepEqual(got.StatusCodes, want.codes) {
+				t.Errorf("expected status codes %v, got %v", want.codes, got.StatusCodes)
+			}
+
+			if len(got.Fields) != want.fields {
+				t.Errorf("expected %d fields, got %d", want.fields, len(got.Fields))
+			}
+		})
 	}
 }
