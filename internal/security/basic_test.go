@@ -35,7 +35,7 @@ func TestBasicForOperations(t *testing.T) {
 	}
 
 	// Act
-	configs := BasicForOperations(operations)
+	configs := ForOperations(operations).Basic
 
 	// Assert
 	if len(configs) != 1 {

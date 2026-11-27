@@ -1,6 +1,4 @@
-{{- $globalBasicAuthSchemes := basicAuthFromList . -}}
-{{- $globalBearerAuthSchemes := bearerAuthFromList . -}}
-{{- $globalApiKeyAuthSchemes := apiKeyAuthFromList . -}}
+{{- $security := securityForOperations . -}}
 
 // RequestEditorFn is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
@@ -28,7 +26,7 @@ type rawClient struct {
 	// the network.
 	RequestEditors []RequestEditorFn
 
-	{{ range $basic := $globalBasicAuthSchemes }}
+	{{ range $basic := $security.Basic }}
     {{- $name := goPascalCase $basic.Name -}}
 	// {{ $name }} uses a username and password to authenticate requests
 	// with HTTP Basic Authentication when configured.
@@ -41,7 +39,7 @@ type rawClient struct {
 	}
     {{ end }}
 
-    {{ range $bearer := $globalBearerAuthSchemes }}
+    {{ range $bearer := $security.Bearer }}
     {{- $name := goPascalCase $bearer.Name -}}
 	// {{ $name }} uses a token provider to authenticate requests with
 	// an Authorization: Bearer <token> header when configured.
@@ -51,7 +49,7 @@ type rawClient struct {
 	}
     {{ end }}
 
-    {{ range $apiKey := $globalApiKeyAuthSchemes }}
+    {{ range $apiKey := $security.APIKey }}
     {{- $name := goPascalCase $apiKey.Name -}}
 	// {{ $name }} uses a static API key to authenticate requests
 	// when configured.
@@ -62,7 +60,7 @@ type rawClient struct {
 	{{ end -}}
 }
 
-{{- if $globalBearerAuthSchemes }}
+{{- if $security.HasBearer }}
 // TokenProvider provides bearer tokens used to authenticate API requests.
 //
 // Implementations may cache tokens and reuse them for their validity period.
@@ -123,7 +121,7 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 	}
 }
 
-{{ range $basic := $globalBasicAuthSchemes }}
+{{ range $basic := $security.Basic }}
 {{- $name := goPascalCase $basic.Name -}}
 // With{{ $name }} configures HTTP Basic Authentication.
 func With{{ goPascalCase $basic.Name }}(username, password string) ClientOption {
@@ -135,7 +133,7 @@ func With{{ goPascalCase $basic.Name }}(username, password string) ClientOption 
 }
 {{ end }}
 
-{{ range $bearer := $globalBearerAuthSchemes }}
+{{ range $bearer := $security.Bearer }}
 {{- $name := goPascalCase $bearer.Name -}}
 // With{{ $name }} configures bearer-token authentication using the supplied token provider.
 func With{{ $name }}(provider TokenProvider) ClientOption {
@@ -146,7 +144,7 @@ func With{{ $name }}(provider TokenProvider) ClientOption {
 }
 {{ end }}
 
-{{ range $apiKey := $globalApiKeyAuthSchemes }}
+{{ range $apiKey := $security.APIKey }}
 {{- $name := goPascalCase $apiKey.Name -}}
 // With{{ $name }} configures authentication using a static API key.
 func With{{ $name }}(apiKey string) ClientOption {
@@ -177,25 +175,22 @@ type rawClientInterface interface {
 {{$opid := .OperationId -}}
 {{$unexportedOpid := goCamelCase .OperationId -}}
 {{$parent := . -}}
-{{- $basicAuthSchemes := basicAuth . -}}
-{{- $bearerAuthSchemes := bearerAuth . -}}
-{{- $apiKeyAuthSchemes := apiKeyAuth . -}}
-{{- $hasAuth := or $basicAuthSchemes $bearerAuthSchemes $apiKeyAuthSchemes -}}
-{{- $shouldRetry := gt (len $bearerAuthSchemes) 0 -}}
+{{- $security := securityForOperation . -}}
+{{- $shouldRetry := $security.HasBearer -}}
 {{range .ClientMethodVariants}}
 {{if ne .Suffix "WithBody"}}
-{{if $hasAuth -}}
+{{if $security.HasSecurity -}}
 // {{$unexportedOpid}}{{.Suffix}} performs an authenticated {{$parent.Method}} {{$parent.Path}} (the `{{$opid}}` operationId) request.
 func (c *rawClient) {{$unexportedOpid}}{{.Suffix}}(ctx context.Context{{.ArgsDecl}}, reqEditors... RequestEditorFn) (*http.Response, error) {
 	editors := append(slices.Clone(reqEditors), func(ctx context.Context, req *http.Request) error {
-        {{ range $basic := $basicAuthSchemes -}}
+        {{ range $basic := $security.Basic -}}
         {{- $name := goPascalCase $basic.Name -}}
         if c.{{ $name }}.Username != "" && c.{{ $name }}.Password != "" {
             req.SetBasicAuth(c.{{ $name }}.Username, c.{{ $name }}.Password)
         }
         {{ end -}}
 
-        {{ range $bearer := $bearerAuthSchemes -}}
+        {{ range $bearer := $security.Bearer -}}
         {{- $name := goPascalCase $bearer.Name -}}
         if c.{{ $name }}.Provider != nil {
             token, err := c.{{ $name }}.Provider.GetToken(ctx)
@@ -206,7 +201,7 @@ func (c *rawClient) {{$unexportedOpid}}{{.Suffix}}(ctx context.Context{{.ArgsDec
         }
         {{ end -}}
 
-        {{ range $apiKey := $apiKeyAuthSchemes -}}
+        {{ range $apiKey := $security.APIKey -}}
         {{- $name := goPascalCase $apiKey.Name -}}
         if c.{{ $name }}.APIKey != "" {
             {{ if eq $apiKey.In "header" -}}
@@ -239,7 +234,7 @@ func (c *rawClient) {{$unexportedOpid}}{{.Suffix}}(ctx context.Context{{.ArgsDec
 
     _ = rsp.Body.Close()
 
-    {{range $bearer := $bearerAuthSchemes -}}
+    {{range $bearer := $security.Bearer -}}
     {{- $name := goPascalCase $bearer.Name -}}
     if provider := c.{{$name}}.Provider; provider != nil {
         if err := provider.InvalidateToken(ctx); err != nil {
@@ -252,8 +247,8 @@ func (c *rawClient) {{$unexportedOpid}}{{.Suffix}}(ctx context.Context{{.ArgsDec
     return c.unauthenticated{{$opid}}{{.Suffix}}(ctx{{.CallArgs}}, editors...)
 }
 {{end -}}
-// {{if $hasAuth}}unauthenticated{{$opid}}{{else}}{{$unexportedOpid}}{{end}}{{.Suffix}} performs a {{$parent.Method}} {{$parent.Path}} (the `{{$opid}}` operationId) request{{if $hasAuth}} without authentication{{end}}.
-func (c *rawClient) {{if $hasAuth}}unauthenticated{{$opid}}{{else}}{{$unexportedOpid}}{{end}}{{.Suffix}}(ctx context.Context{{.ArgsDecl}}, reqEditors... RequestEditorFn) (*http.Response, error) {
+// {{if $security.HasSecurity}}unauthenticated{{$opid}}{{else}}{{$unexportedOpid}}{{end}}{{.Suffix}} performs a {{$parent.Method}} {{$parent.Path}} (the `{{$opid}}` operationId) request{{if $security.HasSecurity}} without authentication{{end}}.
+func (c *rawClient) {{if $security.HasSecurity}}unauthenticated{{$opid}}{{else}}{{$unexportedOpid}}{{end}}{{.Suffix}}(ctx context.Context{{.ArgsDecl}}, reqEditors... RequestEditorFn) (*http.Response, error) {
     req, err := new{{$opid}}Request{{.Suffix}}(c.Server{{.CallArgs}})
     if err != nil {
         return nil, fmt.Errorf("create {{ printf "%s %s" $parent.Method $parent.Path }} request: %w", err)
