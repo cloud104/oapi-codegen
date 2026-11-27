@@ -288,27 +288,26 @@ type rawClientInterface interface {
 // {{$unexportedOpid}}{{.Suffix}} performs an authenticated {{$parent.Method}} {{$parent.Path}} (the `{{$opid}}` operationId) request.
 func (c *rawClient) {{$unexportedOpid}}{{.Suffix}}(ctx context.Context{{.ArgsDecl}}, reqEditors... RequestEditorFn) (*http.Response, error) {
 	editors := append(slices.Clone(reqEditors), func(ctx context.Context, req *http.Request) error {
+        switch {
         {{ range $basic := $security.Basic -}}
         {{- $name := goPascalCase $basic.Name -}}
-        if c.{{ $name }}.Username != "" && c.{{ $name }}.Password != "" {
+        case c.{{$name}}.Username != "" && c.{{$name}}.Password != "":
             req.SetBasicAuth(c.{{ $name }}.Username, c.{{ $name }}.Password)
-        }
         {{ end -}}
 
         {{ range $bearer := $security.Bearer -}}
         {{- $name := goPascalCase $bearer.Name -}}
-        if c.{{ $name }}.Provider != nil {
+        case c.{{$name}}.Provider != nil:
             token, err := c.{{ $name }}.Provider.Token(ctx)
             if err != nil {
                 return fmt.Errorf("get authentication token for {{ printf "%s %s" $parent.Method $parent.Path }}: %w", err)
             }
             req.Header.Set("Authorization", "Bearer "+token)
-        }
         {{ end -}}
 
         {{ range $apiKey := $security.APIKey -}}
         {{- $name := goPascalCase $apiKey.Name -}}
-        if c.{{ $name }}.APIKey != "" {
+        case c.{{$name}}.APIKey != "":
             {{ if eq $apiKey.In "header" -}}
             req.Header.Set("{{$apiKey.KeyName}}", c.{{ $name }}.APIKey)
             {{ else if eq $apiKey.In "query" -}}
@@ -321,19 +320,18 @@ func (c *rawClient) {{$unexportedOpid}}{{.Suffix}}(ctx context.Context{{.ArgsDec
                 Value: c.{{ $name }}.APIKey,
             })
             {{ end -}}
-        }
         {{ end -}}
 
         {{ range $oauth := $security.OAuth2 -}}
         {{- $name := goPascalCase $oauth.Name -}}
-        if c.{{ $name }}.TokenSource != nil {
+        case c.{{$name}}.TokenSource != nil:
             token, err := c.{{ $name }}.TokenSource.Token()
             if err != nil {
                 return fmt.Errorf("get authentication token for {{ printf "%s %s" $parent.Method $parent.Path }}: %w", err)
             }
             token.SetAuthHeader(req)
+        {{end -}}
         }
-        {{ end -}}
 
 		return nil
 	})

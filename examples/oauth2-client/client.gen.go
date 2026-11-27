@@ -173,16 +173,15 @@ type rawClientInterface interface {
 
 func (c *rawClient) startChargingSession(ctx context.Context, params *StartChargingSessionParams, body StartChargingSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	editors := append(slices.Clone(reqEditors), func(ctx context.Context, req *http.Request) error {
-		if c.DriverOAuth.TokenSource != nil {
+		switch {
+		case c.DriverOAuth.TokenSource != nil:
 			token, err := c.DriverOAuth.TokenSource.Token()
 			if err != nil {
 				return fmt.Errorf("get authentication token for POST /charging-sessions: %w", err)
 			}
 
 			token.SetAuthHeader(req)
-		}
-
-		if c.PartnerOAuth.TokenSource != nil {
+		case c.PartnerOAuth.TokenSource != nil:
 			token, err := c.PartnerOAuth.TokenSource.Token()
 			if err != nil {
 				return fmt.Errorf("get authentication token for POST /charging-sessions: %w", err)
@@ -218,16 +217,15 @@ func (c *rawClient) unauthenticatedStartChargingSession(ctx context.Context, par
 
 func (c *rawClient) getChargingSession(ctx context.Context, sessionID SessionID, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	editors := append(slices.Clone(reqEditors), func(ctx context.Context, req *http.Request) error {
-		if c.DriverOAuth.TokenSource != nil {
+		switch {
+		case c.DriverOAuth.TokenSource != nil:
 			token, err := c.DriverOAuth.TokenSource.Token()
 			if err != nil {
 				return fmt.Errorf("get authentication token for GET /charging-sessions/{sessionId}: %w", err)
 			}
 
 			token.SetAuthHeader(req)
-		}
-
-		if c.PartnerOAuth.TokenSource != nil {
+		case c.PartnerOAuth.TokenSource != nil:
 			token, err := c.PartnerOAuth.TokenSource.Token()
 			if err != nil {
 				return fmt.Errorf("get authentication token for GET /charging-sessions/{sessionId}: %w", err)
@@ -263,16 +261,15 @@ func (c *rawClient) unauthenticatedGetChargingSession(ctx context.Context, sessi
 
 func (c *rawClient) stopChargingSession(ctx context.Context, sessionID SessionID, params *StopChargingSessionParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	editors := append(slices.Clone(reqEditors), func(ctx context.Context, req *http.Request) error {
-		if c.DriverOAuth.TokenSource != nil {
+		switch {
+		case c.DriverOAuth.TokenSource != nil:
 			token, err := c.DriverOAuth.TokenSource.Token()
 			if err != nil {
 				return fmt.Errorf("get authentication token for POST /charging-sessions/{sessionId}/stop: %w", err)
 			}
 
 			token.SetAuthHeader(req)
-		}
-
-		if c.PartnerOAuth.TokenSource != nil {
+		case c.PartnerOAuth.TokenSource != nil:
 			token, err := c.PartnerOAuth.TokenSource.Token()
 			if err != nil {
 				return fmt.Errorf("get authentication token for POST /charging-sessions/{sessionId}/stop: %w", err)
@@ -308,7 +305,8 @@ func (c *rawClient) unauthenticatedStopChargingSession(ctx context.Context, sess
 
 func (c *rawClient) getCurrentDriver(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	editors := append(slices.Clone(reqEditors), func(ctx context.Context, req *http.Request) error {
-		if c.DriverOAuth.TokenSource != nil {
+		switch {
+		case c.DriverOAuth.TokenSource != nil:
 			token, err := c.DriverOAuth.TokenSource.Token()
 			if err != nil {
 				return fmt.Errorf("get authentication token for GET /drivers/me: %w", err)
@@ -344,7 +342,8 @@ func (c *rawClient) unauthenticatedGetCurrentDriver(ctx context.Context, reqEdit
 
 func (c *rawClient) listFleetInvoices(ctx context.Context, fleetID FleetID, params *ListFleetInvoicesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	editors := append(slices.Clone(reqEditors), func(ctx context.Context, req *http.Request) error {
-		if c.PartnerOAuth.TokenSource != nil {
+		switch {
+		case c.PartnerOAuth.TokenSource != nil:
 			token, err := c.PartnerOAuth.TokenSource.Token()
 			if err != nil {
 				return fmt.Errorf("get authentication token for GET /fleets/{fleetId}/invoices: %w", err)
@@ -380,7 +379,8 @@ func (c *rawClient) unauthenticatedListFleetInvoices(ctx context.Context, fleetI
 
 func (c *rawClient) listFleetVehicles(ctx context.Context, fleetID FleetID, params *ListFleetVehiclesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	editors := append(slices.Clone(reqEditors), func(ctx context.Context, req *http.Request) error {
-		if c.PartnerOAuth.TokenSource != nil {
+		switch {
+		case c.PartnerOAuth.TokenSource != nil:
 			token, err := c.PartnerOAuth.TokenSource.Token()
 			if err != nil {
 				return fmt.Errorf("get authentication token for GET /fleets/{fleetId}/vehicles: %w", err)
@@ -435,16 +435,15 @@ func (c *rawClient) getHealth(ctx context.Context, reqEditors ...RequestEditorFn
 
 func (c *rawClient) searchChargingStations(ctx context.Context, params *SearchChargingStationsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	editors := append(slices.Clone(reqEditors), func(ctx context.Context, req *http.Request) error {
-		if c.DriverOAuth.TokenSource != nil {
+		switch {
+		case c.DriverOAuth.TokenSource != nil:
 			token, err := c.DriverOAuth.TokenSource.Token()
 			if err != nil {
 				return fmt.Errorf("get authentication token for GET /stations: %w", err)
 			}
 
 			token.SetAuthHeader(req)
-		}
-
-		if c.PartnerOAuth.TokenSource != nil {
+		case c.PartnerOAuth.TokenSource != nil:
 			token, err := c.PartnerOAuth.TokenSource.Token()
 			if err != nil {
 				return fmt.Errorf("get authentication token for GET /stations: %w", err)
